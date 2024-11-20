@@ -1,0 +1,506 @@
+@prefix ex: <http://example.org/> .
+@prefix schema: <https://schema.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ex:Recipe_off_0 a schema:Recipe ;
+    schema:NutritionInformation ex:carbohydrates_0,
+        ex:energy_0,
+        ex:energykcal_0,
+        ex:energykj_0,
+        ex:fat_0,
+        ex:fruitsvegetablesnutsestimatefromingredients_0,
+        ex:novagroup_0,
+        ex:nutriscoregrade_0,
+        ex:nutritionscorefr_0,
+        ex:proteins_0,
+        ex:salt_0,
+        ex:saturatedfat_0,
+        ex:sodium_0,
+        ex:sugars_0,
+        ex:vitaminc_0 ;
+    schema:identifier 0 ;
+    schema:name "Tonno Rio Mare"@en .
+
+ex:Recipe_off_1 a schema:Recipe ;
+    schema:NutritionInformation ex:carbohydrates_1,
+        ex:ecoscoregrade_1,
+        ex:ecoscorescore_1,
+        ex:energy_1,
+        ex:energykj_1,
+        ex:fat_1,
+        ex:fiber_1,
+        ex:fruitsvegetablesnutsestimatefromingredients_1,
+        ex:nutriscoregrade_1,
+        ex:nutritionscorefr_1,
+        ex:proteins_1,
+        ex:salt_1,
+        ex:saturatedfat_1,
+        ex:sodium_1,
+        ex:sugars_1 ;
+    schema:identifier 1 ;
+    schema:name " moutarde au moût de raisin "@en .
+
+ex:Recipe_off_2 a schema:Recipe ;
+    schema:NutritionInformation ex:carbohydrates_2,
+        ex:energy_2,
+        ex:energykcal_2,
+        ex:fat_2,
+        ex:proteins_2,
+        ex:salt_2,
+        ex:saturatedfat_2,
+        ex:sodium_2,
+        ex:sugars_2 ;
+    schema:identifier 2 ;
+    schema:name "Sauce Sweety chili 0%"@en .
+
+ex:Recipe_off_3 a schema:Recipe ;
+    schema:identifier 3 ;
+    schema:name "Pistou d'ail des ours"@en .
+
+ex:Recipe_off_4 a schema:Recipe ;
+    schema:identifier 4 ;
+    schema:name "Pain maïs"@en .
+
+ex:Recipe_off_5 a schema:Recipe ;
+    schema:NutritionInformation ex:carbohydrates_5,
+        ex:ecoscoregrade_5,
+        ex:ecoscorescore_5,
+        ex:energy_5,
+        ex:energykcal_5,
+        ex:fat_5,
+        ex:nutriscoregrade_5,
+        ex:nutritionscorefr_5,
+        ex:proteins_5,
+        ex:salt_5,
+        ex:saturatedfat_5,
+        ex:sodium_5,
+        ex:sugars_5 ;
+    schema:identifier 5 ;
+    schema:name "Salade de carottes râpées"@en .
+
+ex:Recipe_off_6 a schema:Recipe ;
+    schema:NutritionInformation ex:carbohydrates_6,
+        ex:energy_6,
+        ex:energykcal_6,
+        ex:fat_6,
+        ex:proteins_6,
+        ex:salt_6,
+        ex:saturatedfat_6,
+        ex:sodium_6,
+        ex:sugars_6 ;
+    schema:identifier 6 ;
+    schema:name "Fromage blanc aux myrtilles"@en .
+
+ex:Recipe_off_8 a schema:Recipe ;
+    schema:NutritionInformation ex:carbohydrates_8,
+        ex:energy_8,
+        ex:energykcal_8,
+        ex:fat_8,
+        ex:proteins_8,
+        ex:salt_8,
+        ex:saturatedfat_8,
+        ex:sodium_8,
+        ex:sugars_8 ;
+    schema:identifier 8 ;
+    schema:name "Baguette parisien"@en .
+
+ex:Recipe_off_9 a schema:Recipe ;
+    schema:NutritionInformation ex:carbohydrates_9,
+        ex:energy_9,
+        ex:energykcal_9,
+        ex:fat_9,
+        ex:proteins_9,
+        ex:salt_9,
+        ex:saturatedfat_9,
+        ex:sodium_9,
+        ex:sugars_9 ;
+    schema:identifier 9 ;
+    schema:name "&quot;Baguette Lyonnais&quot;"@en .
+
+ex:carbohydrates_0 a ex:Indicator ;
+    schema:quantity "6.7"^^xsd:float ;
+    schema:type "carbohydrates_100g" ;
+    schema:unitText "grams" .
+
+ex:carbohydrates_1 a ex:Indicator ;
+    schema:quantity "29.0"^^xsd:float ;
+    schema:type "carbohydrates_100g" ;
+    schema:unitText "grams" .
+
+ex:carbohydrates_2 a ex:Indicator ;
+    schema:quantity "4.8"^^xsd:float ;
+    schema:type "carbohydrates_100g" ;
+    schema:unitText "grams" .
+
+ex:carbohydrates_5 a ex:Indicator ;
+    schema:quantity "5.3"^^xsd:float ;
+    schema:type "carbohydrates_100g" ;
+    schema:unitText "grams" .
+
+ex:carbohydrates_6 a ex:Indicator ;
+    schema:quantity "16.3"^^xsd:float ;
+    schema:type "carbohydrates_100g" ;
+    schema:unitText "grams" .
+
+ex:carbohydrates_8 a ex:Indicator ;
+    schema:quantity "38.4"^^xsd:float ;
+    schema:type "carbohydrates_100g" ;
+    schema:unitText "grams" .
+
+ex:carbohydrates_9 a ex:Indicator ;
+    schema:quantity "41.0"^^xsd:float ;
+    schema:type "carbohydrates_100g" ;
+    schema:unitText "grams" .
+
+ex:ecoscoregrade_1 a ex:Indicator ;
+    schema:quantity "c"^^xsd:string ;
+    schema:type "ecoscore_grade" .
+
+ex:ecoscoregrade_5 a ex:Indicator ;
+    schema:quantity "b"^^xsd:string ;
+    schema:type "ecoscore_grade" .
+
+ex:ecoscorescore_1 a ex:Indicator ;
+    schema:quantity "54.0"^^xsd:string ;
+    schema:type "ecoscore_score" .
+
+ex:ecoscorescore_5 a ex:Indicator ;
+    schema:quantity "75.0"^^xsd:string ;
+    schema:type "ecoscore_score" .
+
+ex:energy_0 a ex:Indicator ;
+    schema:quantity "1700.0"^^xsd:float ;
+    schema:type "energy_100g" ;
+    schema:unitText "grams" .
+
+ex:energy_1 a ex:Indicator ;
+    schema:quantity "936.0"^^xsd:float ;
+    schema:type "energy_100g" ;
+    schema:unitText "grams" .
+
+ex:energy_2 a ex:Indicator ;
+    schema:quantity "88.0"^^xsd:float ;
+    schema:type "energy_100g" ;
+    schema:unitText "grams" .
+
+ex:energy_5 a ex:Indicator ;
+    schema:quantity "134.0"^^xsd:float ;
+    schema:type "energy_100g" ;
+    schema:unitText "grams" .
+
+ex:energy_6 a ex:Indicator ;
+    schema:quantity "540.0"^^xsd:float ;
+    schema:type "energy_100g" ;
+    schema:unitText "grams" .
+
+ex:energy_8 a ex:Indicator ;
+    schema:quantity "929.0"^^xsd:float ;
+    schema:type "energy_100g" ;
+    schema:unitText "grams" .
+
+ex:energy_9 a ex:Indicator ;
+    schema:quantity "1213.0"^^xsd:float ;
+    schema:type "energy_100g" ;
+    schema:unitText "grams" .
+
+ex:energykcal_0 a ex:Indicator ;
+    schema:quantity "406.0"^^xsd:float ;
+    schema:type "energy-kcal_100g" ;
+    schema:unitText "grams" .
+
+ex:energykcal_2 a ex:Indicator ;
+    schema:quantity "21.0"^^xsd:float ;
+    schema:type "energy-kcal_100g" ;
+    schema:unitText "grams" .
+
+ex:energykcal_5 a ex:Indicator ;
+    schema:quantity "32.0"^^xsd:float ;
+    schema:type "energy-kcal_100g" ;
+    schema:unitText "grams" .
+
+ex:energykcal_6 a ex:Indicator ;
+    schema:quantity "129.0"^^xsd:float ;
+    schema:type "energy-kcal_100g" ;
+    schema:unitText "grams" .
+
+ex:energykcal_8 a ex:Indicator ;
+    schema:quantity "222.0"^^xsd:float ;
+    schema:type "energy-kcal_100g" ;
+    schema:unitText "grams" .
+
+ex:energykcal_9 a ex:Indicator ;
+    schema:quantity "290.0"^^xsd:float ;
+    schema:type "energy-kcal_100g" ;
+    schema:unitText "grams" .
+
+ex:energykj_0 a ex:Indicator ;
+    schema:quantity "1700.0"^^xsd:float ;
+    schema:type "energy-kj_100g" ;
+    schema:unitText "grams" .
+
+ex:energykj_1 a ex:Indicator ;
+    schema:quantity "936.0"^^xsd:float ;
+    schema:type "energy-kj_100g" ;
+    schema:unitText "grams" .
+
+ex:fat_0 a ex:Indicator ;
+    schema:quantity "6.6"^^xsd:float ;
+    schema:type "fat_100g" ;
+    schema:unitText "grams" .
+
+ex:fat_1 a ex:Indicator ;
+    schema:quantity "8.2"^^xsd:float ;
+    schema:type "fat_100g" ;
+    schema:unitText "grams" .
+
+ex:fat_2 a ex:Indicator ;
+    schema:quantity "0.0"^^xsd:float ;
+    schema:type "fat_100g" ;
+    schema:unitText "grams" .
+
+ex:fat_5 a ex:Indicator ;
+    schema:quantity "0.3"^^xsd:float ;
+    schema:type "fat_100g" ;
+    schema:unitText "grams" .
+
+ex:fat_6 a ex:Indicator ;
+    schema:quantity "4.9"^^xsd:float ;
+    schema:type "fat_100g" ;
+    schema:unitText "grams" .
+
+ex:fat_8 a ex:Indicator ;
+    schema:quantity "3.3"^^xsd:float ;
+    schema:type "fat_100g" ;
+    schema:unitText "grams" .
+
+ex:fat_9 a ex:Indicator ;
+    schema:quantity "9.4"^^xsd:float ;
+    schema:type "fat_100g" ;
+    schema:unitText "grams" .
+
+ex:fiber_1 a ex:Indicator ;
+    schema:quantity "0.0"^^xsd:float ;
+    schema:type "fiber_100g" ;
+    schema:unitText "grams" .
+
+ex:fruitsvegetablesnutsestimatefromingredients_0 a ex:Indicator ;
+    schema:quantity "0.0133167613636402"^^xsd:float ;
+    schema:type "fruits-vegetables-nuts-estimate-from-ingredients_100g" ;
+    schema:unitText "grams" .
+
+ex:fruitsvegetablesnutsestimatefromingredients_1 a ex:Indicator ;
+    schema:quantity "0.0"^^xsd:float ;
+    schema:type "fruits-vegetables-nuts-estimate-from-ingredients_100g" ;
+    schema:unitText "grams" .
+
+ex:novagroup_0 a ex:Indicator ;
+    schema:quantity "4.0"^^xsd:string ;
+    schema:type "nova_group" .
+
+ex:nutriscoregrade_0 a ex:Indicator ;
+    schema:quantity "d"^^xsd:string ;
+    schema:type "nutriscore_grade" .
+
+ex:nutriscoregrade_1 a ex:Indicator ;
+    schema:quantity "d"^^xsd:string ;
+    schema:type "nutriscore_grade" .
+
+ex:nutriscoregrade_5 a ex:Indicator ;
+    schema:quantity "a"^^xsd:string ;
+    schema:type "nutriscore_grade" .
+
+ex:nutritionscorefr_0 a ex:Indicator ;
+    schema:quantity "12.0"^^xsd:float ;
+    schema:type "nutrition-score-fr_100g" ;
+    schema:unitText "grams" .
+
+ex:nutritionscorefr_1 a ex:Indicator ;
+    schema:quantity "18.0"^^xsd:float ;
+    schema:type "nutrition-score-fr_100g" ;
+    schema:unitText "grams" .
+
+ex:nutritionscorefr_5 a ex:Indicator ;
+    schema:quantity "-4.0"^^xsd:float ;
+    schema:type "nutrition-score-fr_100g" ;
+    schema:unitText "grams" .
+
+ex:proteins_0 a ex:Indicator ;
+    schema:quantity "80.0"^^xsd:float ;
+    schema:type "proteins_100g" ;
+    schema:unitText "grams" .
+
+ex:proteins_1 a ex:Indicator ;
+    schema:quantity "5.1"^^xsd:float ;
+    schema:type "proteins_100g" ;
+    schema:unitText "grams" .
+
+ex:proteins_2 a ex:Indicator ;
+    schema:quantity "0.2"^^xsd:float ;
+    schema:type "proteins_100g" ;
+    schema:unitText "grams" .
+
+ex:proteins_5 a ex:Indicator ;
+    schema:quantity "0.9"^^xsd:float ;
+    schema:type "proteins_100g" ;
+    schema:unitText "grams" .
+
+ex:proteins_6 a ex:Indicator ;
+    schema:quantity "4.4"^^xsd:float ;
+    schema:type "proteins_100g" ;
+    schema:unitText "grams" .
+
+ex:proteins_8 a ex:Indicator ;
+    schema:quantity "11.7"^^xsd:float ;
+    schema:type "proteins_100g" ;
+    schema:unitText "grams" .
+
+ex:proteins_9 a ex:Indicator ;
+    schema:quantity "12.5"^^xsd:float ;
+    schema:type "proteins_100g" ;
+    schema:unitText "grams" .
+
+ex:salt_0 a ex:Indicator ;
+    schema:quantity "0.5"^^xsd:float ;
+    schema:type "salt_100g" ;
+    schema:unitText "grams" .
+
+ex:salt_1 a ex:Indicator ;
+    schema:quantity "4.6"^^xsd:float ;
+    schema:type "salt_100g" ;
+    schema:unitText "grams" .
+
+ex:salt_2 a ex:Indicator ;
+    schema:quantity "2.04"^^xsd:float ;
+    schema:type "salt_100g" ;
+    schema:unitText "grams" .
+
+ex:salt_5 a ex:Indicator ;
+    schema:quantity "0.42"^^xsd:float ;
+    schema:type "salt_100g" ;
+    schema:unitText "grams" .
+
+ex:salt_6 a ex:Indicator ;
+    schema:quantity "0.25"^^xsd:float ;
+    schema:type "salt_100g" ;
+    schema:unitText "grams" .
+
+ex:salt_8 a ex:Indicator ;
+    schema:quantity "0.678"^^xsd:float ;
+    schema:type "salt_100g" ;
+    schema:unitText "grams" .
+
+ex:salt_9 a ex:Indicator ;
+    schema:quantity "0.9"^^xsd:float ;
+    schema:type "salt_100g" ;
+    schema:unitText "grams" .
+
+ex:saturatedfat_0 a ex:Indicator ;
+    schema:quantity "4.3"^^xsd:float ;
+    schema:type "saturated-fat_100g" ;
+    schema:unitText "grams" .
+
+ex:saturatedfat_1 a ex:Indicator ;
+    schema:quantity "2.2"^^xsd:float ;
+    schema:type "saturated-fat_100g" ;
+    schema:unitText "grams" .
+
+ex:saturatedfat_2 a ex:Indicator ;
+    schema:quantity "0.0"^^xsd:float ;
+    schema:type "saturated-fat_100g" ;
+    schema:unitText "grams" .
+
+ex:saturatedfat_5 a ex:Indicator ;
+    schema:quantity "0.1"^^xsd:float ;
+    schema:type "saturated-fat_100g" ;
+    schema:unitText "grams" .
+
+ex:saturatedfat_6 a ex:Indicator ;
+    schema:quantity "3.1"^^xsd:float ;
+    schema:type "saturated-fat_100g" ;
+    schema:unitText "grams" .
+
+ex:saturatedfat_8 a ex:Indicator ;
+    schema:quantity "2.1"^^xsd:float ;
+    schema:type "saturated-fat_100g" ;
+    schema:unitText "grams" .
+
+ex:saturatedfat_9 a ex:Indicator ;
+    schema:quantity "4.5"^^xsd:float ;
+    schema:type "saturated-fat_100g" ;
+    schema:unitText "grams" .
+
+ex:sodium_0 a ex:Indicator ;
+    schema:quantity "0.2"^^xsd:float ;
+    schema:type "sodium_100g" ;
+    schema:unitText "grams" .
+
+ex:sodium_1 a ex:Indicator ;
+    schema:quantity "1.84"^^xsd:float ;
+    schema:type "sodium_100g" ;
+    schema:unitText "grams" .
+
+ex:sodium_2 a ex:Indicator ;
+    schema:quantity "0.816"^^xsd:float ;
+    schema:type "sodium_100g" ;
+    schema:unitText "grams" .
+
+ex:sodium_5 a ex:Indicator ;
+    schema:quantity "0.168"^^xsd:float ;
+    schema:type "sodium_100g" ;
+    schema:unitText "grams" .
+
+ex:sodium_6 a ex:Indicator ;
+    schema:quantity "0.1"^^xsd:float ;
+    schema:type "sodium_100g" ;
+    schema:unitText "grams" .
+
+ex:sodium_8 a ex:Indicator ;
+    schema:quantity "0.2712"^^xsd:float ;
+    schema:type "sodium_100g" ;
+    schema:unitText "grams" .
+
+ex:sodium_9 a ex:Indicator ;
+    schema:quantity "0.36"^^xsd:float ;
+    schema:type "sodium_100g" ;
+    schema:unitText "grams" .
+
+ex:sugars_0 a ex:Indicator ;
+    schema:quantity "6.7"^^xsd:float ;
+    schema:type "sugars_100g" ;
+    schema:unitText "grams" .
+
+ex:sugars_1 a ex:Indicator ;
+    schema:quantity "22.0"^^xsd:float ;
+    schema:type "sugars_100g" ;
+    schema:unitText "grams" .
+
+ex:sugars_2 a ex:Indicator ;
+    schema:quantity "0.4"^^xsd:float ;
+    schema:type "sugars_100g" ;
+    schema:unitText "grams" .
+
+ex:sugars_5 a ex:Indicator ;
+    schema:quantity "3.9"^^xsd:float ;
+    schema:type "sugars_100g" ;
+    schema:unitText "grams" .
+
+ex:sugars_6 a ex:Indicator ;
+    schema:quantity "16.3"^^xsd:float ;
+    schema:type "sugars_100g" ;
+    schema:unitText "grams" .
+
+ex:sugars_8 a ex:Indicator ;
+    schema:quantity "1.8"^^xsd:float ;
+    schema:type "sugars_100g" ;
+    schema:unitText "grams" .
+
+ex:sugars_9 a ex:Indicator ;
+    schema:quantity "2.0"^^xsd:float ;
+    schema:type "sugars_100g" ;
+    schema:unitText "grams" .
+
+ex:vitaminc_0 a ex:Indicator ;
+    schema:quantity "0.0048"^^xsd:float ;
+    schema:type "vitamin-c_100g" ;
+    schema:unitText "grams" .
+

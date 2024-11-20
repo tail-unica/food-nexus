@@ -1,0 +1,111 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix schema: <https://schema.org/> .
+@prefix unica: <file:///./namespace_unica.ttl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+unica:FoodProducer a rdfs:Class ;
+    rdfs:label "Food Producer"@en ;
+    rdfs:comment "Information about the producer of a food item."@en ;
+    rdfs:subClassOf schema:Organization .
+
+unica:Indicator a rdfs:Class ;
+    rdfs:label "Indicator"@en ;
+    rdfs:comment "Represents nutritional and sustainability indicators for food items."@en ;
+    rdfs:subClassOf schema:NutritionInformation .
+
+unica:UserConstraint a rdfs:Class ;
+    rdfs:label "User Constraint"@en ;
+    rdfs:comment "Constraint about what a user can or want to eat."@en ;
+    rdfs:subClassOf schema:Intangible .
+
+unica:calciumPer100g a rdf:Property ;
+    rdfs:label "Calcium per 100g (mg)"@en ;
+    rdfs:comment "Calcium content per 100 grams."@en ;
+    rdfs:domain unica:Indicator ;
+    rdfs:range xsd:float .
+
+unica:constraintDescription a rdf:Property ;
+    rdfs:label "Constraint Description"@en ;
+    rdfs:comment "Description of the constraint."@en ;
+    rdfs:domain unica:UserConstraint ;
+    rdfs:range xsd:string .
+
+unica:constraintName a rdf:Property ;
+    rdfs:label "Constraint Name"@en ;
+    rdfs:comment "Name of the constraint."@en ;
+    rdfs:domain unica:UserConstraint ;
+    rdfs:range xsd:string .
+
+unica:ecoscoreGrade a rdf:Property ;
+    rdfs:label "Eco-Score Grade"@en ;
+    rdfs:comment "A grade indicating the Eco-Score environmental impact level."@en ;
+    rdfs:domain unica:Indicator ;
+    rdfs:range xsd:string .
+
+unica:ecoscoreScore a rdf:Property ;
+    rdfs:label "Eco-Score Score"@en ;
+    rdfs:comment "A numeric score for Eco-Score system."@en ;
+    rdfs:domain unica:Indicator ;
+    rdfs:range xsd:float .
+
+unica:fsaScore a rdf:Property ;
+    rdfs:label "FSA Score"@en ;
+    rdfs:comment "A score based on the Food Standards Agency's healthfulness criteria."@en ;
+    rdfs:domain unica:Indicator ;
+    rdfs:range xsd:float .
+
+unica:ironPer100g a rdf:Property ;
+    rdfs:label "Iron per 100g (mg)"@en ;
+    rdfs:comment "Iron content per 100 grams."@en ;
+    rdfs:domain unica:Indicator ;
+    rdfs:range xsd:float .
+
+unica:novaGroup a rdf:Property ;
+    rdfs:label "NOVA Group"@en ;
+    rdfs:comment "Group classification of processing level based on NOVA system."@en ;
+    rdfs:domain unica:Indicator ;
+    rdfs:range xsd:string .
+
+unica:nutriScore a rdf:Property ;
+    rdfs:label "Nutri-Score"@en ;
+    rdfs:comment "A score indicating the nutritional value based on the Nutri-Score system."@en ;
+    rdfs:domain unica:Indicator ;
+    rdfs:range xsd:float .
+
+unica:nutriscoreGrade a rdf:Property ;
+    rdfs:label "Nutri-Score Grade"@en ;
+    rdfs:comment "A grade indicating the Nutri-Score nutritional level."@en ;
+    rdfs:domain unica:Indicator ;
+    rdfs:range xsd:string .
+
+unica:nutriscoreScore a rdf:Property ;
+    rdfs:label "Nutri-Score Score"@en ;
+    rdfs:comment "A numeric score for Nutri-Score system."@en ;
+    rdfs:domain unica:Indicator ;
+    rdfs:range xsd:float .
+
+unica:nutritionScoreFrPer100g a rdf:Property ;
+    rdfs:label "Nutrition Score FR per 100g"@en ;
+    rdfs:comment "French nutrition score per 100 grams."@en ;
+    rdfs:domain unica:Indicator ;
+    rdfs:range xsd:float .
+
+unica:vitaminAPer100g a rdf:Property ;
+    rdfs:label "Vitamin A per 100g (mcg)"@en ;
+    rdfs:comment "Vitamin A content per 100 grams."@en ;
+    rdfs:domain unica:Indicator ;
+    rdfs:range xsd:float .
+
+unica:vitaminCPer100g a rdf:Property ;
+    rdfs:label "Vitamin C per 100g (mg)"@en ;
+    rdfs:comment "Vitamin C content per 100 grams."@en ;
+    rdfs:domain unica:Indicator ;
+    rdfs:range xsd:float .
+
+unica:whoScore a rdf:Property ;
+    rdfs:label "WHO Score"@en ;
+    rdfs:comment "A score indicating WHO healthfulness assessment."@en ;
+    rdfs:domain unica:Indicator ;
+    rdfs:range xsd:float .
+
