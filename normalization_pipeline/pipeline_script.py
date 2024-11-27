@@ -1,6 +1,6 @@
 """
-File che contiene script e dati necessari per la normalizzazione
-dei nomi degli ingredienti e la definizione del modello di traduzione
+File containing scripts and data required for the normalization
+of ingredient names and the definition of the translation model
 """
 
 
@@ -20,15 +20,15 @@ from nltk.corpus import stopwords  # type: ignore
 from nltk.tokenize import word_tokenize  # type: ignore
 
 
-def crea_modello_traduzione() -> None:
+def create_translation_model() -> None:
     """
-    Chiamando questa funzione crea un modello di traduzione
-    basato su qwen2.5:32b e usabile su ollama
+    Calling this function creates a translation model
+    based on qwen2.5:32b and usable on Ollama
 
     :return: None
     """
 
-    # Definizione del system prompt del modello
+    # Definition of the system prompt for the model
     modelfile = """
     FROM qwen2.5:32b
     SYSTEM You are a highly skilled linguist with a specific task: I will provide you with a single string of input related to food names, ingredients, recipes, or culinary terms. \
@@ -37,6 +37,7 @@ def crea_modello_traduzione() -> None:
     - Do not add any comments, explanations, or modifications to your response. \
     - Always respond with either "eng" or the English translation of the provided text. \
     - Do not remove any punctuation mark, for example (",", ".", ";", ":", "!", "?", "(", ")", "\"") in your response. \
+    - Do not put ani '"' when you are responding "eng". \
     Here are some examples for clarity: \
     - "pane al mais" -> "corn bread" \
     - "apple" -> "eng" \
@@ -62,32 +63,32 @@ def crea_modello_traduzione() -> None:
     PARAMETER top_k 1
     """
 
-    # Crea il modello con il system prompt definito e con nome "translation_expert"
+    # Create the model with the defined system prompt and name "translation_expert"
     ollama.create(model="translation_expert", modelfile=modelfile)
 
 
 def translate_to_english_test(text: str) -> str:
     """
-    funzione che traduce una stringa in inglese
+    Function that translates a string into English
 
-    :param text: testo da tradurre
-    :return: risposta del modello di traduzione
+    :param text: text to be translated
+    :return: response from the translation model
     """
     response = ollama.generate(model="translation_expert", prompt=text)
     print(text, response["response"])
     return response["response"]
 
 
-# Device su cui si svolgeranno le operazioni
+# Device on which operations will be performed
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
-# Inizializza il lemmatizzatore, il correttore ortografico, il registro delle unità
+# Initialize the lemmatizer, spell checker, and unit registry
 lemmatizer = WordNetLemmatizer()
 spell_checker = SpellChecker()
 ureg = pint.UnitRegistry()
 
-# Definizioni personalizzate di unità non standard
+# Custom definitions of non-standard units
 ureg.define("tbsp = 15 * milliliter")
 ureg.define("tsp = 5 * milliliter")
 ureg.define("cup = 240 * milliliter")
@@ -97,7 +98,7 @@ ureg.define("ounce = 28.3495 * gram")
 ureg.define("fluid_ounce = 29.5735 * milliliter")
 
 
-# Lista di suffissi e prefissi da rimuovere
+# List of suffixes and prefixes to remove
 suffixes_and_prefixes = [
     "non",
     "pre",
@@ -115,7 +116,7 @@ suffixes_and_prefixes = [
 ]
 
 
-# Dizionario di sigle e valori associati
+# Dictionary of acronyms and associated values
 abbreviations = {
     "evo": "extra virgin olive oil",
     "bbq": "barbecue",
@@ -173,7 +174,7 @@ unit_conversion_map = {
 }
 
 
-# Elenco delle unità di misura da rimuovere
+# List of units of measurement to remove
 units_to_remove = ["gram", "milliliters"]
 
 
@@ -181,26 +182,26 @@ def load_adjectives_to_keep_words(
     input_file="../csv_file/aggettivi_FoodKg.csv",
 ) -> set[str]:
     """
-    Funzione per caricare gli aggettivi unici in `keep_words`
+    Function to load unique adjectives into `keep_words`
 
-    :param input_file: percorso del file CSV
+    :param input_file: path to the CSV file
 
-    :return: un set di stringhe contenenti gli aggettivi unici di FoodKG
+    :return: a set of strings containing the unique adjectives from FoodKG
     """
 
-    # Inizializza il set di stringhe
+    # Initialize the set of strings
     keep_words = set()
     with open(input_file, mode="r", encoding="utf-8") as csvfile:
         reader = csv.DictReader(csvfile)
 
-        # Aggiungi ogni aggettivo trovato nel file a `keep_words`
+        # Add each adjective found in the file to `keep_words`
         for row in reader:
             adjective = row["adjective"].strip().lower()
             keep_words.add(adjective)
     return keep_words
 
 
-# lista parole da non eliminare in aggettivi e avverbi
+# List of words to keep in adjectives and adverbs
 keep_words = load_adjectives_to_keep_words()
 
 
@@ -208,68 +209,68 @@ def load_brands_from_csv(
     file_path="../csv_file/brands_filtered.csv",
 ) -> list[str]:
     """
-    Funzione per caricare i nomi dei brand da eliminare dal file CSV apposito
+    Function to load brand names to be removed from the appropriate CSV file
 
-    :param file_path: percorso del file CSV
+    :param file_path: path to the CSV file
 
-    :return: una lista di stringhe contenenti i nomi dei brand da eliminare
+    :return: a list of strings containing brand names to remove
     """
-    # Inizializza la lista di stringhe
+    # Initialize the list of strings
     brands = []
     with open(file_path, "r", encoding="utf-8") as csvfile:
         reader = csv.reader(csvfile)
         for row in reader:
-            # Controlla se la riga non è vuota
+            # Check if the row is not empty
             if row:
-                # Aggiunge il nome del brand rimuovendo spazi extra
+                # Add the brand name by removing extra spaces
                 brands.append(row[0].strip())
 
     return brands
 
 
 """
-li ordino perche cosi se un nome di un brand è compreso in un altro, rimuove il nome piu lungo
-ad esempio "rio" e "rio mare" sono entrambi brand, applicando la rimozione del brand al prodotto
-"tonno rio mare" rimuoverebbe "rio" e poi e basta senza rimuoveere mare se non fossero ordinati
+I sort them so that if a brand name is included in another, the longer name is removed first
+For example, "rio" and "rio mare" are both brands, applying the brand removal to the product
+"tonno rio mare" would remove "rio" first and then stop, without removing "mare" if they weren't sorted
 """
-# Lista di brand da rimuovere
+# List of brands to remove
 brands = sorted(load_brands_from_csv(), key=len, reverse=True)
 
 
 def remove_text_in_parentheses(text: str) -> str:
     """
-    Funzione per rimuovere il testo tra parentesi
+    Function to remove text within parentheses
 
-    :param text: il testo in cui è da rimuovere il testo tra parentesi
-    :return: il testo con rimosso il testo tra parentesi
+    :param text: the text from which to remove the text within parentheses
+    :return: the text with the text within parentheses removed
     """
     return re.sub(r"\(.*?\)", "", text).strip()
 
 
 def remove_text_after_comma_or_colon(text: str) -> str:
     """
-    Rimuove il testo dopo la prima virgola o dopo il carattere ":".
+    Removes text after the first comma or colon character.
 
-    :param text: Il testo dal quale rimuovere la parte dopo la prima virgola o il carattere ":".
-    :return: Il testo con la parte successiva alla prima virgola o al carattere ":" rimossa.
+    :param text: The text from which to remove the part after the first comma or colon.
+    :return: The text with the part after the first comma or colon removed.
     """
     return re.split(r"[,:]", text, maxsplit=1)[0].strip()
 
 
-# Funzione per rimuovere tutta la punteggiatura rimanente
+# Function to remove all remaining punctuation
 def remove_or_replace_punctuation(text: str) -> str:
     """
-    Rimuove o sostituisce la punteggiatura nel testo.
+    Removes or replaces punctuation in the text.
 
-    Sostituisce la punteggiatura tra due parole con uno spazio e rimuove la punteggiatura rimanente.
+    Replaces punctuation between two words with a space and removes any remaining punctuation.
 
-    :param text: Il testo da cui rimuovere o sostituire la punteggiatura.
-    :return: Il testo con la punteggiatura rimanente rimossa o sostituita.
+    :param text: The text from which to remove or replace punctuation.
+    :return: The text with remaining punctuation removed or replaced.
     """
-    # Sostituisci la punteggiatura tra due caratteri con uno spazio
+    # Replace punctuation between two characters with a space
     text = re.sub(r"(?<=\w)[^\w\s](?=\w)", " ", text)
 
-    # Rimuovi qualsiasi altra punteggiatura che non sia già stata sostituita
+    # Remove any other punctuation that wasn't already replaced
     text = re.sub(r"[^\w\s]", "", text)
 
     return text.strip()
@@ -277,22 +278,22 @@ def remove_or_replace_punctuation(text: str) -> str:
 
 def remove_numeric_values(text: str) -> str:
     """
-    Rimuove i valori numerici nel testo, inclusi quelli con punto o virgola decimale.
+    Removes numeric values from the text, including those with decimal points or commas.
 
-    :param text: Il testo da cui rimuovere i valori numerici.
-    :return: Il testo senza valori numerici.
+    :param text: The text from which to remove numeric values.
+    :return: The text without numeric values.
     """
-    # Rimuove numeri interi e numeri decimali con punto o virgola
+    # Remove whole numbers and decimal numbers with period or comma
     return re.sub(r"\b\d+[.,]?\d*\b", "", text).strip()
 
 
-# Funzione per tradurre in inglese
+# Function to translate to English
 def translate_to_english(text: str) -> str:
     """
-    Traduce il testo in inglese utilizzando il modello di traduzione.
+    Translates the text to English using the translation model.
 
-    :param text: Il testo da tradurre in inglese.
-    :return: Il testo tradotto in inglese o il testo originale se la traduzione non è necessaria.
+    :param text: The text to translate to English.
+    :return: The translated text in English or the original text if translation is not needed.
     """
     response = ollama.generate(model="translation_expert", prompt=text)
     if response["response"].strip() != "eng":
@@ -300,13 +301,13 @@ def translate_to_english(text: str) -> str:
     return text
 
 
-# Funzione per espandere le abbreviazioni
+# Function to expand abbreviations
 def replace_abbreviations(text: str) -> str:
     """
-    Sostituisce le abbreviazioni nel testo con la loro forma estesa.
+    Replaces abbreviations in the text with their full form.
 
-    :param text: Il testo contenente abbreviazioni da sostituire.
-    :return: Il testo con le abbreviazioni sostituite dalla forma estesa.
+    :param text: The text containing abbreviations to replace.
+    :return: The text with abbreviations replaced by their full form.
     """
     for key, value in abbreviations.items():
         text = re.sub(
@@ -315,13 +316,13 @@ def replace_abbreviations(text: str) -> str:
     return text
 
 
-# Funzione per rimuovere suffissi e prefissi
+# Function to remove suffixes and prefixes
 def remove_suffixes_prefixes(text: str) -> str:
     """
-    Rimuove i suffissi e prefissi da parole autonome nel testo.
+    Removes suffixes and prefixes from standalone words in the text.
 
-    :param text: Il testo da cui rimuovere suffissi e prefissi.
-    :return: Il testo con suffissi e prefissi rimossi.
+    :param text: The text from which to remove suffixes and prefixes.
+    :return: The text with suffixes and prefixes removed.
     """
     for item in suffixes_and_prefixes:
         text = re.sub(r"\b" + re.escape(item) + r"\b", "", text)
@@ -329,13 +330,13 @@ def remove_suffixes_prefixes(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-# Funzione per rimuovere i nomi di brand
+# Function to remove brand names
 def remove_brands(text: str) -> str:
     """
-    Rimuove i nomi di brand dal testo.
+    Removes brand names from the text.
 
-    :param text: Il testo da cui rimuovere i brand.
-    :return: Il testo con i nomi dei brand rimossi.
+    :param text: The text from which to remove brand names.
+    :return: The text with brand names removed.
     """
     for brand in brands:
         text = re.sub(
@@ -345,30 +346,30 @@ def remove_brands(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-# Funzione per convertire il testo in minuscolo
+# Function to convert text to lowercase
 def convert_to_lowercase(text: str) -> str:
     """
-    Converte il testo in minuscolo.
+    Converts the text to lowercase.
 
-    :param text: Il testo da convertire in minuscolo.
-    :return: Il testo convertito in minuscolo.
+    :param text: The text to convert to lowercase.
+    :return: The text converted to lowercase.
     """
     return text.lower()
 
 
-# Funzione per normalizzare i caratteri speciali
+# Function to normalize special characters
 def normalize_special_characters(text: str) -> str:
     """
-    Normalizza i caratteri speciali rimuovendo accenti e caratteri non ASCII.
+    Normalizes special characters by removing accents and non-ASCII characters.
 
-    :param text: Il testo da normalizzare.
-    :return: Il testo con caratteri speciali normalizzati.
+    :param text: The text to normalize.
+    :return: The text with special characters normalized.
     """
 
-    # Normalizza i caratteri Unicode (NFKD rimuove gli accenti)
+    # Normalize Unicode characters (NFKD removes accents)
     normalized_text = unicodedata.normalize("NFKD", text)
 
-    # Rimuovi e caratteri non ASCII
+    # Remove non-ASCII characters
     return "".join(
         c
         for c in normalized_text
@@ -376,122 +377,122 @@ def normalize_special_characters(text: str) -> str:
     )
 
 
-# Funzione per ordinare le parole in ordine alfabetico
+# Function to sort words alphabetically
 def sort_words_alphabetically(text: str) -> str:
     """
-    Ordina le parole nel testo in ordine alfabetico.
+    Sorts the words in the text alphabetically.
 
-    :param text: Il testo da ordinare.
-    :return: Il testo con le parole ordinate alfabeticamente.
+    :param text: The text to sort.
+    :return: The text with words sorted alphabetically.
     """
     words = text.split()
     sorted_words = sorted(words)
     return " ".join(sorted_words)
 
 
+# Function to normalize quantities
 def normalize_quantities(text: str) -> str:
     """
-    Normalizza le quantità nel testo, gestendo anche unità separate da spazi.
+    Normalizes quantities in the text, handling units with optional spaces.
 
-    :param text: Il testo contenente le quantità da normalizzare.
-    :return: Il testo con le quantità normalizzate.
+    :param text: The text containing quantities to normalize.
+    :return: The text with quantities normalized.
     """
-    # Usa un'espressione regolare per trovare pattern di tipo "numero [spazio opzionale] unità"
+    # Use a regular expression to find patterns like "number [optional space] unit"
     pattern = r"(\d+(\.\d+)?)\s*([a-zA-Z_]+)"
     matches = re.finditer(pattern, text)
 
     for match in matches:
-        number = match.group(1)  # Numero trovato
-        unit = match.group(
-            3
-        ).lower()  # Unità trovata (in minuscolo per uniformità)
-        original_quantity = match.group(
-            0
-        )  # Il match originale, con eventuali spazi
+        # Found number
+        number = match.group(1)
+        # Found unit (in lowercase for uniformity)
+        unit = match.group(3).lower()
+        # The original match, with optional spaces
+        original_quantity = match.group(0)
 
-        # Mappa l'unità alla sua forma standard (se esiste nella mappa)
+        # Map the unit to its standardized form (if it exists in the map)
         if unit in unit_conversion_map:
             try:
                 standardized_unit = unit_conversion_map[unit]
-                # Creazione della quantità con unità standard
+                # Create the quantity with the standardized unit
                 quantity = ureg.Quantity(float(number), unit)
 
-                # Conversione all'unità base (gram o milliliter)
+                # Convert to the base unit (gram or milliliter)
                 normalized_quantity = quantity.to(standardized_unit)
 
-                # Formatta il risultato in modo chiaro (arrotondato a due decimali)
+                # Format the result clearly (rounded to two decimals)
                 normalized_text = (
                     f"{normalized_quantity.magnitude:.2f} {standardized_unit}"
                 )
 
-                # Sostituisce l'originale con la quantità normalizzata
+                # Replace the original with the normalized quantity
                 text = text.replace(original_quantity, normalized_text)
             except (
                 ureg.UndefinedUnitError,
                 ureg.DimensionalityError,
                 ValueError,
             ):
-                # Se non è una quantità valida o c'è un'incompatibilità, continua senza modificare
+                # If it's not a valid quantity or there's an incompatibility, continue without modification
                 continue
 
     return text
 
 
-# Funzione per rimuovere le stopwords
+# Function to remove stopwords
 def remove_stopwords(text: str) -> str:
     """
-    Rimuove le stopwords dal testo.
+    Removes stopwords from the text.
 
-    :param text: Il testo da cui rimuovere le stopwords.
-    :return: Il testo con le stopwords rimosse.
+    :param text: The text from which to remove stopwords.
+    :return: The text with stopwords removed.
     """
-    # Carica le stopwords della lingua inglese
+    # Load the stopwords for the English language
     stop_words = set(stopwords.words("english"))
-    # Tokenizza il testo
+    # Tokenize the text
     words = word_tokenize(text)
-    # Rimuove le stopwords
+    # Remove stopwords
     filtered_words = [word for word in words if word.lower() not in stop_words]
     return " ".join(filtered_words)
 
 
-# Funzione per convertire il testo al singolare
+# Function to lemmatize the text
 def lemmatize_text(text: str) -> str:
     """
-    Lemmatizza il testo, riducendo le parole alla loro forma base.
+    Lemmatizes the text, reducing words to their base form.
 
-    :param text: Il testo da lemmatizzare.
-    :return: Il testo lemmatizzato.
+    :param text: The text to lemmatize.
+    :return: The lemmatized text.
     """
     words = nltk.word_tokenize(text)
     lemmatized_words = [lemmatizer.lemmatize(word) for word in words]
     return " ".join(lemmatized_words)
 
 
-# Funzione per rimuovere le unità di misura
+# Function to remove units of measure
 def remove_units(text: str) -> str:
     """
-    Rimuove le unità di misura dal testo.
+    Removes units of measure from the text.
 
-    :param text: Il testo da cui rimuovere le unità di misura.
-    :return: Il testo senza le unità di misura.
+    :param text: The text from which to remove units of measure.
+    :return: The text without units of measure.
     """
     words = text.split()
     cleaned_words = [word for word in words if word not in units_to_remove]
     return " ".join(cleaned_words)
 
 
-# Funzione per rimuovere verbi, avverbi e aggettivi non inclusi nella lista consentita
+# Function to remove unwanted parts of speech (verbs, adverbs, and adjectives not in the allowed list)
 def remove_unwanted_pos(text: str) -> str:
     """
-    Rimuove verbi, avverbi e aggettivi non inclusi nella lista consentita.
+    Removes verbs, adverbs, and adjectives not included in the allowed list.
 
-    :param text: Il testo da cui rimuovere i POS indesiderati.
-    :return: Il testo con i POS indesiderati rimossi.
+    :param text: The text from which to remove unwanted parts of speech.
+    :return: The text with unwanted parts of speech removed.
     """
     words = word_tokenize(text)
 
-    # ho tolto 'RB' perche toglie troppe informazioni, è da valutare se rimetterlo o meno
-    # 'JJ' = aggettivi, 'RB' = avverbi, 'VB' = verbi, 'NNP' = nomi propri
+    # Removed 'RB' because it removes too much information, to be evaluated if re-adding it
+    # 'JJ' = adjectives, 'RB' = adverbs, 'VB' = verbs, 'NNP' = proper nouns
     filtered_words = [
         word
         for word, pos in pos_tag(words)
@@ -500,13 +501,12 @@ def remove_unwanted_pos(text: str) -> str:
     return " ".join(filtered_words)
 
 
-# Funzione che rimuove le parole duplicate
 def remove_duplicate_words(text: str) -> str:
     """
-    Rimuove le parole duplicate nel testo.
+    Removes duplicate words from the text.
 
-    :param text: Il testo da cui rimuovere le parole duplicate.
-    :return: Il testo senza parole duplicate.
+    :param text: The text from which to remove duplicate words.
+    :return: The text without duplicate words.
     """
     words = word_tokenize(text)
     filtered_words = list(set(words))
@@ -515,27 +515,27 @@ def remove_duplicate_words(text: str) -> str:
 
 def remove_lenght1_words(line):
     """
-    Rimuove tutte le parole di lunghezza 1 da una stringa.
+    Removes all words of length 1 from a string.
 
     Args:
-        line (str): La stringa di input.
+        line (str): The input string.
 
     Returns:
-        str: La stringa con le parole di lunghezza 1 rimosse.
+        str: The string with words of length 1 removed.
     """
     return " ".join(word for word in line.split() if len(word) > 1)
 
 
 def pipeline(
-    input_file, output_file, mostra_tutto=False, mostra_qualcosa=False
+    input_file, output_file, show_all=False, show_something=False
 ) -> None:
     """
-    Funzione per eseguire il pipeline di normalizzazione
+    Function to execute the normalization pipeline
 
-    :param input_file: percorso del file da normalizzare
-    :param output_file: percorso del file di output
-    :param mostra_tutto: se True, mostra tutte le fasi intermedie di normalizzazione
-    :param mostra_qualcosa: se True, mostra alcune fasi  di normalizzazione
+    :param input_file: path of the file to normalize
+    :param output_file: path of the output file
+    :param show_all: if True, shows all intermediate normalization steps
+    :param show_something: if True, shows some normalization steps
     """
 
     with open(input_file, "r", encoding="utf-8") as infile, open(
@@ -543,107 +543,109 @@ def pipeline(
     ) as outfile:
         for line in infile:
 
-            # Testo originale
-            if mostra_tutto or mostra_qualcosa:
-                print("originale:".ljust(40), line, end="")
+            line = re.sub(r"&quot;", "", line)
 
-            # Converti in minuscolo
+            # Original text
+            if show_all or show_something:
+                print("original:".ljust(40), line, end="")
+
+            # Convert to lowercase
             line = convert_to_lowercase(line)
-            if mostra_tutto:
-                print("minuscolo:".ljust(40), line)
+            if show_all:
+                print("lowercase:".ljust(40), line, end="")
 
-            # Rimuovi i nomi di brand
+            # Remove brand names
             line = remove_brands(line)
-            if mostra_tutto:
-                print("brand rimosso:".ljust(40), line)
+            if show_all:
+                print("brand removed:".ljust(40), line)
 
-            # Traduci il testo in inglese
+            # Translate text to English
             line = translate_to_english(line)
-            if mostra_tutto:
-                print("traduzione testo in inglese:".ljust(40), line)
+            if show_all:
+                print("text translated to English:".ljust(40), line)
 
-            # Converti in minuscolo
+            # Convert to lowercase
             line = convert_to_lowercase(line)
-            if mostra_tutto:
-                print("minuscolo:".ljust(40), line)
+            if show_all:
+                print("lowercase:".ljust(40), line)
 
-            # Espansione sigle
+            # Expand abbreviations
             line = replace_abbreviations(line)
-            if mostra_tutto:
-                print("sigle espanse:".ljust(40), line)
+            if show_all:
+                print("abbreviations expanded:".ljust(40), line)
 
-            # Rimuovi verbi, avverbi e aggettivi non inclusi nella lista
+            # Remove unwanted adjectives, adverbs, and verbs
             line = remove_unwanted_pos(line)
-            if mostra_tutto:
-                print("rimozione aggettivi:".ljust(40), line)
+            if show_all:
+                print("remove adjectives:".ljust(40), line)
 
-            # Rimuovi suffissi e prefissi
+            # Remove suffixes and prefixes
             line = remove_suffixes_prefixes(line)
-            if mostra_tutto:
-                print("rimozione suffissi e prefissi:".ljust(40), line)
+            if show_all:
+                print("remove suffixes and prefixes:".ljust(40), line)
 
-            # Rimuovi testo tra parentesi
+            # Remove text in parentheses
             line = remove_text_in_parentheses(line)
-            if mostra_tutto:
-                print("rimozione testo parentesi:".ljust(40), line)
+            if show_all:
+                print("remove text in parentheses:".ljust(40), line)
 
-            # Rimuovi testo dopo la prima virgola o ":"
+            # Remove text after the first comma or ":"
             line = remove_text_after_comma_or_colon(line)
-            if mostra_tutto:
-                print("rimozione testo dopo virgola:".ljust(40), line)
+            if show_all:
+                print("remove text after comma:".ljust(40), line)
 
-            # Rimuovi punteggiatura rimanente
+            # Remove remaining punctuation
             line = remove_or_replace_punctuation(line)
-            if mostra_tutto:
-                print("rimozione punteggiatura:".ljust(40), line)
+            if show_all:
+                print("remove punctuation:".ljust(40), line)
 
-            # Rimuovi le stopwords
+            # Remove stopwords
             line = remove_stopwords(line)
-            if mostra_tutto:
-                print("rimozione stopwords:".ljust(40), line)
+            if show_all:
+                print("remove stopwords:".ljust(40), line)
 
-            # Normalizza le quantità
+            # Normalize quantities
             line = normalize_quantities(line)
-            if mostra_tutto:
-                print("normalizza quantità:".ljust(40), line)
+            if show_all:
+                print("normalize quantities:".ljust(40), line)
 
-            # Elimina le misure
+            # Remove units of measurement
             line = remove_units(line)
-            if mostra_tutto:
-                print("rimozione unità di misura:".ljust(40), line)
+            if show_all:
+                print("remove units of measurement:".ljust(40), line)
 
-            # Rimuovi valori numerici
+            # Remove numeric values
             line = remove_numeric_values(line)
-            if mostra_tutto:
-                print("rimozione valori numerici:".ljust(40), line)
+            if show_all:
+                print("remove numeric values:".ljust(40), line)
 
-            # Converti il testo al singolare
+            # Convert text to singular
             line = lemmatize_text(line)
-            if mostra_tutto:
-                print("conversione testo al singolare:".ljust(40), line)
+            if show_all:
+                print("convert text to singular:".ljust(40), line)
 
-            # Normalizza i caratteri speciali
+            # Normalize special characters
             line = normalize_special_characters(line)
-            if mostra_tutto:
-                print("normalizza caratteri speciali:".ljust(40), line)
+            if show_all:
+                print("normalize special characters:".ljust(40), line)
 
-            # Rimuovi le parole duplicate
+            # Remove duplicate words
             line = remove_duplicate_words(line)
-            if mostra_tutto:
-                print("rimozione parole duplicate:".ljust(40), line)
+            if show_all:
+                print("remove duplicate words:".ljust(40), line)
 
-            # Rimuovi caratteri singoli
+            # Remove single-character words
             line = remove_lenght1_words(line)
-            if mostra_tutto:
-                print("rimozione parole lunghe 1 carattere:".ljust(40), line)
+            if show_all:
+                print("remove single-character words:".ljust(40), line)
 
-            # Ordina le parole in ordine alfabetico
+            # Sort words alphabetically
             line = sort_words_alphabetically(line)
-            if mostra_tutto:
-                print("ordinamento alfabetico:".ljust(40), line)
+            if show_all:
+                print("alphabetical sorting:".ljust(40), line)
 
-            if mostra_qualcosa or mostra_tutto:
-                print("normalizzazione completa:".ljust(40), line, "\n")
+            if show_something or show_all:
+                print("complete normalization:".ljust(40), line, "\n")
             outfile.write(line + "\n")
 
-    print("Normalizzazione completa")
+    print("Normalization complete")

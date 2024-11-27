@@ -1,6 +1,5 @@
 """
-File con varie funzioni e dati necessari per la conversione dei dati di 
-HUMMUS e open food facts in un formato RDF
+File with various functions and data necessary for converting HUMMUS and Open Food Facts data into an RDF format.
 """
 
 
@@ -9,49 +8,50 @@ import pandas as pd  # type: ignore
 import re
 import ollama  # type: ignore
 import csv
+from rdflib.namespace import OWL  # type: ignore
 
 
 def sanitize_for_uri(value) -> str:
     """
-    Funzione di sanificazione generica per URI
-    (alcuni nomi di hummus iniziavano con simboli speciali)
+    Generic sanitization function for URIs
+    (some HUMMUS names started with special characters)
 
-    :param value: valore da sanitizzare
+    :param value: value to sanitize
 
-    :return: valore sanitizzato
+    :return: sanitized value
     """
-    return re.sub(r"[^a-zA-Z0-9]", "", str(value))
+    return re.sub(r"[^a-zA-Z0-9_]", "", str(value))
 
 
 def clean_column_name(col_name) -> str:
     """
-    Funzione per pulire il nome della colonna, rimuovendo contenuti tra parentesi quadre
+    Function to clean the column name by removing content within square brackets
 
-    :param col_name: nome della colonna
+    :param col_name: name of the column
 
-    :return: nome della colonna pulito
+    :return: cleaned column name
     """
     return re.sub(r"\s*\[.*?\]", "", col_name).strip()
 
 
-def crea_namespace(namespace_completo=True) -> None:
+def create_namespace(namespace_completo=True) -> None:
     """
-    Funzione per creare il file ttl con il namespace personalizzato di unica
+    Function to create the TTL file with the custom namespace for UNICA
     """
 
-    # Creiamo il grafo
+    # Create the graph
     g = Graph()
 
-    # Definizione dei namespace
+    # Define the namespaces
     SCHEMA = Namespace("https://schema.org/")
     UNICA = Namespace(
         "file:///../csv_file/namespace_unica.ttl#"
-    )  # Namespace personalizzato, poi si decidera il nome e l'indirizzo
+    )  # Custom namespace, the name and address will be decided later
     XSD_NS = Namespace("http://www.w3.org/2001/XMLSchema#")
     RDFS_NS = Namespace("http://www.w3.org/2000/01/rdf-schema#")
     RDF_NS = Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
 
-    # Aggiungiamo i prefissi al grafo
+    # Add prefixes to the graph
     g.bind("schema", SCHEMA)
     g.bind("unica", UNICA)
     g.bind("xsd", XSD_NS)
@@ -59,7 +59,7 @@ def crea_namespace(namespace_completo=True) -> None:
     g.bind("rdf", RDF_NS)
 
     if namespace_completo:
-        # Creazione delle classi
+        # Create classes
         g.add((UNICA.FoodProducer, RDF.type, RDFS.Class))
         g.add((UNICA.FoodProducer, RDFS.subClassOf, SCHEMA.Organization))
         g.add(
@@ -98,7 +98,7 @@ def crea_namespace(namespace_completo=True) -> None:
         )
     )
 
-    # Proprietà per UserConstraint
+    # Propriety for UserConstraint
     g.add((UNICA.constraintName, RDF.type, RDF.Property))
     g.add((UNICA.constraintName, RDFS.domain, UNICA.UserConstraint))
     g.add((UNICA.constraintName, RDFS.range, XSD.string))
@@ -135,7 +135,7 @@ def crea_namespace(namespace_completo=True) -> None:
         )
     )
 
-    # Creazione della classe Indicator
+    # Create the Indicator class
     g.add((UNICA.Indicator, RDF.type, RDFS.Class))
     g.add((UNICA.Indicator, RDFS.subClassOf, SCHEMA.NutritionInformation))
     g.add((UNICA.Indicator, RDFS.label, Literal("Indicator", lang="en")))
@@ -151,7 +151,7 @@ def crea_namespace(namespace_completo=True) -> None:
     )
 
     if namespace_completo:
-        # Proprietà per Indicator
+        # Indicator property
         proprieta_indicator = [
             (
                 "calciumPer100g",
@@ -233,7 +233,7 @@ def crea_namespace(namespace_completo=True) -> None:
             ),
         ]
     else:
-        # Proprietà per Indicator
+        # Indicator Property
         proprieta_indicator = [
             (
                 "whoScore",
@@ -262,39 +262,53 @@ def crea_namespace(namespace_completo=True) -> None:
         g.add((UNICA[prop], RDFS.label, Literal(label, lang="en")))
         g.add((UNICA[prop], RDFS.comment, Literal(comment, lang="en")))
 
-    # Salva in formato Turtle con il nome 'namespace_unica.ttl'
+    # Save in Turtle format with the name 'namespace_unica.ttl'
     with open("../csv_file/namespace_unica.ttl", "w") as f:
         f.write(g.serialize(format="turtle"))
 
-    print(f"namespace creato con successo")
+    print(f"namespace created successfully")
 
 
-def converti_hummus_in_rdf() -> None:
+def convert_hummus_in_rdf() -> None:
     """
-    Funzione per convertire i dati di hummus in un formato RDF
+    Function to convert hummus data into RDF format
     """
 
-    # Inizializza il grafo e i namespace
+    # Initialize the graph and namespaces
     g = Graph()
 
-    # Ottiene namespace
+    # Obtain namespace
     UNICA = Namespace("../csv_file/namespace_unica.ttl/")
     SCHEMA = Namespace("https://schema.org/")
 
-    # Associa i namespace al grafo
+    # Associate namespaces with the graph
     g.bind("unica", UNICA)
     g.bind("schema", SCHEMA)
 
-    # File di input
-    file_ricette = "../csv_file/pp_recipes.csv"
-    file_review = "../csv_file/pp_reviews.csv"
-    file_utenti = "../csv_file/pp_members.csv"
-    # file_ricette = "../csv_file/pp_recipes_righe.csv"
-    # file_review = "../csv_file/pp_reviews_righe.csv"
-    # file_utenti = "../csv_file/pp_members_righe.csv"
+    # Ontology versioning
+    link_ontology = "https://unica.it/ontologies/unica-hummus"
+    ontology_iri = URIRef(f"{link_ontology}")
+    version_iri = URIRef(f"{link_ontology}/1.0")
+    version_info = Literal("Version 1.0 - Initial release", lang="en")
+
+    g.add((ontology_iri, RDF.type, OWL.Ontology))
+    g.add((ontology_iri, OWL.versionIRI, version_iri))
+    g.add((ontology_iri, OWL.versionInfo, version_info))
+
+    # Reference to the previous version
+    prior_version_iri = URIRef(f"{link_ontology}/0.0")
+    g.add((ontology_iri, OWL.priorVersion, prior_version_iri))
+
+    # input file
+    # file_ricette = "../csv_file/pp_recipes.csv"
+    # file_review = "../csv_file/pp_reviews.csv"
+    # file_utenti = "../csv_file/pp_members.csv"
+    file_ricette = "../csv_file/pp_recipes_righe.csv"
+    file_review = "../csv_file/pp_reviews_righe.csv"
+    file_utenti = "../csv_file/pp_members_righe.csv"
     file_output = "../csv_file/ontologia_nostra_hummus.ttl"
 
-    # Carica i CSV
+    # Upload the CSV
     df_ricette = pd.read_csv(file_ricette, on_bad_lines="skip")
     df_review = pd.read_csv(file_review, on_bad_lines="skip")
     df_utenti = pd.read_csv(file_utenti, on_bad_lines="skip")
@@ -302,7 +316,7 @@ def converti_hummus_in_rdf() -> None:
     tag_count = {}
     ingredient_count = {}
 
-    # Indicatori nutrizionali
+    # Indicator measurement mapping
     indicator_fields = {
         "servingSize": "grams",
         "calories": "cal",
@@ -320,7 +334,7 @@ def converti_hummus_in_rdf() -> None:
         "nutri_score": None,
     }
 
-    # Crea le entità UserGroup
+    # Create the entity UserGroup
     for idx, row in df_utenti.iterrows():
         if pd.notna(row["member_id"]):
             group_id = URIRef(
@@ -336,7 +350,7 @@ def converti_hummus_in_rdf() -> None:
                     )
                 )
 
-    # Crea le entità Recipe
+    # Create the entity Recipe
     for idx, row in df_ricette.iterrows():
         if pd.notna(row["recipe_id"]):
 
@@ -348,6 +362,7 @@ def converti_hummus_in_rdf() -> None:
                 g.add(
                     (recipe_id, SCHEMA.name, Literal(row["title"], lang="en"))
                 )
+
             g.add((recipe_id, SCHEMA.identifier, Literal(row["recipe_id"])))
             if pd.notna(row["directions"]):
                 g.add(
@@ -373,8 +388,9 @@ def converti_hummus_in_rdf() -> None:
                     .split(sep=", ")
                 )
                 for tag in tags:
-                    tag = sanitize_for_uri(tag)
-                    tag_id = URIRef(UNICA[f"Tag_{sanitize_for_uri(tag)}"])
+                    tag1 = tag
+                    tag = sanitize_for_uri(tag.replace("-", "_").lower())
+                    tag_id = URIRef(UNICA[f"Tag_{tag}"])
                     if tag not in tag_count:
                         tag_count[tag] = 1
                         g.add((tag_id, RDF.type, UNICA.UserConstraint))
@@ -390,7 +406,8 @@ def converti_hummus_in_rdf() -> None:
                                 tag_id,
                                 SCHEMA.constraintDescription,
                                 Literal(
-                                    f"is a constraint about {tag}", lang="en"
+                                    f"is a user constraint about {tag1}",
+                                    lang="en",
                                 ),
                             )
                         )
@@ -399,7 +416,7 @@ def converti_hummus_in_rdf() -> None:
 
             # Indicator
             for col, unit in indicator_fields.items():
-                # Trova la colonna nel CSV corrispondente all'indicatore, dopo aver rimosso le parentesi quadre
+                # Find the column in the CSV corresponding to the indicator, after removing the square brackets
                 csv_column = next(
                     (
                         csv_col
@@ -408,11 +425,11 @@ def converti_hummus_in_rdf() -> None:
                     ),
                     None,
                 )
-                # Continua solo se abbiamo trovato una corrispondenza e il valore non è NaN
+                # Continue only if we found a match and the value is not NaN
                 if csv_column and pd.notna(row[csv_column]):
                     indicator_id = URIRef(
                         UNICA[
-                            f"Indicator_{sanitize_for_uri(col)}_{sanitize_for_uri(row['recipe_id'])}"
+                            f"Indicator_{sanitize_for_uri(col.replace(' ', '_').lower())}_{sanitize_for_uri(row['recipe_id'])}"
                         ]
                     )
                     g.add((indicator_id, RDF.type, UNICA.Indicator))
@@ -430,7 +447,7 @@ def converti_hummus_in_rdf() -> None:
                         (recipe_id, SCHEMA.NutritionInformation, indicator_id)
                     )
 
-            # Ingredienti
+            # Ingredients
             if pd.notna(row["ingredient_food_kg_names"]):
                 ingredients = row["ingredient_food_kg_names"].split(", ")
                 for ing in ingredients:
@@ -442,13 +459,19 @@ def converti_hummus_in_rdf() -> None:
                     if ing not in ingredient_count:
                         ingredient_count[ing] = 1
                         g.add((ingredient_id, RDF.type, SCHEMA.Recipe))
+
                         g.add(
                             (
                                 ingredient_id,
                                 SCHEMA.identifier,
-                                Literal(ingredient_id),
+                                Literal(
+                                    sanitize_for_uri(
+                                        ing.replace(" ", "_").lower()
+                                    )
+                                ),
                             )
                         )
+
                         # g.add((ingredient_id, SCHEMA.RecipeInstructions, Literal(None, lang="en")))
 
                     ingredient_id_for_recipe = ingredient_id + str(idx)
@@ -464,7 +487,7 @@ def converti_hummus_in_rdf() -> None:
 
                     g.add(
                         (
-                            ingredient_id,
+                            recipe_id,
                             SCHEMA.hasPart,
                             ingredient_id_for_recipe,
                         )
@@ -473,7 +496,7 @@ def converti_hummus_in_rdf() -> None:
                         (ingredient_id_for_recipe, SCHEMA.isPartOf, recipe_id)
                     )
 
-    # Crea le entità UserReview e relazioni
+    # Create UserReview entities and relationships
     for idx, row in df_review.iterrows():
         if pd.notna(row["rating"]) and isinstance(row["rating"], (int, float)):
             review_id = URIRef(UNICA[f"Review_{sanitize_for_uri(idx)}"])
@@ -482,9 +505,10 @@ def converti_hummus_in_rdf() -> None:
                     (
                         review_id,
                         SCHEMA.reviewRating,
-                        Literal(row["rating"] / 10, datatype=XSD.float),
+                        Literal(row["rating"], datatype=XSD.float),
                     )
-                )  # Scala ad 1-5 perche su hummus sono da 1 a 10, ma su schema da 1 a 5
+                )
+
             g.add((review_id, RDF.type, SCHEMA.UserReview))
             if pd.notna(row["text"]):
                 g.add(
@@ -520,36 +544,49 @@ def converti_hummus_in_rdf() -> None:
                     )
                 )
 
-    # Salva il grafo RDF in formato Turtle
+    # Save the RDF graph in Turtle format
     g.serialize(destination=file_output, format="turtle")
-    print(f"File generato con successo: {file_output}")
+    print(f"Generated file: {file_output}")
 
 
-def converti_off_in_rdf() -> None:
+def convert_off_in_rdf() -> None:
     """
-    Funzione per convertire i dati di off in un formato RDF
+    Function to convert off data into RDF format
     """
 
-    # Inizializza il grafo e i namespace
+    # Initialize the graph and namespaces
     g = Graph()
 
-    # Definisci i namespace
+    # Define namespaces
     UNICA = Namespace("../csv_file/namespace_unica.ttl/")
     SCHEMA = Namespace("https://schema.org/")
 
-    # Associa i namespace al grafo
+    # Associate namespaces with the graph
     g.bind("unica", UNICA)
     g.bind("schema", SCHEMA)
 
-    # File di input e output
+    # Ontology versioning
+    link_ontology = "https://unica.it/ontologies/unica-off"
+    # Configure versioning
+    ontology_iri = URIRef(f"{link_ontology}")
+    version_iri = URIRef(f"{link_ontology}/1.0")
+    version_info = Literal("Version 1.0 - Initial release", lang="en")
+
+    g.add((ontology_iri, RDF.type, OWL.Ontology))
+    g.add((ontology_iri, OWL.versionIRI, version_iri))
+    g.add((ontology_iri, OWL.versionInfo, version_info))
+
+    # Reference to the previous version
+    prior_version_iri = URIRef(f"{link_ontology}/0.0")
+    g.add((ontology_iri, OWL.priorVersion, prior_version_iri))
+
+    # File of input and output
     file_input1 = "../csv_file/en.openfoodfacts.org.products.csv"
     file_input = "../csv_file/off_righe.csv"
     file_output = "../csv_file/ontologia_nostra_off.ttl"
 
-    # Carica il CSV
-    df = pd.read_csv(
-        file_input, sep="\t", on_bad_lines="skip"
-    )  # Usa il separatore corretto
+    # Upload the CSV
+    df = pd.read_csv(file_input, sep="\t", on_bad_lines="skip")
 
     qualitatives_indicators = [
         "nutriscore_grade",
@@ -558,14 +595,14 @@ def converti_off_in_rdf() -> None:
         "ecoscore_score",
     ]
 
-    # Itera attraverso ogni riga per creare le entità Recipe e Indicator
+    # Iterate through each row to create the Recipe and Indicator entities
     for idx, row in df.iterrows():
         if pd.notna(row["product_name"]) and row["product_name"].strip() != "":
 
-            # Crea la ricetta
+            # Create the recipe
             recipe_id = URIRef(
                 UNICA[f"Recipe_off_{idx}"]
-            )  # ho messo off per differenziarle dagli id di hummus
+            )  # I put _off to differentiate them from the hummus ids
             g.add((recipe_id, RDF.type, SCHEMA.Recipe))
             g.add(
                 (
@@ -592,7 +629,7 @@ def converti_off_in_rdf() -> None:
                         and indicator_value != "unknown"
                     ):
 
-                        # Crea l'indicatore
+                        # Create the indicator
                         indicator_id = URIRef(
                             UNICA[
                                 f"{sanitize_for_uri(re.sub('_100g', '', column))}_{idx}"
@@ -629,7 +666,7 @@ def converti_off_in_rdf() -> None:
                                 )
                             )
 
-                        # Aggiungi la relazione tra la ricetta e l'indicatore
+                        # Add the relationship between the recipe and the indicator
                         g.add(
                             (
                                 recipe_id,
@@ -638,7 +675,7 @@ def converti_off_in_rdf() -> None:
                             )
                         )
 
-    # Relazioni di alternativa tra ricette, è ingrediente, ha ingrediente
+    # Relationship of alternative between recipes, is ingredient, has ingredient
     for idx1, row1 in df.iterrows():
         for idx2, row2 in df.iterrows():
             if (
@@ -649,7 +686,7 @@ def converti_off_in_rdf() -> None:
                 and row2["product_name"].strip() != ""
             ):
 
-                # Relazione di ricette alternative
+                # Relationdhip Alternative Recipe
                 if (
                     pd.notna(row1["generic_name"])
                     and pd.notna(row2["generic_name"])
@@ -663,7 +700,7 @@ def converti_off_in_rdf() -> None:
                         )
                     )
 
-                # Relazione di ha ingrediente / è ingrediente
+                # Relationship of has ingredient / is ingredient
                 if pd.notna(row2["ingredients_text"]) and row1[
                     "generic_name"
                 ] in str(row2["ingredients_text"]).split(", "):
@@ -682,6 +719,6 @@ def converti_off_in_rdf() -> None:
                         )
                     )
 
-    # Salva il grafo RDF in formato Turtle
+    # Save the RDF graph in Turtle format
     g.serialize(destination=file_output, format="turtle")
-    print(f"File generato con successo: {file_output}")
+    print(f"Generated file: {file_output}")

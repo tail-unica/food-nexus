@@ -1,7 +1,6 @@
 """
-File che contiene script e dati necessari per la creazione di 
-modelli LLM, analisi sui file CSV e sulle ontologie
-e crea file usati come input per altri script
+File containing scripts and data necessary for the creation of LLM models, analysis of CSV files and ontologies,
+and creating files used as input for other scripts.
 """
 
 
@@ -17,54 +16,54 @@ import sys
 from collections import Counter
 
 
-# script per estrarre ricette dal csv
-def estrai_ricette(
+# Script to extract recipes from the CSV
+def extract_recipes(
     input_file,
     output_file,
-    nome_colonna="title",
-    righe=100,
-    delimitatore1=",",
-    delimitatore2=" ",
+    column_name="title",
+    rows=100,
+    delimiter1=",",
+    delimiter2=" ",
 ) -> None:
     """
-    Funzione usata per estrarre le ricette o i prodotti dal csv
+    Function used to extract recipes or products from the CSV
 
-    :param input_file: percorso del file CSV da cui estrarre le ricette
-    :param output_file: percorso del file CSV dove salvare le ricette estratte
-    :param nome_colonna: nome della colonna che contiene il titolo della ricetta
-    :param righe: numero di righe da estrarre
-    :param delimitatore1: delimitatore del file CSV da cui estrarre le ricette
-    :param delimitatore2: delimitatore del file CSV dove salvare le ricette estratte
+    :param input_file: path to the CSV file from which to extract recipes
+    :param output_file: path to the CSV file where extracted recipes will be saved
+    :param column_name: name of the column containing the recipe title
+    :param rows: number of rows to extract
+    :param delimiter1: delimiter of the CSV file from which to extract recipes
+    :param delimiter2: delimiter of the CSV file where extracted recipes will be saved
     :return: None
     """
 
     with open(input_file, mode="r", newline="", encoding="utf-8") as csv_input:
-        reader = csv.DictReader(csv_input, delimiter=delimitatore1)
+        reader = csv.DictReader(csv_input, delimiter=delimiter1)
 
         with open(
             output_file, mode="w", newline="", encoding="utf-8"
         ) as csv_output:
-            writer = csv.writer(csv_output, delimiter=delimitatore2)
+            writer = csv.writer(csv_output, delimiter=delimiter2)
 
             for i, row in enumerate(reader):
-                if i < righe or righe == -1:
+                if i < rows or rows == -1:
                     if (
-                        row[nome_colonna] != nome_colonna
-                        and row[nome_colonna] != ""
+                        row[column_name] != column_name
+                        and row[column_name] != ""
                     ):
-                        writer.writerow([row[nome_colonna]])
+                        writer.writerow([row[column_name]])
                 else:
                     break
 
 
-def estrai_righe(input_file, output_file, delimiter=",", righe=100) -> None:
+def extract_rows(input_file, output_file, delimiter=",", rows=100) -> None:
     """
-    Funzione per estrarre righe dal csv
+    Function to extract rows from the CSV
 
-    :param input_file: percorso del file CSV da cui estrarre le righe
-    :param output_file: percorso del file CSV dove salvare le righe estratte
-    :param delimiter: delimitatore del file CSV da cui estrarre le righe
-    :param righe: numero di righe da estrarre
+    :param input_file: path to the CSV file from which to extract rows
+    :param output_file: path to the CSV file where extracted rows will be saved
+    :param delimiter: delimiter of the CSV file from which to extract rows
+    :param rows: number of rows to extract
     :return: None
     """
     with open(input_file, mode="r", newline="", encoding="utf-8") as csv_input:
@@ -74,24 +73,26 @@ def estrai_righe(input_file, output_file, delimiter=",", righe=100) -> None:
             output_file, mode="w", newline="", encoding="utf-8"
         ) as csv_output:
             writer = csv.writer(csv_output, delimiter=delimiter)
+            # Write headers to the output file
             writer.writerow(reader.fieldnames)  # type: ignore
 
             for i, row in enumerate(reader):
-                if i < righe or righe == -1:
+                if i < rows or rows == -1:
+                    # Write row values
                     writer.writerow(row.values())
                 else:
                     break
 
 
-def estrai_ingredienti_foodkg(
+def extract_ingredients_foodkg(
     input_file, output_file, min_occurrences=0
 ) -> None:
     """
-    Funzione per estrarre e pulire gli ingredienti unici da FoodKg e contarne le occorrenze
+    Function to extract and clean unique ingredients from FoodKG and count their occurrences
 
-    :param input_file: percorso del file CSV da cui estrarre gli ingredienti
-    :param output_file: percorso del file CSV dove salvare gli ingredienti estratti
-    :param min_occurrences: numero minimo di occorrenze che un ingrediente deve avere per essere salvato
+    :param input_file: path to the CSV file from which to extract ingredients
+    :param output_file: path to the CSV file where extracted ingredients will be saved
+    :param min_occurrences: minimum number of occurrences an ingredient must have to be saved
     :return: None
     """
 
@@ -117,7 +118,7 @@ def estrai_ingredienti_foodkg(
             except (ValueError, SyntaxError):
                 continue
 
-    # Salva gli ingredienti unici stampa il numero di ingredienti e occorrenze
+    # Save the unique ingredients and print the number of ingredients and occurrences
     with open(output_file, "w", newline="", encoding="utf-8") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["ingredient"])
@@ -125,19 +126,19 @@ def estrai_ingredienti_foodkg(
             if count >= min_occurrences:
                 writer.writerow([ingredient])
         print(
-            f"File {output_file} creato con {len(ingredient_counts)} ingredienti unici e {sum(ingredient_counts.values())} occorrenze totali."
+            f"File {output_file} created with {len(ingredient_counts)} unique ingredients and {sum(ingredient_counts.values())} total occurrences."
         )
 
 
-def estrai_aggettivi_foodkg(
+def extract_adjectives_foodkg(
     input_file, output_file, text_column="text_column_name"
 ) -> None:
     """
-    Funzione per estrarre aggettivi dagli elementi di foodkg
+    Function to extract adjectives from FoodKG elements
 
-    :param input_file: percorso del file CSV da cui estrarre gli aggettivi
-    :param output_file: percorso del file CSV dove salvare gli aggettivi estratti
-    :param text_column: nome della colonna che contiene il testo da estrarre gli aggettivi
+    :param input_file: path to the CSV file from which to extract adjectives
+    :param output_file: path to the CSV file where extracted adjectives will be saved
+    :param text_column: name of the column containing the text from which adjectives will be extracted
     :return: None
     """
     unique_adjectives = set()
@@ -145,14 +146,14 @@ def estrai_aggettivi_foodkg(
 
     for text in data[text_column].dropna():
         words = word_tokenize(str(text))
-        # Identifica il POS di ciascuna parola
+        # Identify the POS of each word
         tagged_words = pos_tag(words)
 
-        # Filtra e aggiungi solo gli aggettivi
+        # Filter and add only adjectives
         for word, pos in tagged_words:
-            # 'JJ' è il tag per gli aggettivi
+            # 'JJ' is the tag for adjectives
             if pos == "JJ":
-                # Converte in minuscolo per evitare duplicati simili
+                # Convert to lowercase to avoid similar duplicates
                 unique_adjectives.add(word.lower())
 
     with open(output_file, "w", newline="", encoding="utf-8") as csvfile:
@@ -162,15 +163,16 @@ def estrai_aggettivi_foodkg(
             writer.writerow([adjective])
 
     print(
-        f"File {output_file} creato con {len(unique_adjectives)} aggettivi unici."
+        f"File {output_file} created with {len(unique_adjectives)} unique adjectives."
     )
 
 
-def estrai_tag_unici(file_csv, file_output) -> None:
+def extract_tags_unique(file_csv, file_output) -> None:
     """
-    Funzione per estrarre i tag unici da HUMMUS (a scopo di analisi)
-    :param file_csv: percorso del file CSV da cui estrarre i tag
-    :param file_output: percorso del file CSV dove salvare i tag estratti
+    Function to extract unique tags from HUMMUS (for analysis purposes)
+
+    :param file_csv: path to the CSV file from which to extract the tags
+    :param file_output: path to the CSV file where the extracted tags will be saved
     :return: None
     """
     tag_count = {}
@@ -193,9 +195,9 @@ def estrai_tag_unici(file_csv, file_output) -> None:
             txtfile.write(f'"{tag}", {count}\n')
 
 
-def crea_food_expert() -> None:
+def create_food_expert() -> None:
     """
-    Funzione per creare un modello per il filtraggio dei brand utilizzabile su ollama
+    Function to create a model for brand filtering usable on Ollama
     """
 
     # system prompt
@@ -228,13 +230,13 @@ def crea_food_expert() -> None:
     PARAMETER top_k 1
     '''
 
-    # crea il modello
+    # create the model
     ollama.create(model="food_expert", modelfile=modelfile)
 
 
-def testa_accuratezza_filtraggio_brand(file1, file) -> None:
+def test_filtering_brand_accuracy(file1, file) -> None:
     """
-    Funzione per testare il modello di filtraggio dei brand
+    Function to test the brand filtering model
     """
     results = []
     correct_count = 0
@@ -246,10 +248,10 @@ def testa_accuratezza_filtraggio_brand(file1, file) -> None:
             brand = row["brand_name"]
             expected_response = row["expected_response"]
 
-            # Genera la risposta del modello
+            # Generate the model's response
             response = ollama.generate(model="food_expert", prompt=brand)
 
-            # Controlla se è corretta
+            # Check if the response is correct
             is_correct = (
                 response["response"].strip().lower() == expected_response
             )
@@ -262,7 +264,7 @@ def testa_accuratezza_filtraggio_brand(file1, file) -> None:
                 }
             )
 
-            # Aggiorna il conteggio
+            # Update counts
             total_count += 1
             if is_correct:
                 correct_count += 1
@@ -282,11 +284,11 @@ def testa_accuratezza_filtraggio_brand(file1, file) -> None:
 
 def analisi_quantities(input_file, output_file, n) -> None:
     """
-    Funzione per analizzare la colonna quantities di off (a scopo di analisi)
+    Function to analyze the quantities column of OFF (for analysis purposes)
 
-    :param input_file: percorso del file CSV di cui fare l'analisi
-    :param output_file: percorso del file CSV dove salvare l'analisi
-    :param n: numero di occorrenze che una quatità deve avere per essere considerata valida
+    :param input_file: path to the CSV file to analyze
+    :param output_file: path to the CSV file where the analysis will be saved
+    :param n: the minimum number of occurrences for a quantity to be considered valid
     :return: None
     """
 
@@ -316,12 +318,12 @@ def analisi_quantities(input_file, output_file, n) -> None:
                 writer.writerow([brand])
 
 
-def pulitura_brand(input_file, output_file) -> None:
+def brand_filtering(input_file, output_file) -> None:
     """
-    Funzione per filtrare i brand classificati come cibo dal modello food expert
+    Function to filter brands classified as food by the food expert model.
 
-    :param input_file: percorso del file con i brand da filtrare
-    :param output_file: percorso del file dove salvare i brand filtrati
+    :param input_file: path to the file with brands to filter
+    :param output_file: path to the file where filtered brands will be saved
     :return: None
     """
 
@@ -335,22 +337,22 @@ def pulitura_brand(input_file, output_file) -> None:
             brand = row["brand_name"]
             response = ollama.generate(model="food_expert", prompt=brand)
 
-            # se `model_response` è "nonfood", scrive il brand nel file di output
+            # If the `model_response` is "notfood", write the brand to the output file
             if response["response"] == "notfood":
                 outfile.write(f"{brand}\n")
 
-        print(f"\nGenerato il file {output_file}")
+        print(f"\nGenerated the file {output_file}")
 
 
-def analisi_numero_istanze_per_colonna(
+def number_of_instance_for_columns(
     input_file, output_file, chunk_size=120000
 ) -> None:
     """
-    Funzione per analizzare il numero di istanze per ogni colonna di OFF (a scopo di analisi)
+    Function to analyze the number of instances per column in OFF (for analysis purposes)
 
-    :param input_file: percorso del file CSV di cui fare l'analisi
-    :param output_file: percorso del file CSV dove salvare l'analisi
-    :param chunk_size: dimensione del chunk di lettura
+    :param input_file: path to the CSV file to analyze
+    :param output_file: path to the CSV file where the analysis will be saved
+    :param chunk_size: size of the chunk to read
     :return: None
     """
 
@@ -377,20 +379,20 @@ def analisi_numero_istanze_per_colonna(
         for col, counts in column_counts.items():
             f.write(f"{col},{counts['full']},{counts['empty']}\n")
 
-    print(f"Analisi completata. Risultati salvati in {output_file}")
+    print(f"Analysis completed. Results saved in {output_file}")
 
 
 def clean_brand_name(brand_name) -> str | None:
     """
-    Funzione per pulire i nomi dei brand
+    Function to clean brand names
 
-    :param brand_name: il nome del brand da pulire
-    :return: il nome pulito del brand
+    :param brand_name: the brand name to clean
+    :return: the cleaned brand name
     """
-    # Rimuove stringhe "&quot" e sostituisci con nulla
+    # Remove "&quot" strings and replace with nothing
     brand_name = brand_name.replace("&quot", "")
 
-    # Rimuove punteggiatura e spazi extra
+    # Remove punctuation and extra spaces
     brand_name = re.sub(r"[^\w\s]", "", brand_name).strip()
 
     if brand_name.isdigit() or len(brand_name) <= 1 or brand_name == " ":
@@ -400,11 +402,11 @@ def clean_brand_name(brand_name) -> str | None:
 
 def extract_clean_brands(input_file, output_file, n=1) -> None:
     """
-    Funzione per estrarre e pulire i brand unici da off che appaiono piu di n volte
+    Function to extract and clean unique brands from OFF that appear more than n times.
 
-    :param input_file: percorso del file da leggere
-    :param output_file: percorso del file di output
-    :param n: numero minimo di occorrenze per un brand per essere considerato valido
+    :param input_file: path to the file to read
+    :param output_file: path to the output file
+    :param n: minimum number of occurrences for a brand to be considered valid
     """
 
     brand_counts = dict()
@@ -421,7 +423,6 @@ def extract_clean_brands(input_file, output_file, n=1) -> None:
             for brand in chunk[col].dropna().unique():
                 cleaned_brand = clean_brand_name(brand)
                 if cleaned_brand:
-
                     brand_counts[cleaned_brand] = (
                         brand_counts.get(cleaned_brand, 0) + 1
                     )
@@ -436,10 +437,10 @@ def extract_clean_brands(input_file, output_file, n=1) -> None:
 
 def count_products_by_brand_threshold(csv_file, threshold_range) -> None:
     """
-    Funzione per contare quanti prodotti sono legati a brand con meno di n apparizioni
+    Function to count how many products are linked to brands with fewer than n appearances.
 
-    :param csv_file: percorso del file CSV da leggere
-    :param threshold_range: intervallo di numero di apparizioni brand da considerare
+    :param csv_file: path to the CSV file to read
+    :param threshold_range: range of the number of brand appearances to consider
     :return: None
     """
     csv.field_size_limit(1_000_000_000)
@@ -454,7 +455,7 @@ def count_products_by_brand_threshold(csv_file, threshold_range) -> None:
                 if brand:
                     brand_counter[brand] += 1
             except csv.Error as e:
-                print(f"Errore alla riga {row_num}: {e}. Riga saltata.")
+                print(f"Error at row {row_num}: {e}. Skipping row.")
 
     eliminated_counts = {threshold: 0 for threshold in threshold_range}
     remaining_counts = {threshold: 0 for threshold in threshold_range}
@@ -467,55 +468,53 @@ def count_products_by_brand_threshold(csv_file, threshold_range) -> None:
                 remaining_counts[threshold] += occurrences
 
     for threshold in threshold_range:
-        print(f"Soglia: {threshold}")
-        print(
-            f"Numero di prodotti non considerati: {eliminated_counts[threshold]}"
-        )
-        print(f"Numero di prodotti considerati: {remaining_counts[threshold]}")
+        print(f"Threshold: {threshold}")
+        print(f"Number of products excluded: {eliminated_counts[threshold]}")
+        print(f"Number of products considered: {remaining_counts[threshold]}")
 
 
-def estrai_descrizione(
+def extract_description(
     input_file,
     output_file,
-    nome_colonna="title",
-    righe=100,
-    delimitatore1=",",
-    delimitatore2=" ",
+    column_name="title",
+    rows=100,
+    delimiter1=",",
+    delimiter2=" ",
 ):
     """
-    Funzione  per estrarre le member description degli utenti di hummus
+    Function to extract the member descriptions of users in HUMMUS.
 
-    :param input_file: percorso del file CSV da leggere
-    :param output_file: percorso del file CSV di output
-    :param nome_colonna: nome della colonna che contiene il titolo della ricetta
-    :param righe: numero di righe da leggere
-    :param delimitatore1: delimitatore del file CSV da leggere
-    :param delimitatore2: delimitatore del file CSV di output
+    :param input_file: path to the CSV file to read
+    :param output_file: path to the output CSV file
+    :param column_name: name of the column that contains the recipe title
+    :param rows: number of rows to read
+    :param delimiter1: delimiter for the input CSV file
+    :param delimiter2: delimiter for the output CSV file
     :return: None
 
     """
     with open(input_file, mode="r", newline="", encoding="utf-8") as csv_input:
-        reader = csv.DictReader(csv_input, delimiter=delimitatore1)
+        reader = csv.DictReader(csv_input, delimiter=delimiter1)
 
         with open(
             output_file, mode="w", newline="", encoding="utf-8"
         ) as csv_output:
-            writer = csv.writer(csv_output, delimiter=delimitatore2)
+            writer = csv.writer(csv_output, delimiter=delimiter2)
 
             for i, row in enumerate(reader):
-                if i < righe or righe == -1:
+                if i < rows or rows == -1:
                     if (
-                        row[nome_colonna] != nome_colonna
-                        and row[nome_colonna] != ""
+                        row[column_name] != column_name
+                        and row[column_name] != ""
                     ):
-                        writer.writerow([row[nome_colonna]])
+                        writer.writerow([row[column_name]])
                 else:
                     break
 
 
-def crea_estrattore_member_description() -> None:
+def create_attribute_extractor() -> None:
     """
-    Funzione per creare un modello di estrazione di attributi dalle descrizioni degli utenti
+    Function for create a model of extracting attributes from user descriptions
     """
 
     # System prompt
@@ -560,16 +559,16 @@ def crea_estrattore_member_description() -> None:
     PARAMETER top_k 1
     """
 
-    # Crea il modello con il system prompt definito e con nome "attribute_extractor"
+    # Create the model with the defined system prompt and name "attribute_extractor"
     ollama.create(model="attribute_extractor", modelfile=modelfile)
 
 
-def testa_estrazione_attributi_utenti(file) -> None:
+def test_attribute_extraction(file) -> None:
     """
-    Funzione per testare l'estrazione di attributi dalle descrizioni degli utenti
-    prende delle descrizioni degli utenti e estrae gli attributi inferiti
+    Function to test the extraction of attributes from user descriptions.
+    It takes user descriptions and extracts the inferred attributes.
 
-    :param file: percorso del file CSV da leggere
+    :param file: path to the CSV file to read
     :return: None
     """
 
@@ -579,5 +578,5 @@ def testa_estrazione_attributi_utenti(file) -> None:
             response = ollama.generate(
                 model="attribute_extractor", prompt=str(row)
             )
-            print("descrizione utente: \n", (str(row)))
-            print("attributi estratti: \n", response["response"])
+            print("User description: \n", (str(row)))
+            print("Extracted attributes: \n", response["response"])
