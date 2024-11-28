@@ -20,15 +20,6 @@ import numpy as np
 import tensorflow as tf
 import rdflib  # type: ignore
 
-# Load the module path
-module_path = os.path.abspath("talk-like-a-graph")
-if module_path not in sys.path:
-    sys.path.insert(0, module_path)
-
-
-from talk_like_a_graph.graph_generators import generate_graphs  # type: ignore
-from talk_like_a_graph.graph_tasks import CycleCheck, ShortestPath, NodeCount  # type: ignore
-
 
 # Definition of edge colors representing relationships in the graph
 edge_colors = {
