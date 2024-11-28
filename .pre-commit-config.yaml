@@ -5,3 +5,13 @@ repos:
       - id: black
         args: [--line-length=80]
         language_version: python3.11
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.0
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+      - id: ruff
+        name: ruff-imports
+        args: [--select I, --fix]
