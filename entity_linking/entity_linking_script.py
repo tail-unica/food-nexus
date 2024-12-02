@@ -3,14 +3,13 @@ File with various functions and data necessary for entity linking
 using an approach with BERT and one similar to the Bari approach
 """
 
-
-import torch  # type: ignore
-from sentence_transformers import SentenceTransformer, util  # type: ignore
 import csv
 import math
+
 import numpy as np
+import torch  # type: ignore
+from sentence_transformers import SentenceTransformer, util  # type: ignore
 from tqdm import tqdm
-from sklearn.metrics.pairwise import cosine_similarity
 from transformers import AutoModel, AutoTokenizer  # type: ignore
 
 
@@ -64,9 +63,7 @@ class RecipeTransformer:
     """
 
     def __init__(self, transformer_name):
-        self.device = torch.device(
-            "cuda" if torch.cuda.is_available() else "cpu"
-        )
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.tokenizer = AutoTokenizer.from_pretrained(transformer_name)
         self.model = AutoModel.from_pretrained(transformer_name).to(self.device)
         torch.cuda.empty_cache()
@@ -109,9 +106,7 @@ def compute_embeddings(text_list, transformer, batch_size=1500):
     embeddings = []
     num_texts = len(text_list)
 
-    for i in tqdm(
-        range(0, num_texts, batch_size), desc="Calculating embeddings"
-    ):
+    for i in tqdm(range(0, num_texts, batch_size), desc="Calculating embeddings"):
         batch = text_list[i : i + batch_size]
         batch_embeddings = transformer.process_batch(batch)
         embeddings.append(batch_embeddings)
@@ -132,8 +127,7 @@ def find_similar_by_title(input_text, entities_list, embeddings, transformer):
 
     input_embedding = transformer.process_batch([input_text])[0]  # .numpy()
     similarities = np.dot(embeddings, input_embedding) / (
-        np.linalg.norm(embeddings, axis=1) * np.linalg.norm(input_embedding)
-        + 1e-10
+        np.linalg.norm(embeddings, axis=1) * np.linalg.norm(input_embedding) + 1e-10
     )
 
     max_index = np.argmax(similarities)
@@ -153,7 +147,6 @@ def read_specified_columns(
     :return: a list of tuples, each containing the values from the specified columns
     """
     with open(file_path, "r", newline="", encoding="utf-8") as csvfile:
-
         # Use DictReader to access column values by name
         reader = csv.DictReader(csvfile, delimiter=delimiter)
 
@@ -162,9 +155,7 @@ def read_specified_columns(
             raise ValueError(
                 "One or more specified columns do not exist in the CSV file"
             )
-        return [
-            tuple(row[col] for col in elenco_colonne) for row in reader if row
-        ]
+        return [tuple(row[col] for col in elenco_colonne) for row in reader if row]
 
 
 def normalize_columns(data: list) -> list:
@@ -207,8 +198,8 @@ def calculate_macronutrient_similarity(tuple1, tuple2):
 
     :return: similarity index of the tuples' macronutrients, ranging from -0.5 to 0.5
     """
-    _, carbs1, fats1, proteins1 = tuple1
-    _, carbs2, fats2, proteins2 = tuple2
+    carbs1, fats1, proteins1 = tuple1
+    carbs2, fats2, proteins2 = tuple2
 
     # if any of the values are missing, return zero
     if (
@@ -238,32 +229,37 @@ def calculate_macronutrient_similarity(tuple1, tuple2):
         return similarity
 
 
-def find_most_similar_pairs_with_indicators(list1, list2):
+def find_k_most_similar_pairs_with_indicators(list1, list2, k=1):
     """
-    Finds the most similar item from list2 for each item in list1, considering
+    Finds the k most similar items from list2 for each item in list1, considering
     both cosine similarity and the macronutrient similarity index.
 
-    :param list1: list of tuples (name, carbohydrates, fats, proteins)
-    :param list2: list of tuples (name, carbohydrates, fats, proteins)
-    :return: list of tuples in the form (item1, item2, similarity_value)
+    :param list1: list of tuples (name, carbohydrates, fats, proteins, optional string)
+    :param list2: list of tuples (name, carbohydrates, fats, proteins, optional string)
+    :param k: number of most similar items to return
+    :param use_indicator: whether to use indicators or not
+    :return: list of tuples (item1, item2, similarity_value, indicator1, indicator2)
     """
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # Load the model
     model = SentenceTransformer("paraphrase-MiniLM-L3-v2").to(device)
 
+    if len(list1[0]) <= 2 or len(list2[0]) <= 2:
+        # Ensure each element in list1 and list2 has 4 elements by appending (0, 0, 0)
+        list1 = [(item[0], 0, 0, 0, item[-1]) for item in list1]
+        list2 = [(item[0], 0, 0, 0, item[-1]) for item in list2]
+
     # Extract only the names to calculate embeddings
     names2 = [t[0] for t in list2]
 
     # Calculate embeddings for list2
     embeddings2 = model.encode(names2, convert_to_tensor=True, device=device)
-    most_similar_pairs = []
+    most_similar_tuples = []
 
-    for i, item in enumerate(list1):
+    for item in list1:
         # Calculate the embedding for the current name
-        embedding1 = model.encode(
-            [item[0]], convert_to_tensor=True, device=device
-        )
+        embedding1 = model.encode([item[0]], convert_to_tensor=True, device=device)
         # Calculate cosine similarity
         cosine_scores = util.cos_sim(embedding1, embeddings2)[0]
 
@@ -271,16 +267,18 @@ def find_most_similar_pairs_with_indicators(list1, list2):
         total_scores = []
         for j, tuple2 in enumerate(list2):
             macronutrient_similarity = calculate_macronutrient_similarity(
-                item, tuple2
+                item[1:4], tuple2[1:4]
             )
             total_score = cosine_scores[j].item() + macronutrient_similarity
-            total_scores.append(total_score)
+            total_scores.append(
+                (tuple2[0], total_score, tuple2[-1])
+            )  # Name, score, and indicator
 
-        # Find the index with the highest total score
-        max_index = total_scores.index(max(total_scores))
-        max_score = total_scores[max_index]
+        # Sort by score in descending order and take the top k items
+        top_k_scores = sorted(total_scores, key=lambda x: x[1], reverse=True)[:k]
 
-        # Add the pair to the result list
-        most_similar_pairs.append((item[0], list2[max_index][0], max_score))
+        # Add the k most similar pairs to the result list as tuples with indicators
+        for pair in top_k_scores:
+            most_similar_tuples.append((pair[1], item[-1], pair[2]))
 
-    return most_similar_pairs
+    return most_similar_tuples

@@ -1,25 +1,10 @@
 """
-File containing scripts and data required for the interactive visualization 
+File containing scripts and data required for the interactive visualization
 of the ontology
 """
 
-
-import os
-import sys
-from collections import OrderedDict
-from dataclasses import dataclass
-from functools import cache
-import itertools
-from typing import Callable
 import networkx as nx  # type: ignore
-import requests
-import xmltodict  # type: ignore
-from ipysigma import Sigma  # type: ignore
-import ipywidgets as widgets  # type: ignore
-import numpy as np
-import tensorflow as tf
 import rdflib  # type: ignore
-
 
 # Definition of edge colors representing relationships in the graph
 edge_colors = {

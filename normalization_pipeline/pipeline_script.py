@@ -3,21 +3,19 @@ File containing scripts and data required for the normalization
 of ingredient names and the definition of the translation model
 """
 
-
-import torch  # type: ignore
-import ollama  # type: ignore
 import csv
+import json
 import re
-import pint  # type: ignore
 import string
+import unicodedata
+
 import nltk  # type: ignore
-from nltk import pos_tag, word_tokenize  # type: ignore
+import ollama  # type: ignore
+import pint  # type: ignore
+import torch  # type: ignore
+from nltk.corpus import stopwords  # type: ignore
 from nltk.stem import WordNetLemmatizer  # type: ignore
 from spellchecker import SpellChecker  # type: ignore
-import unicodedata
-from pint import UnitRegistry, UndefinedUnitError  # type: ignore
-from nltk.corpus import stopwords  # type: ignore
-from nltk.tokenize import word_tokenize  # type: ignore
 
 
 def create_translation_model() -> None:
@@ -98,88 +96,33 @@ ureg.define("ounce = 28.3495 * gram")
 ureg.define("fluid_ounce = 29.5735 * milliliter")
 
 
-# List of suffixes and prefixes to remove
-suffixes_and_prefixes = [
-    "non",
-    "pre",
-    "post",
-    "anti",
-    "bio",
-    "extra",
-    "over",
-    "under",
-    "less",
-    "full",
-    "ate",
-    "&quot;",
-    "quot",
-]
+# Function to load json files
+def load_json_file(file_path):
+    with open(file_path, "r", encoding="utf-8") as file:
+        return json.load(file)
 
+
+# Path of json files
+suffixes_and_prefixes_file = "data/suffixes_and_prefixes.json"
+abbreviations_file = "data/abbreviations.json"
+unit_conversion_map_file = "data/unit_conversion_map.json"
+units_to_remove_file = "data/units_to_remove.json"
+
+# List of suffixes and prefixes to remove
+suffixes_and_prefixes = load_json_file(suffixes_and_prefixes_file)
 
 # Dictionary of acronyms and associated values
-abbreviations = {
-    "evo": "extra virgin olive oil",
-    "bbq": "barbecue",
-    "qt": "quart",
-    "pkg": "package",
-    "deg": "degree",
-    "gf": "gluten-free",
-    "df": "dairy-free",
-    "vgn": "vegan",
-    "froz": "frozen",
-    "rt": "room temperature",
-    "bt": "boiling temperature",
-    "bld": "boiled",
-    "whl": "whole",
-    "xt": "extra thick",
-    "pwdr": "powder",
-    "bkng": "baking",
-    "med": "medium",
-    "lg": "large",
-    "sm": "small",
-    "xlg": "extra large",
-}
+abbreviations = load_json_file(abbreviations_file)
 
-unit_conversion_map = {
-    "g": "gram",
-    "gram": "gram",
-    "grams": "gram",
-    "kg": "gram",
-    "kilogram": "gram",
-    "kilograms": "gram",
-    "mg": "gram",
-    "ounce": "gram",
-    "ounces": "gram",
-    "ml": "milliliter",
-    "milliliter": "milliliter",
-    "milliliters": "milliliter",
-    "l": "milliliter",
-    "liter": "milliliter",
-    "liters": "milliliter",
-    "tbsp": "milliliter",
-    "tablespoon": "milliliter",
-    "tablespoons": "milliliter",
-    "tsp": "milliliter",
-    "teaspoon": "milliliter",
-    "teaspoons": "milliliter",
-    "oz": "milliliter",
-    "fluid_ounce": "milliliter",
-    "fluid_ounces": "milliliter",
-    "cup": "milliliter",
-    "cups": "milliliter",
-    "pint": "milliliter",
-    "pints": "milliliter",
-    "quart": "milliliter",
-    "quarts": "milliliter",
-}
-
+# Dictionary of units and their standardized forms
+unit_conversion_map = load_json_file(unit_conversion_map_file)
 
 # List of units of measurement to remove
-units_to_remove = ["gram", "milliliters"]
+units_to_remove = load_json_file(units_to_remove_file)
 
 
 def load_adjectives_to_keep_words(
-    input_file="../csv_file/aggettivi_FoodKg.csv",
+    input_file="./csv_file/aggettivi_FoodKg.csv",
 ) -> set[str]:
     """
     Function to load unique adjectives into `keep_words`
@@ -206,7 +149,7 @@ keep_words = load_adjectives_to_keep_words()
 
 
 def load_brands_from_csv(
-    file_path="../csv_file/brands_filtered.csv",
+    file_path="./csv_file/brands_filtered.csv",
 ) -> list[str]:
     """
     Function to load brand names to be removed from the appropriate CSV file
@@ -310,9 +253,7 @@ def replace_abbreviations(text: str) -> str:
     :return: The text with abbreviations replaced by their full form.
     """
     for key, value in abbreviations.items():
-        text = re.sub(
-            r"\b" + re.escape(key) + r"\b", value, text, flags=re.IGNORECASE
-        )
+        text = re.sub(r"\b" + re.escape(key) + r"\b", value, text, flags=re.IGNORECASE)
     return text
 
 
@@ -339,9 +280,7 @@ def remove_brands(text: str) -> str:
     :return: The text with brand names removed.
     """
     for brand in brands:
-        text = re.sub(
-            r"\b" + re.escape(brand) + r"\b", "", text, flags=re.IGNORECASE
-        )
+        text = re.sub(r"\b" + re.escape(brand) + r"\b", "", text, flags=re.IGNORECASE)
 
     return re.sub(r"\s+", " ", text).strip()
 
@@ -449,7 +388,7 @@ def remove_stopwords(text: str) -> str:
     # Load the stopwords for the English language
     stop_words = set(stopwords.words("english"))
     # Tokenize the text
-    words = word_tokenize(text)
+    words = nltk.word_tokenize(text)
     # Remove stopwords
     filtered_words = [word for word in words if word.lower() not in stop_words]
     return " ".join(filtered_words)
@@ -489,13 +428,13 @@ def remove_unwanted_pos(text: str) -> str:
     :param text: The text from which to remove unwanted parts of speech.
     :return: The text with unwanted parts of speech removed.
     """
-    words = word_tokenize(text)
+    words = nltk.word_tokenize(text)
 
     # Removed 'RB' because it removes too much information, to be evaluated if re-adding it
     # 'JJ' = adjectives, 'RB' = adverbs, 'VB' = verbs, 'NNP' = proper nouns
     filtered_words = [
         word
-        for word, pos in pos_tag(words)
+        for word, pos in nltk.pos_tag(words)
         if pos not in ("VB", "JJ", "NNP") or word in keep_words
     ]
     return " ".join(filtered_words)
@@ -508,7 +447,7 @@ def remove_duplicate_words(text: str) -> str:
     :param text: The text from which to remove duplicate words.
     :return: The text without duplicate words.
     """
-    words = word_tokenize(text)
+    words = nltk.word_tokenize(text)
     filtered_words = list(set(words))
     return " ".join(filtered_words)
 
@@ -526,8 +465,116 @@ def remove_lenght1_words(line):
     return " ".join(word for word in line.split() if len(word) > 1)
 
 
+def pipeline_core(line, show_all=False, show_something=False):
+    line = re.sub(r"&quot;", "", line)
+
+    # Original text
+    if show_all or show_something:
+        print("original:".ljust(40), line)
+
+    # Convert to lowercase
+    line = convert_to_lowercase(line)
+    if show_all:
+        print("lowercase:".ljust(40), line)
+
+    # Remove brand names
+    line = remove_brands(line)
+    if show_all:
+        print("brand removed:".ljust(40), line)
+
+    # Translate text to English
+    line = translate_to_english(line)
+    if show_all:
+        print("text translated to English:".ljust(40), line)
+
+    # Convert to lowercase
+    line = convert_to_lowercase(line)
+    if show_all:
+        print("lowercase:".ljust(40), line)
+
+    # Expand abbreviations
+    line = replace_abbreviations(line)
+    if show_all:
+        print("abbreviations expanded:".ljust(40), line)
+
+    # Remove unwanted adjectives, adverbs, and verbs
+    line = remove_unwanted_pos(line)
+    if show_all:
+        print("remove adjectives:".ljust(40), line)
+
+    # Remove suffixes and prefixes
+    line = remove_suffixes_prefixes(line)
+    if show_all:
+        print("remove suffixes and prefixes:".ljust(40), line)
+
+    # Remove text in parentheses
+    line = remove_text_in_parentheses(line)
+    if show_all:
+        print("remove text in parentheses:".ljust(40), line)
+
+    # Remove text after the first comma or ":"
+    line = remove_text_after_comma_or_colon(line)
+    if show_all:
+        print("remove text after comma:".ljust(40), line)
+
+    # Remove remaining punctuation
+    line = remove_or_replace_punctuation(line)
+    if show_all:
+        print("remove punctuation:".ljust(40), line)
+
+    # Remove stopwords
+    line = remove_stopwords(line)
+    if show_all:
+        print("remove stopwords:".ljust(40), line)
+
+    # Normalize quantities
+    line = normalize_quantities(line)
+    if show_all:
+        print("normalize quantities:".ljust(40), line)
+
+    # Remove units of measurement
+    line = remove_units(line)
+    if show_all:
+        print("remove units of measurement:".ljust(40), line)
+
+    # Remove numeric values
+    line = remove_numeric_values(line)
+    if show_all:
+        print("remove numeric values:".ljust(40), line)
+
+    # Convert text to singular
+    line = lemmatize_text(line)
+    if show_all:
+        print("convert text to singular:".ljust(40), line)
+
+    # Normalize special characters
+    line = normalize_special_characters(line)
+    if show_all:
+        print("normalize special characters:".ljust(40), line)
+
+    # Remove duplicate words
+    line = remove_duplicate_words(line)
+    if show_all:
+        print("remove duplicate words:".ljust(40), line)
+
+    # Remove single-character words
+    line = remove_lenght1_words(line)
+    if show_all:
+        print("remove single-character words:".ljust(40), line)
+
+    # Sort words alphabetically
+    line = sort_words_alphabetically(line)
+    if show_all:
+        print("alphabetical sorting:".ljust(40), line)
+
+    if show_something or show_all:
+        print("complete normalization:".ljust(40), line, "\n")
+
+    return line
+
+
 def pipeline(
-    input_file, output_file, show_all=False, show_something=False
+    input_file, output_file, show_all=False, show_something=False, line=""
 ) -> None:
     """
     Function to execute the normalization pipeline
@@ -538,114 +585,15 @@ def pipeline(
     :param show_something: if True, shows some normalization steps
     """
 
-    with open(input_file, "r", encoding="utf-8") as infile, open(
-        output_file, "w", encoding="utf-8"
-    ) as outfile:
+    with (
+        open(input_file, "r", encoding="utf-8") as infile,
+        open(output_file, "w", encoding="utf-8") as outfile,
+    ):
         for line in infile:
+            line = pipeline_core(
+                show_all=show_all, show_something=show_something, line=line
+            )
 
-            line = re.sub(r"&quot;", "", line)
-
-            # Original text
-            if show_all or show_something:
-                print("original:".ljust(40), line, end="")
-
-            # Convert to lowercase
-            line = convert_to_lowercase(line)
-            if show_all:
-                print("lowercase:".ljust(40), line, end="")
-
-            # Remove brand names
-            line = remove_brands(line)
-            if show_all:
-                print("brand removed:".ljust(40), line)
-
-            # Translate text to English
-            line = translate_to_english(line)
-            if show_all:
-                print("text translated to English:".ljust(40), line)
-
-            # Convert to lowercase
-            line = convert_to_lowercase(line)
-            if show_all:
-                print("lowercase:".ljust(40), line)
-
-            # Expand abbreviations
-            line = replace_abbreviations(line)
-            if show_all:
-                print("abbreviations expanded:".ljust(40), line)
-
-            # Remove unwanted adjectives, adverbs, and verbs
-            line = remove_unwanted_pos(line)
-            if show_all:
-                print("remove adjectives:".ljust(40), line)
-
-            # Remove suffixes and prefixes
-            line = remove_suffixes_prefixes(line)
-            if show_all:
-                print("remove suffixes and prefixes:".ljust(40), line)
-
-            # Remove text in parentheses
-            line = remove_text_in_parentheses(line)
-            if show_all:
-                print("remove text in parentheses:".ljust(40), line)
-
-            # Remove text after the first comma or ":"
-            line = remove_text_after_comma_or_colon(line)
-            if show_all:
-                print("remove text after comma:".ljust(40), line)
-
-            # Remove remaining punctuation
-            line = remove_or_replace_punctuation(line)
-            if show_all:
-                print("remove punctuation:".ljust(40), line)
-
-            # Remove stopwords
-            line = remove_stopwords(line)
-            if show_all:
-                print("remove stopwords:".ljust(40), line)
-
-            # Normalize quantities
-            line = normalize_quantities(line)
-            if show_all:
-                print("normalize quantities:".ljust(40), line)
-
-            # Remove units of measurement
-            line = remove_units(line)
-            if show_all:
-                print("remove units of measurement:".ljust(40), line)
-
-            # Remove numeric values
-            line = remove_numeric_values(line)
-            if show_all:
-                print("remove numeric values:".ljust(40), line)
-
-            # Convert text to singular
-            line = lemmatize_text(line)
-            if show_all:
-                print("convert text to singular:".ljust(40), line)
-
-            # Normalize special characters
-            line = normalize_special_characters(line)
-            if show_all:
-                print("normalize special characters:".ljust(40), line)
-
-            # Remove duplicate words
-            line = remove_duplicate_words(line)
-            if show_all:
-                print("remove duplicate words:".ljust(40), line)
-
-            # Remove single-character words
-            line = remove_lenght1_words(line)
-            if show_all:
-                print("remove single-character words:".ljust(40), line)
-
-            # Sort words alphabetically
-            line = sort_words_alphabetically(line)
-            if show_all:
-                print("alphabetical sorting:".ljust(40), line)
-
-            if show_something or show_all:
-                print("complete normalization:".ljust(40), line, "\n")
-            outfile.write(line + "\n")
+        outfile.write(line + "\n")
 
     print("Normalization complete")

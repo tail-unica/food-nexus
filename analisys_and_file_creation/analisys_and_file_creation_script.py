@@ -3,17 +3,14 @@ File containing scripts and data necessary for the creation of LLM models, analy
 and creating files used as input for other scripts.
 """
 
-
-import csv
 import ast
+import csv
+import re
+from collections import Counter
+
+import ollama  # type: ignore
 import pandas as pd  # type: ignore
 from nltk import pos_tag, word_tokenize  # type: ignore
-from ast import literal_eval
-import ollama  # type: ignore
-import re
-from collections import defaultdict
-import sys
-from collections import Counter
 
 
 # Script to extract recipes from the CSV
@@ -40,17 +37,12 @@ def extract_recipes(
     with open(input_file, mode="r", newline="", encoding="utf-8") as csv_input:
         reader = csv.DictReader(csv_input, delimiter=delimiter1)
 
-        with open(
-            output_file, mode="w", newline="", encoding="utf-8"
-        ) as csv_output:
+        with open(output_file, mode="w", newline="", encoding="utf-8") as csv_output:
             writer = csv.writer(csv_output, delimiter=delimiter2)
 
             for i, row in enumerate(reader):
                 if i < rows or rows == -1:
-                    if (
-                        row[column_name] != column_name
-                        and row[column_name] != ""
-                    ):
+                    if row[column_name] != column_name and row[column_name] != "":
                         writer.writerow([row[column_name]])
                 else:
                     break
@@ -69,9 +61,7 @@ def extract_rows(input_file, output_file, delimiter=",", rows=100) -> None:
     with open(input_file, mode="r", newline="", encoding="utf-8") as csv_input:
         reader = csv.DictReader(csv_input, delimiter=delimiter)
 
-        with open(
-            output_file, mode="w", newline="", encoding="utf-8"
-        ) as csv_output:
+        with open(output_file, mode="w", newline="", encoding="utf-8") as csv_output:
             writer = csv.writer(csv_output, delimiter=delimiter)
             # Write headers to the output file
             writer.writerow(reader.fieldnames)  # type: ignore
@@ -84,9 +74,7 @@ def extract_rows(input_file, output_file, delimiter=",", rows=100) -> None:
                     break
 
 
-def extract_ingredients_foodkg(
-    input_file, output_file, min_occurrences=0
-) -> None:
+def extract_ingredients_foodkg(input_file, output_file, min_occurrences=0) -> None:
     """
     Function to extract and clean unique ingredients from FoodKG and count their occurrences
 
@@ -107,11 +95,9 @@ def extract_ingredients_foodkg(
         low_memory=False,
     ):
         for ingredient_list_str in chunk["ingredient_food_kg_names"].dropna():
-
             try:
                 ingredient_list = ast.literal_eval(ingredient_list_str)
                 for ingredient in ingredient_list:
-
                     ingredient_counts[ingredient] = (
                         ingredient_counts.get(ingredient, 0) + 1
                     )
@@ -252,9 +238,7 @@ def test_filtering_brand_accuracy(file1, file) -> None:
             response = ollama.generate(model="food_expert", prompt=brand)
 
             # Check if the response is correct
-            is_correct = (
-                response["response"].strip().lower() == expected_response
-            )
+            is_correct = response["response"].strip().lower() == expected_response
             results.append(
                 {
                     "brand_name": brand,
@@ -306,10 +290,7 @@ def analisi_quantities(input_file, output_file, n) -> None:
             for brand in chunk[col].dropna().unique():
                 cleaned_brand = brand
                 if cleaned_brand:
-
-                    brand_counts[cleaned_brand] = (
-                        brand_counts.get(cleaned_brand, 0) + 1
-                    )
+                    brand_counts[cleaned_brand] = brand_counts.get(cleaned_brand, 0) + 1
 
     with open(output_file, "w", newline="", encoding="utf-8") as csvfile:
         writer = csv.writer(csvfile)
@@ -327,11 +308,12 @@ def brand_filtering(input_file, output_file) -> None:
     :return: None
     """
 
-    with open(input_file, newline="") as csvfile, open(
-        output_file, mode="w", newline=""
-    ) as outfile:
+    with (
+        open(input_file, newline="") as csvfile,
+        open(output_file, mode="w", newline="") as outfile,
+    ):
         reader = csv.DictReader(csvfile)
-        outfile.write(f"brand_name\n")
+        outfile.write("brand_name\n")
 
         for row in reader:
             brand = row["brand_name"]
@@ -344,9 +326,7 @@ def brand_filtering(input_file, output_file) -> None:
         print(f"\nGenerated the file {output_file}")
 
 
-def number_of_instance_for_columns(
-    input_file, output_file, chunk_size=120000
-) -> None:
+def number_of_instance_for_columns(input_file, output_file, chunk_size=120000) -> None:
     """
     Function to analyze the number of instances per column in OFF (for analysis purposes)
 
@@ -423,9 +403,7 @@ def extract_clean_brands(input_file, output_file, n=1) -> None:
             for brand in chunk[col].dropna().unique():
                 cleaned_brand = clean_brand_name(brand)
                 if cleaned_brand:
-                    brand_counts[cleaned_brand] = (
-                        brand_counts.get(cleaned_brand, 0) + 1
-                    )
+                    brand_counts[cleaned_brand] = brand_counts.get(cleaned_brand, 0) + 1
 
     with open(output_file, "w", newline="", encoding="utf-8") as csvfile:
         writer = csv.writer(csvfile)
@@ -496,17 +474,12 @@ def extract_description(
     with open(input_file, mode="r", newline="", encoding="utf-8") as csv_input:
         reader = csv.DictReader(csv_input, delimiter=delimiter1)
 
-        with open(
-            output_file, mode="w", newline="", encoding="utf-8"
-        ) as csv_output:
+        with open(output_file, mode="w", newline="", encoding="utf-8") as csv_output:
             writer = csv.writer(csv_output, delimiter=delimiter2)
 
             for i, row in enumerate(reader):
                 if i < rows or rows == -1:
-                    if (
-                        row[column_name] != column_name
-                        and row[column_name] != ""
-                    ):
+                    if row[column_name] != column_name and row[column_name] != "":
                         writer.writerow([row[column_name]])
                 else:
                     break
@@ -575,8 +548,6 @@ def test_attribute_extraction(file) -> None:
     with open(file, newline="") as csvfile:
         reader = csv.reader(csvfile)
         for row in reader:
-            response = ollama.generate(
-                model="attribute_extractor", prompt=str(row)
-            )
+            response = ollama.generate(model="attribute_extractor", prompt=str(row))
             print("User description: \n", (str(row)))
             print("Extracted attributes: \n", response["response"])
