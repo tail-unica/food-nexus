@@ -18,65 +18,6 @@ from nltk.stem import WordNetLemmatizer  # type: ignore
 from spellchecker import SpellChecker  # type: ignore
 
 
-def create_translation_model() -> None:
-    """
-    Calling this function creates a translation model
-    based on qwen2.5:32b and usable on Ollama
-
-    :return: None
-    """
-
-    # Definition of the system prompt for the model
-    modelfile = """
-    FROM qwen2.5:32b
-    SYSTEM You are a highly skilled linguist with a specific task: I will provide you with a single string of input related to food names, ingredients, recipes, or culinary terms. \
-    Your objective is to determine the language of the input string. If the string is in English, respond with "eng." If the string is not in English, translate it into English. \
-    Please adhere to the following guidelines: \
-    - Do not add any comments, explanations, or modifications to your response. \
-    - Always respond with either "eng" or the English translation of the provided text. \
-    - Do not remove any punctuation mark, for example (",", ".", ";", ":", "!", "?", "(", ")", "\"") in your response. \
-    - Do not put ani '"' when you are responding "eng". \
-    Here are some examples for clarity: \
-    - "pane al mais" -> "corn bread" \
-    - "apple" -> "eng" \
-    - "frutta" -> "fruit" \
-    - "cibo" -> "food" \
-    - "birne" -> "pear" \
-    - "arroz con pollo y verduras frescas" -> "rice with chicken and fresh vegetables" \
-    - "bánh mì với thịt và rau củ" -> "sandwich with meat and vegetables" \
-    - "パスタとトマトソース" -> "pasta with tomato sauce" \
-    - "gnocchi di patate con burro e salvia" -> "potato dumplings with butter and sage" \
-    - "choucroute garnie avec des saucisses" -> "sauerkraut with sausages" \
-    - "paella de mariscos y arroz amarillo" -> "seafood paella with yellow rice" \
-    - "fish and chips" -> "eng" \
-    - "tonno! ☺️ pizza bio l rustica 1kg (2x500g) - con tonno agli oli evo, una vera bontà" -> "tuna! ☺️ pizza bio l rustic 1kg (2x500g) - with tuna in evo oils, a true delight" \
-    - "cioccolato 🍫 extra fondente - 85% cacao (con aroma di vaniglia naturale)" -> "extra dark chocolate 85 percent cocoa with natural vanilla aroma" \
-    - "queso manchego curado 🧀 - ideal para tapas o gratinar" -> "manchego cheese cured ideal for tapas or gratinating" \
-    - "bánh cuốn nhân thịt 🥢 - món ăn sáng Việt Nam thơm ngon" -> "bánh cuốn with meat a delicious Vietnamese breakfast dish" \
-    - "寿司 🍣 - 新鮮な魚で作られた最高の日本料理" -> "sushi the finest Japanese dish made with fresh fish" \
-    - "pomodoro rosso bio 🍅 (1kg) - perfetto per salse fatte in casa" -> "red organic tomato 1kg perfect for homemade sauces" \
-    Begin processing the input now. \
-    PARAMETER temperature 0
-    PARAMETER top_p 0.8
-    PARAMETER top_k 1
-    """
-
-    # Create the model with the defined system prompt and name "translation_expert"
-    ollama.create(model="translation_expert", modelfile=modelfile)
-
-
-def translate_to_english_test(text: str) -> str:
-    """
-    Function that translates a string into English
-
-    :param text: text to be translated
-    :return: response from the translation model
-    """
-    response = ollama.generate(model="translation_expert", prompt=text)
-    print(text, response["response"])
-    return response["response"]
-
-
 # Device on which operations will be performed
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -253,7 +194,9 @@ def replace_abbreviations(text: str) -> str:
     :return: The text with abbreviations replaced by their full form.
     """
     for key, value in abbreviations.items():
-        text = re.sub(r"\b" + re.escape(key) + r"\b", value, text, flags=re.IGNORECASE)
+        text = re.sub(
+            r"\b" + re.escape(key) + r"\b", value, text, flags=re.IGNORECASE
+        )
     return text
 
 
@@ -280,7 +223,9 @@ def remove_brands(text: str) -> str:
     :return: The text with brand names removed.
     """
     for brand in brands:
-        text = re.sub(r"\b" + re.escape(brand) + r"\b", "", text, flags=re.IGNORECASE)
+        text = re.sub(
+            r"\b" + re.escape(brand) + r"\b", "", text, flags=re.IGNORECASE
+        )
 
     return re.sub(r"\s+", " ", text).strip()
 
@@ -465,7 +410,16 @@ def remove_lenght1_words(line):
     return " ".join(word for word in line.split() if len(word) > 1)
 
 
-def pipeline_core(line, show_all=False, show_something=False):
+def pipeline_core(line, show_all=False, show_something=False) -> str:
+    """
+    Function to execute the normalization pipeline on a single line
+
+    :param line: the line to normalize
+    :param show_all: if True, shows all intermediate normalization steps
+    :param show_something: if True, shows some normalization steps
+    :return: the normalized line
+    """
+
     line = re.sub(r"&quot;", "", line)
 
     # Original text
@@ -574,26 +528,52 @@ def pipeline_core(line, show_all=False, show_something=False):
 
 
 def pipeline(
-    input_file, output_file, show_all=False, show_something=False, line=""
+    input_file,
+    output_file,
+    column_name,
+    delimiter=",",
+    show_all=False,
+    show_something=False,
 ) -> None:
     """
-    Function to execute the normalization pipeline
+    Function to execute the normalization pipeline on a specific column of a csv file.
 
     :param input_file: path of the file to normalize
     :param output_file: path of the output file
+    :param column_name: name of the column to normalize
+    :param delimiter: delimiter used in the input CSV file (default is ',')
     :param show_all: if True, shows all intermediate normalization steps
     :param show_something: if True, shows some normalization steps
     """
 
     with (
         open(input_file, "r", encoding="utf-8") as infile,
-        open(output_file, "w", encoding="utf-8") as outfile,
+        open(output_file, "w", encoding="utf-8", newline="") as outfile,
     ):
-        for line in infile:
-            line = pipeline_core(
-                show_all=show_all, show_something=show_something, line=line
+        reader = csv.DictReader(infile, delimiter=delimiter)
+        fieldnames = reader.fieldnames
+
+        if fieldnames is None:
+            raise ValueError("Input file is empty or invalid.")
+
+        if column_name not in fieldnames:
+            raise ValueError(
+                f"Column '{column_name}' not found in the input file."
             )
 
-        outfile.write(line + "\n")
+        writer = csv.DictWriter(
+            outfile, fieldnames=fieldnames, delimiter=delimiter
+        )
+        writer.writeheader()
+
+        for row in reader:
+            original_line = row[column_name]
+            transformed_line = pipeline_core(
+                show_all=show_all,
+                show_something=show_something,
+                line=original_line,
+            )
+            row[column_name] = transformed_line
+            writer.writerow(row)
 
     print("Normalization complete")

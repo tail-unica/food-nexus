@@ -3,7 +3,6 @@ File with various functions and data necessary for converting HUMMUS and Open Fo
 """
 
 import re
-
 import pandas as pd  # type: ignore
 from rdflib import RDF, RDFS, XSD, Graph, Literal, Namespace, URIRef  # type: ignore
 from rdflib.namespace import OWL  # type: ignore
@@ -12,7 +11,6 @@ from rdflib.namespace import OWL  # type: ignore
 def sanitize_for_uri(value) -> str:
     """
     Generic sanitization function for URIs
-    (some HUMMUS names started with special characters)
 
     :param value: value to sanitize
 
@@ -71,7 +69,9 @@ def create_namespace(namespace_completo=True) -> None:
             (
                 UNICA.FoodProducer,
                 RDFS.comment,
-                Literal("Information about the producer of a food item.", lang="en"),
+                Literal(
+                    "Information about the producer of a food item.", lang="en"
+                ),
             )
         )
 
@@ -88,7 +88,9 @@ def create_namespace(namespace_completo=True) -> None:
         (
             UNICA.UserConstraint,
             RDFS.comment,
-            Literal("Constraint about what a user can or want to eat.", lang="en"),
+            Literal(
+                "Constraint about what a user can or want to eat.", lang="en"
+            ),
         )
     )
 
@@ -302,7 +304,7 @@ def convert_hummus_in_rdf() -> None:
     file_review = "../csv_file/pp_reviews_rows.csv"
     file_utenti = "../csv_file/pp_members_rows.csv"
 
-    file_output = "../csv_file/ontologia_nostra_hummus.ttl"
+    file_output = "../csv_file/ontology_hummus.ttl"
 
     # Upload the CSV
     df_ricette = pd.read_csv(file_ricette, on_bad_lines="skip")
@@ -340,7 +342,9 @@ def convert_hummus_in_rdf() -> None:
     # Create the entity UserGroup
     for idx, row in df_utenti.iterrows():
         if pd.notna(row["member_id"]):
-            group_id = URIRef(UNICA[f"UserGroup_{sanitize_for_uri(row['member_id'])}"])
+            group_id = URIRef(
+                UNICA[f"UserGroup_{sanitize_for_uri(row['member_id'])}"]
+            )
             g.add((group_id, RDF.type, SCHEMA.Organization))
             if pd.notna(row["member_name"]):
                 g.add(
@@ -359,7 +363,9 @@ def convert_hummus_in_rdf() -> None:
             )
             g.add((recipe_id, RDF.type, SCHEMA.Recipe))
             if pd.notna(row["title"]):
-                g.add((recipe_id, SCHEMA.name, Literal(row["title"], lang="en")))
+                g.add(
+                    (recipe_id, SCHEMA.name, Literal(row["title"], lang="en"))
+                )
 
             g.add((recipe_id, SCHEMA.identifier, Literal(row["recipe_id"])))
             if pd.notna(row["directions"]):
@@ -379,7 +385,12 @@ def convert_hummus_in_rdf() -> None:
 
             # UserConstraint
             if pd.notna(row["tags"]):
-                tags = str(row["tags"]).strip("[]").replace("'", "").split(sep=", ")
+                tags = (
+                    str(row["tags"])
+                    .strip("[]")
+                    .replace("'", "")
+                    .split(sep=", ")
+                )
                 for tag in tags:
                     tag1 = tag
                     tag = sanitize_for_uri(tag.replace("-", "_").lower())
@@ -432,7 +443,9 @@ def convert_hummus_in_rdf() -> None:
 
                     stringa = str(row[csv_column])
                     if col in qualitatives_indicators_hummus:
-                        quantità = float(stringa) / float(row["servingSize [g]"]) * 100
+                        quantità = (
+                            float(stringa) / float(row["servingSize [g]"]) * 100
+                        )
                     else:
                         quantità = float(stringa)
 
@@ -443,7 +456,9 @@ def convert_hummus_in_rdf() -> None:
                             Literal(quantità, datatype=XSD.float),
                         )
                     )
-                    g.add((recipe_id, SCHEMA.NutritionInformation, indicator_id))
+                    g.add(
+                        (recipe_id, SCHEMA.NutritionInformation, indicator_id)
+                    )
 
             # Ingredients
             if pd.notna(row["ingredient_food_kg_names"]):
@@ -463,12 +478,16 @@ def convert_hummus_in_rdf() -> None:
                                 ingredient_id,
                                 SCHEMA.identifier,
                                 Literal(
-                                    sanitize_for_uri(ing.replace(" ", "_").lower())
+                                    sanitize_for_uri(
+                                        ing.replace(" ", "_").lower()
+                                    )
                                 ),
                             )
                         )
 
-                    ingredient_id_for_recipe = ingredient_id + "_" + str(object=idx)
+                    ingredient_id_for_recipe = (
+                        ingredient_id + "_" + str(object=idx)
+                    )
                     g.add(
                         (
                             ingredient_id_for_recipe,
@@ -522,7 +541,9 @@ def convert_hummus_in_rdf() -> None:
                         review_id,
                         SCHEMA.itemReviewed,
                         URIRef(
-                            UNICA[f"Recipe_hummus{sanitize_for_uri(row['recipe_id'])}"]
+                            UNICA[
+                                f"Recipe_hummus{sanitize_for_uri(row['recipe_id'])}"
+                            ]
                         ),
                     )
                 )
@@ -530,7 +551,9 @@ def convert_hummus_in_rdf() -> None:
                 g.add(
                     (
                         URIRef(
-                            UNICA[f"UserGroup_{sanitize_for_uri(row['member_id'])}"]
+                            UNICA[
+                                f"UserGroup_{sanitize_for_uri(row['member_id'])}"
+                            ]
                         ),
                         SCHEMA.publishesReview,
                         review_id,
@@ -575,7 +598,7 @@ def convert_off_in_rdf() -> None:
     # File of input and output
     # off_file = "../csv_file/en.openfoodfacts.org.products.csv"
     off_file = "../csv_file/off_rows.csv"
-    file_output = "../csv_file/ontologia_nostra_off.ttl"
+    file_output = "../csv_file/ontology_off.ttl"
 
     # Upload the CSV
     df_off = pd.read_csv(off_file, sep="\t", on_bad_lines="skip")
@@ -587,7 +610,9 @@ def convert_off_in_rdf() -> None:
         "ecoscore_score",
     ]
 
-    # Iterate through each row to create the Recipe and Indicator entities
+    traces_and_allergies = {}
+
+    # Iterate through each row to create Recipe, UserConstraint and Indicator entities
     for idx, row in df_off.iterrows():
         if pd.notna(row["product_name"]) and row["product_name"].strip() != "":
             # Create the recipe
@@ -610,12 +635,76 @@ def convert_off_in_rdf() -> None:
                 )
             )
 
+            # UserConstraint
+            if pd.notna(row["allergens"]):
+                for allergen in row["allergens"].split(","):
+                    allergen1 = allergen.replace("en:", "")
+                    allergen = sanitize_for_uri(
+                        allergen.replace("en:", "").replace("-", "_").lower()
+                    )
+                    allergen = URIRef(
+                        UNICA[f"allergen_{sanitize_for_uri(allergen)}"]
+                    )
+                    if allergen not in traces_and_allergies:
+                        traces_and_allergies[allergen] = 1
+                        g.add((allergen, RDF.type, UNICA.UserConstraint))
+                        g.add(
+                            (
+                                allergen,
+                                SCHEMA.constraintName,
+                                Literal(allergen1, lang="en"),
+                            )
+                        )
+                        g.add(
+                            (
+                                allergen,
+                                SCHEMA.constraintDescription,
+                                Literal(
+                                    f"is a user constraint about having an allergy to {allergen1}",
+                                    lang="en",
+                                ),
+                            )
+                        )
+
+                    g.add((allergen, SCHEMA.suitableForDiet, recipe_id))
+
+            if pd.notna(row["traces_en"]):
+                for trace in row["traces_en"].split(","):
+                    trace1 = trace
+                    trace = sanitize_for_uri(trace.replace("-", "_").lower())
+                    trace = URIRef(UNICA[f"trace_{sanitize_for_uri(trace)}"])
+                    if trace not in traces_and_allergies:
+                        traces_and_allergies[trace] = 1
+                        g.add((trace, RDF.type, UNICA.UserConstraint))
+                        g.add(
+                            (
+                                trace,
+                                SCHEMA.constraintName,
+                                Literal(trace1, lang="en"),
+                            )
+                        )
+                        g.add(
+                            (
+                                trace,
+                                SCHEMA.constraintDescription,
+                                Literal(
+                                    f"is a user constraint about having a trace of {trace1} in the product",
+                                    lang="en",
+                                ),
+                            )
+                        )
+
+                    g.add((trace, SCHEMA.suitableForDiet, recipe_id))
+
             # Indicator
             for column in df_off.columns:
                 if "100g" in column or column in qualitatives_indicators:
                     indicator_value = row[column]
 
-                    if pd.notna(indicator_value) and indicator_value != "unknown":
+                    if (
+                        pd.notna(indicator_value)
+                        and indicator_value != "unknown"
+                    ):
                         # Create the indicator
                         column = column.replace("-", "_")
                         indicator_id = URIRef(
@@ -638,7 +727,9 @@ def convert_off_in_rdf() -> None:
                                 (
                                     indicator_id,
                                     SCHEMA.quantity,
-                                    Literal(indicator_value, datatype=XSD.float),
+                                    Literal(
+                                        indicator_value, datatype=XSD.float
+                                    ),
                                 )
                             )
                         else:
@@ -646,7 +737,9 @@ def convert_off_in_rdf() -> None:
                                 (
                                     indicator_id,
                                     SCHEMA.quantity,
-                                    Literal(indicator_value, datatype=XSD.string),
+                                    Literal(
+                                        indicator_value, datatype=XSD.string
+                                    ),
                                 )
                             )
 
@@ -684,9 +777,9 @@ def convert_off_in_rdf() -> None:
                     )
 
                 # Relationship of has ingredient / is ingredient
-                if pd.notna(row2["ingredients_text"]) and row1["generic_name"] in str(
-                    row2["ingredients_text"]
-                ).split(", "):
+                if pd.notna(row2["ingredients_text"]) and row1[
+                    "generic_name"
+                ] in str(row2["ingredients_text"]).split(", "):
                     g.add(
                         (
                             URIRef(UNICA[f"recipe_{idx1}"]),

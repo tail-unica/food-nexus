@@ -5,24 +5,12 @@ using an approach with BERT and one similar to the Bari approach
 
 import csv
 import math
-
 import numpy as np
 import torch  # type: ignore
 from sentence_transformers import SentenceTransformer, util  # type: ignore
 from tqdm import tqdm
 from transformers import AutoModel, AutoTokenizer  # type: ignore
-
-
-def read_first_column(file_path):
-    """
-    Function to read the first column from a CSV file
-
-    :param file_path: path to the CSV file
-    :return: a list of elements from the first column
-    """
-    with open(file_path, "r", newline="", encoding="utf-8") as csvfile:
-        reader = csv.reader(csvfile)
-        return [row[0] for row in reader if row]
+from sklearn.metrics.pairwise import cosine_similarity
 
 
 def find_most_similar_pairs(list1, list2):
@@ -37,8 +25,6 @@ def find_most_similar_pairs(list1, list2):
 
     # Load the model
     model = SentenceTransformer("paraphrase-MiniLM-L3-v2").to(device)
-    # paraphrase-MiniLm-L3-v2
-    # paraphrase-MiniLM-L12-v2
 
     embeddings2 = model.encode(list2, convert_to_tensor=True, device=device)
     most_similar_pairs = []
@@ -63,7 +49,9 @@ class RecipeTransformer:
     """
 
     def __init__(self, transformer_name):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device(
+            "cuda" if torch.cuda.is_available() else "cpu"
+        )
         self.tokenizer = AutoTokenizer.from_pretrained(transformer_name)
         self.model = AutoModel.from_pretrained(transformer_name).to(self.device)
         torch.cuda.empty_cache()
@@ -106,7 +94,9 @@ def compute_embeddings(text_list, transformer, batch_size=1500):
     embeddings = []
     num_texts = len(text_list)
 
-    for i in tqdm(range(0, num_texts, batch_size), desc="Calculating embeddings"):
+    for i in tqdm(
+        range(0, num_texts, batch_size), desc="Calculating embeddings"
+    ):
         batch = text_list[i : i + batch_size]
         batch_embeddings = transformer.process_batch(batch)
         embeddings.append(batch_embeddings)
@@ -125,10 +115,19 @@ def find_similar_by_title(input_text, entities_list, embeddings, transformer):
     :return: the most similar recipe to the input text and its similarity score
     """
 
-    input_embedding = transformer.process_batch([input_text])[0]  # .numpy()
-    similarities = np.dot(embeddings, input_embedding) / (
-        np.linalg.norm(embeddings, axis=1) * np.linalg.norm(input_embedding) + 1e-10
-    )
+    input_embedding = transformer.process_batch([input_text])[0]
+
+    assert (
+        input_embedding.shape[0] == embeddings.shape[1]
+    ), "Embedding dimensions do not match."
+
+    # Convert the embeddings to numpy format if necessary
+    if isinstance(input_embedding, torch.Tensor):
+        input_embedding = input_embedding.cpu().numpy()
+    if isinstance(embeddings, torch.Tensor):
+        embeddings = embeddings.cpu().numpy()
+
+    similarities = cosine_similarity([input_embedding], embeddings)[0]  # type: ignore
 
     max_index = np.argmax(similarities)
     max_score = similarities[max_index]
@@ -137,25 +136,46 @@ def find_similar_by_title(input_text, entities_list, embeddings, transformer):
 
 
 def read_specified_columns(
-    file_path: str, elenco_colonne: list, delimiter: str = ";"
+    file_path: str,
+    elenco_colonne: list,
+    delimiter: str = ";",
+    encoding: str = "utf-8",
+    max_cell_length: int = 1000,
 ) -> list:
     """
-    Function to read specified columns from a CSV file
+    Function to read specified columns from a CSV file, ignoring rows with overly long cell values.
 
     :param file_path: path to the CSV file
     :param elenco_colonne: list of column names to include
+    :param delimiter: delimiter used in the CSV file (default: ';')
+    :param encoding: file encoding (default: 'utf-8')
+    :param max_cell_length: maximum allowed length for a cell value (default: 1000)
     :return: a list of tuples, each containing the values from the specified columns
     """
-    with open(file_path, "r", newline="", encoding="utf-8") as csvfile:
+    csv.field_size_limit(1_000_000_000)
+
+    with open(file_path, "r", newline="", encoding=encoding) as csvfile:
         # Use DictReader to access column values by name
         reader = csv.DictReader(csvfile, delimiter=delimiter)
 
-        # print(reader.fieldnames)
+        # Check if the specified columns exist in the file
         if not set(elenco_colonne).issubset(reader.fieldnames):  # type: ignore
             raise ValueError(
                 "One or more specified columns do not exist in the CSV file"
             )
-        return [tuple(row[col] for col in elenco_colonne) for row in reader if row]
+
+        # Filter rows and check for overly long cell values
+        filtered_rows = []
+        for row in reader:
+            # Check if all values in the specified columns are below the length threshold
+            if all(
+                len(row[col]) <= max_cell_length
+                for col in elenco_colonne
+                if row[col]
+            ):
+                filtered_rows.append(tuple(row[col] for col in elenco_colonne))
+
+        return filtered_rows
 
 
 def normalize_columns(data: list) -> list:
@@ -229,7 +249,9 @@ def calculate_macronutrient_similarity(tuple1, tuple2):
         return similarity
 
 
-def find_k_most_similar_pairs_with_indicators(list1, list2, k=1):
+def find_k_most_similar_pairs_with_indicators(
+    list1, list2, k=1, model="paraphrase-MiniLM-L3-v2", use_indicator=False
+):
     """
     Finds the k most similar items from list2 for each item in list1, considering
     both cosine similarity and the macronutrient similarity index.
@@ -243,9 +265,9 @@ def find_k_most_similar_pairs_with_indicators(list1, list2, k=1):
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # Load the model
-    model = SentenceTransformer("paraphrase-MiniLM-L3-v2").to(device)
+    model = SentenceTransformer(model).to(device)
 
-    if len(list1[0]) <= 2 or len(list2[0]) <= 2:
+    if not use_indicator:
         # Ensure each element in list1 and list2 has 4 elements by appending (0, 0, 0)
         list1 = [(item[0], 0, 0, 0, item[-1]) for item in list1]
         list2 = [(item[0], 0, 0, 0, item[-1]) for item in list2]
@@ -259,7 +281,9 @@ def find_k_most_similar_pairs_with_indicators(list1, list2, k=1):
 
     for item in list1:
         # Calculate the embedding for the current name
-        embedding1 = model.encode([item[0]], convert_to_tensor=True, device=device)
+        embedding1 = model.encode(
+            [item[0]], convert_to_tensor=True, device=device
+        )
         # Calculate cosine similarity
         cosine_scores = util.cos_sim(embedding1, embeddings2)[0]
 
@@ -274,11 +298,67 @@ def find_k_most_similar_pairs_with_indicators(list1, list2, k=1):
                 (tuple2[0], total_score, tuple2[-1])
             )  # Name, score, and indicator
 
-        # Sort by score in descending order and take the top k items
-        top_k_scores = sorted(total_scores, key=lambda x: x[1], reverse=True)[:k]
+        # If k<0, take all items
+        if k > 0:
+            # Sort by score in descending order and take the top k items
+            top_k_scores = sorted(
+                total_scores, key=lambda x: x[1], reverse=True
+            )[:k]
+        else:
+            top_k_scores = sorted(
+                total_scores, key=lambda x: x[1], reverse=True
+            )
 
         # Add the k most similar pairs to the result list as tuples with indicators
         for pair in top_k_scores:
             most_similar_tuples.append((pair[1], item[-1], pair[2]))
 
     return most_similar_tuples
+
+
+def read_csv(file_path):
+    """Reads a CSV file and returns a list of tuples."""
+    with open(file_path, mode="r", encoding="utf-8") as file:
+        reader = csv.DictReader(file)
+        data = [(row["off"], row["foodkg"]) for row in reader]
+    return data
+
+
+def evaluate_entity_linking_method(
+    data, model="paraphrase-MiniLM-L3-v2", show_progress=False
+):
+    """
+    Evaluates the accuracy of an entity linking method.
+
+    :param data: list of tuples (off, foodkg)
+    :param method: entity linking method
+    :param transformer: (optional) transformer for the second method
+    :param embeddings: (optional) precomputed embeddings for the second method
+    :return: accuracy as a percentage
+    """
+    # Prepare data for the entity linking method
+    list1 = [(row[0], 0, 0, 0, row[0]) for row in data]  # Off entities
+    list2 = [(row[1], 0, 0, 0, row[1]) for row in data]  # FoodKG entities
+
+    # Apply the method
+    k = 1  # Number of results to consider
+    linked_entities = find_k_most_similar_pairs_with_indicators(
+        list1, list2, k=k, model=model
+    )
+
+    # Evaluate results
+    correct_count = 0
+    for i, (similarity, original_off, linked_foodkg) in enumerate(
+        linked_entities
+    ):
+
+        if show_progress:
+            print(
+                f"Original OFF: {original_off}, Linked FoodKG: {linked_foodkg}, \n  Similarity: {similarity:.2f}, \n  Correct: {linked_foodkg.lower() == data[i][1].lower()}\n"
+            )
+        expected_foodkg = data[i][1]
+        if linked_foodkg.lower().strip() == expected_foodkg.lower().strip():
+            correct_count += 1
+
+    accuracy = (correct_count / len(data)) * 100
+    return accuracy

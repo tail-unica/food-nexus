@@ -1,22 +1,38 @@
 """
-SO CHE QUESTO FILE è SCRITTO MALE, LO STO USANDO PER FARE PROVE
-inoltre si deve ancora definire quale bert usare per il linking
+BETA of the Script for merging the two ontologies
 """
 
-# ruff: noqa: E402
 
-from create_rdf_script import sanitize_for_uri  # type: ignore
-from entity_linking_script import (  # type: ignore
-    find_k_most_similar_pairs_with_indicators,
-    normalize_columns,
-    read_specified_columns,
-)
-from pipeline_script import pipeline_core  # type: ignore
+import os
+import sys
 from rdflib import RDF, Graph, Literal, Namespace, URIRef  # type: ignore
 from rdflib.namespace import OWL  # type: ignore
 
 
-def create_completed_ontology(merge: bool = False) -> None:
+def add_to_sys_path(folder_name):
+    utils_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), folder_name)
+    )
+    sys.path.append(utils_path)
+
+
+add_to_sys_path("entity_linking_file")
+add_to_sys_path("create_rdf_file")
+add_to_sys_path("normalization_pipeline_file")
+
+from entity_linking import (  # type: ignore
+    read_specified_columns,
+    normalize_columns,
+    find_k_most_similar_pairs_with_indicators,
+)
+
+from create_rdf import sanitize_for_uri  # type: ignore
+from pipeline import pipeline_core, pipeline  # type: ignore
+
+
+def create_completed_ontology(
+    merge: bool = False, threshold_value: float = 0.95
+) -> None:
     """
     Function to create the hummus-off ontology with associate recipe and ingredient
     """
@@ -50,8 +66,8 @@ def create_completed_ontology(merge: bool = False) -> None:
     g.add((ontology_iri, OWL.priorVersion, prior_version_iri))
 
     ontology_files = [
-        "./csv_file/ontologia_nostra_hummus.ttl",
-        "./csv_file/ontologia_nostra_off.ttl",
+        "./csv_file/ontology_hummus.ttl",
+        "./csv_file/ontology_off.ttl",
     ]
 
     # Upload the ontologies
@@ -65,6 +81,9 @@ def create_completed_ontology(merge: bool = False) -> None:
 
     # Merge the ontologies
     if merge:
+
+        # Columns of the hummus file to be used for the merging
+        hummus_file_path1 = "./csv_file/pp_recipes.csv"
         hummus_file_path = "./csv_file/pp_recipes_rows.csv"
         hummus_column = [
             "title",
@@ -76,8 +95,12 @@ def create_completed_ontology(merge: bool = False) -> None:
         list_hummus_recipe = read_specified_columns(
             hummus_file_path, hummus_column, delimiter=","
         )
+
+        # Normalize the columns by dividing them by serving size
         list_hummus_recipe = normalize_columns(list_hummus_recipe)
 
+        # Columns of the off file to be used for the merging
+        off_file_path1 = "./csv_file/off.csv"
         off_file_path = "./csv_file/off_rows.csv"
         off_column = [
             "product_name",
@@ -89,12 +112,15 @@ def create_completed_ontology(merge: bool = False) -> None:
             off_file_path, off_column, delimiter="\t"
         )
 
+        # Columns of the foodkg file to be used for the merging
+        food_kg_path1 = "./csv_file/pp_recipes.csv"
         food_kg_path = "./csv_file/pp_recipes_rows.csv"
         foodkg_column = ["ingredient_food_kg_names"]
         list_foodkg_temp = read_specified_columns(
             food_kg_path, foodkg_column, delimiter=","
         )
 
+        # Clean the foodkg column
         list_foodkg = []
         for elementi in list_foodkg_temp:
             for elementi2 in (
@@ -103,6 +129,7 @@ def create_completed_ontology(merge: bool = False) -> None:
                 list_foodkg.append(elementi2)
         list_foodkg = list(set(list_foodkg))
 
+        # Merge hummus and off
         for lst1 in (list_hummus_recipe, list_off_recipe):
             for i, item in enumerate(lst1):
                 if item[0] != "":
@@ -118,23 +145,28 @@ def create_completed_ontology(merge: bool = False) -> None:
                         lst1.pop(i)
 
         most_similar_pairs = find_k_most_similar_pairs_with_indicators(
-            list_hummus_recipe, list_off_recipe, k=5
+            list_hummus_recipe,
+            list_off_recipe,
+            k=5,
+            model="paraphrase-MiniLM-L3-v2",
         )
 
         for score, original_name1, original_name2 in most_similar_pairs:
-            threshold = 0.05
+            threshold = threshold_value
             if float(score) > threshold:
                 hummus_recipes = [
                     recipe
                     for recipe in g.subjects(RDF.type, SCHEMA.Recipe)
-                    if (recipe, SCHEMA.name, Literal(original_name1, lang="en")) in g
+                    if (recipe, SCHEMA.name, Literal(original_name1, lang="en"))
+                    in g
                     and recipe.startswith(str(UNICA) + "Recipe_hummus")
                 ]
 
                 off_recipes = [
                     recipe
                     for recipe in g.subjects(RDF.type, SCHEMA.Recipe)
-                    if (recipe, SCHEMA.name, Literal(original_name2, lang="en")) in g
+                    if (recipe, SCHEMA.name, Literal(original_name2, lang="en"))
+                    in g
                     and recipe.startswith(str(UNICA) + "Recipe_off")
                 ]
 
@@ -157,16 +189,17 @@ def create_completed_ontology(merge: bool = False) -> None:
             list_off_recipe[i] = [item[0], item[-1]]
 
         most_similar_pairs = find_k_most_similar_pairs_with_indicators(
-            list_off_recipe, list_foodkg, k=5
+            list_off_recipe, list_foodkg, k=5, model="paraphrase-MiniLM-L3-v2"
         )
 
         for score, original_name1, original_name2 in most_similar_pairs:
-            threshold = 0.05
+            threshold = threshold_value
             if float(score) > threshold:
                 off_recipes = [
                     recipe
                     for recipe in g.subjects(RDF.type, SCHEMA.Recipe)
-                    if (recipe, SCHEMA.name, Literal(original_name1, lang="en")) in g
+                    if (recipe, SCHEMA.name, Literal(original_name1, lang="en"))
+                    in g
                     and recipe.startswith(str(UNICA) + "Recipe_off")
                 ]
 
@@ -177,7 +210,9 @@ def create_completed_ontology(merge: bool = False) -> None:
                         recipe,
                         SCHEMA.identifier,
                         Literal(
-                            sanitize_for_uri(original_name2.replace(" ", "_").lower())
+                            sanitize_for_uri(
+                                original_name2.replace(" ", "_").lower()
+                            )
                         ),
                     )
                     in g

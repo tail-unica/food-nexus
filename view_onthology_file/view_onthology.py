@@ -6,6 +6,7 @@ of the ontology
 import networkx as nx  # type: ignore
 import rdflib  # type: ignore
 
+
 # Definition of edge colors representing relationships in the graph
 edge_colors = {
     "memberOf": "#00FF00",  # green
