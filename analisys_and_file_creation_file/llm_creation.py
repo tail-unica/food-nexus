@@ -2,7 +2,7 @@
 File containing scripts and data necessary for the creation of LLM models
 """
 
-import ollama  # type: ignore
+import ollama
 
 
 def create_food_expert() -> None:

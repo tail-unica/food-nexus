@@ -5,8 +5,10 @@ BETA of the Script for merging the two ontologies
 
 import os
 import sys
-from rdflib import RDF, Graph, Literal, Namespace, URIRef  # type: ignore
-from rdflib.namespace import OWL  # type: ignore
+from rdflib import RDF, Graph, Literal, Namespace, URIRef
+from rdflib.namespace import OWL
+import ollama
+import csv
 
 
 def add_to_sys_path(folder_name):
@@ -30,8 +32,145 @@ from create_rdf import sanitize_for_uri  # type: ignore
 from pipeline import pipeline_core, pipeline  # type: ignore
 
 
+def add_user_attributes(
+    input_file,
+    output_file,
+    column_name,
+    new_column_names,
+    delimiter=",",
+    delimiter2=",",
+    show_progress=True,
+) -> None:
+
+    with (
+        open(input_file, "r", encoding="utf-8") as infile,
+        open(output_file, "w", encoding="utf-8", newline="") as outfile,
+    ):
+        reader = csv.DictReader(infile, delimiter=delimiter)
+        fieldnames = reader.fieldnames
+
+        if fieldnames is None:
+            raise ValueError("Input file is empty or invalid.")
+
+        if column_name not in fieldnames:
+            raise ValueError(
+                f"Column '{column_name}' not found in the input file."
+            )
+
+        # Add the new columns to the output file
+        fieldnames.extend(new_column_names)  # type: ignore
+
+        writer = csv.DictWriter(
+            outfile, fieldnames=fieldnames, delimiter=delimiter2
+        )
+        writer.writeheader()
+
+        for row in reader:
+            extracted_attributes_dictionary = {}
+            # Initialize new columns with empty values
+            for column in new_column_names:
+                row[column] = ""
+
+            if row[column_name] != "":
+                original_line = row[column_name]
+
+                # Call the model
+                extracted_attributes_string = ollama.generate(
+                    model="attribute_extractor", prompt=original_line
+                )
+                extracted_attributes_string = extracted_attributes_string[
+                    "response"
+                ].replace("####### ", "")
+
+                # Parse attributes
+                if show_progress:
+                    print(extracted_attributes_string)
+
+                for attribute in extracted_attributes_string.split(","):
+                    if len(attribute.split(":")) > 1:
+                        attribute_name, attribute_value = attribute.split(":")
+                        attribute_name = attribute_name.strip()
+                        attribute_value = attribute_value.strip()
+                        # print(attribute_name, attribute_value)
+                        if attribute_name.strip() in [
+                            "weight",
+                            "height",
+                            "gender",
+                            "age",
+                        ]:
+                            if (
+                                attribute_name
+                                not in extracted_attributes_dictionary
+                            ):
+                                extracted_attributes_dictionary[
+                                    attribute_name
+                                ] = ""
+                            if (
+                                extracted_attributes_dictionary[attribute_name]
+                                == ""
+                            ):
+                                extracted_attributes_dictionary[
+                                    attribute_name
+                                ] = attribute_value
+                            else:
+                                extracted_attributes_dictionary[
+                                    attribute_name
+                                ] = (
+                                    extracted_attributes_dictionary[
+                                        attribute_name
+                                    ]
+                                    + ";"
+                                    + attribute_value
+                                )
+                        elif attribute_name.strip() in [
+                            "physical activity category",
+                            "religious constraint",
+                            "food allergies or intolerances",
+                            "dietary preference",
+                        ]:
+                            if (
+                                "user_constraints"
+                                not in extracted_attributes_dictionary
+                            ):
+                                extracted_attributes_dictionary[
+                                    "user_constraints"
+                                ] = ""
+                            if (
+                                extracted_attributes_dictionary[
+                                    "user_constraints"
+                                ]
+                                == ""
+                            ):
+                                extracted_attributes_dictionary[
+                                    "user_constraints"
+                                ] = (attribute_name + ": " + attribute_value)
+                            else:
+                                extracted_attributes_dictionary[
+                                    "user_constraints"
+                                ] = (
+                                    extracted_attributes_dictionary[
+                                        "user_constraints"
+                                    ]
+                                    + "; "
+                                    + attribute_name
+                                    + ": "
+                                    + attribute_value
+                                )
+                    else:
+                        attribute = ""
+
+            # Add extracted attributes to the row
+            for column in new_column_names:
+                if column in extracted_attributes_dictionary:
+                    row[column] = extracted_attributes_dictionary[column]
+
+            writer.writerow(row)
+
+    print("Normalization complete")
+
+
 def create_completed_ontology(
-    merge: bool = False, threshold_value: float = 0.95
+    merge: bool = False, threshold_value: float = 0.85
 ) -> None:
     """
     Function to create the hummus-off ontology with associate recipe and ingredient
@@ -76,6 +215,7 @@ def create_completed_ontology(
         temp_graph.namespace_manager.bind("unica", UNICA)
         temp_graph.namespace_manager.bind("schema", SCHEMA)
 
+        # Upload the ontologies data in the new graph
         temp_graph.parse(file_path, format="turtle")
         g += temp_graph
 
@@ -83,83 +223,69 @@ def create_completed_ontology(
     if merge:
 
         # Columns of the hummus file to be used for the merging
-        hummus_file_path1 = "./csv_file/pp_recipes.csv"
-        hummus_file_path = "./csv_file/pp_recipes_rows.csv"
+        hummus_file_path = "./csv_file/pp_recipes_normalized_by_pipeline.csv"
         hummus_column = [
             "title",
             "totalFat [g]",
             "totalCarbohydrate [g]",
             "protein [g]",
             "servingSize [g]",
+            "title_normalized",
         ]
         list_hummus_recipe = read_specified_columns(
             hummus_file_path, hummus_column, delimiter=","
         )
+        # print(list_hummus_recipe[0])
 
         # Normalize the columns by dividing them by serving size
         list_hummus_recipe = normalize_columns(list_hummus_recipe)
 
+        # print(list_hummus_recipe[0])
+
         # Columns of the off file to be used for the merging
-        off_file_path1 = "./csv_file/off.csv"
-        off_file_path = "./csv_file/off_rows.csv"
+        off_file_path = "./csv_file/off_normalized_by_pipeline.csv"
         off_column = [
             "product_name",
             "fat_100g",
             "carbohydrates_100g",
             "proteins_100g",
+            "product_name_normalized",
         ]
         list_off_recipe = read_specified_columns(
             off_file_path, off_column, delimiter="\t"
         )
 
+        # print(list_off_recipe[0])
+
         # Columns of the foodkg file to be used for the merging
-        food_kg_path1 = "./csv_file/pp_recipes.csv"
-        food_kg_path = "./csv_file/pp_recipes_rows.csv"
-        foodkg_column = ["ingredient_food_kg_names"]
-        list_foodkg_temp = read_specified_columns(
+        food_kg_path = (
+            "./csv_file/ingredients_food_kg_normalizzed_by_pipeline.csv"
+        )
+        foodkg_column = ["ingredient", "ingredient_normalized"]
+        list_foodkg = read_specified_columns(
             food_kg_path, foodkg_column, delimiter=","
         )
 
-        # Clean the foodkg column
-        list_foodkg = []
-        for elementi in list_foodkg_temp:
-            for elementi2 in (
-                str(elementi).strip('("[]"),').replace("'", "").split(", ")
-            ):
-                list_foodkg.append(elementi2)
-        list_foodkg = list(set(list_foodkg))
+        # print(list_foodkg[0])
 
-        # Merge hummus and off
-        for lst1 in (list_hummus_recipe, list_off_recipe):
-            for i, item in enumerate(lst1):
-                if item[0] != "":
-                    temp_item = list(item)
-                    normalized_name = pipeline_core(
-                        line=item[0], show_all=False, show_something=False
-                    )
-                    if normalized_name != "":
-                        temp_item.insert(0, normalized_name)
-                        temp_item.append(temp_item.pop(1))
-                        lst1[i] = tuple(temp_item)
-                    else:
-                        lst1.pop(i)
-
+        ### Merge hummus and off ###
         most_similar_pairs = find_k_most_similar_pairs_with_indicators(
             list_hummus_recipe,
             list_off_recipe,
             k=5,
             model="paraphrase-MiniLM-L3-v2",
+            use_indicator=True,
         )
 
         for score, original_name1, original_name2 in most_similar_pairs:
-            threshold = threshold_value
-            if float(score) > threshold:
+            if float(score) > threshold_value:
+
                 hummus_recipes = [
                     recipe
                     for recipe in g.subjects(RDF.type, SCHEMA.Recipe)
                     if (recipe, SCHEMA.name, Literal(original_name1, lang="en"))
                     in g
-                    and recipe.startswith(str(UNICA) + "Recipe_hummus")
+                    and recipe.startswith(str(UNICA) + "Recipe_hummus")  # type: ignore
                 ]
 
                 off_recipes = [
@@ -167,7 +293,7 @@ def create_completed_ontology(
                     for recipe in g.subjects(RDF.type, SCHEMA.Recipe)
                     if (recipe, SCHEMA.name, Literal(original_name2, lang="en"))
                     in g
-                    and recipe.startswith(str(UNICA) + "Recipe_off")
+                    and recipe.startswith(str(UNICA) + "Recipe_off")  # type: ignore
                 ]
 
                 for hummus_recipe in hummus_recipes:
@@ -175,32 +301,28 @@ def create_completed_ontology(
                         g.add((hummus_recipe, SCHEMA.sameAs, off_recipe))
                         g.add((off_recipe, SCHEMA.sameAs, hummus_recipe))
 
-        for i, item in enumerate(list_foodkg):
-            if item != "":
-                normalized_name = pipeline_core(
-                    line=item, show_all=False, show_something=False
-                )
-                if normalized_name != "":
-                    list_foodkg[i] = [normalized_name, item]
-                else:
-                    list_foodkg.pop(i)
-
+        ### Merge foodkg and off ###
         for i, item in enumerate(list_off_recipe):
             list_off_recipe[i] = [item[0], item[-1]]
 
         most_similar_pairs = find_k_most_similar_pairs_with_indicators(
-            list_off_recipe, list_foodkg, k=5, model="paraphrase-MiniLM-L3-v2"
+            list_off_recipe,
+            list_foodkg,
+            k=5,
+            model="paraphrase-MiniLM-L3-v2",
+            use_indicator=False,
         )
 
         for score, original_name1, original_name2 in most_similar_pairs:
-            threshold = threshold_value
-            if float(score) > threshold:
+
+            if float(score) > threshold_value:
+
                 off_recipes = [
                     recipe
                     for recipe in g.subjects(RDF.type, SCHEMA.Recipe)
                     if (recipe, SCHEMA.name, Literal(original_name1, lang="en"))
                     in g
-                    and recipe.startswith(str(UNICA) + "Recipe_off")
+                    and recipe.startswith(str(UNICA) + "Recipe_off")  # type: ignore
                 ]
 
                 foodkg_recipes = [
@@ -216,8 +338,9 @@ def create_completed_ontology(
                         ),
                     )
                     in g
-                    and recipe.startswith(str(UNICA) + "Recipe_Ingredient")
+                    and recipe.startswith(str(UNICA) + "Recipe_Ingredient")  # type: ignore
                 ]
+
                 for foodkg_recipe in foodkg_recipes:
                     for off_recipe in off_recipes:
                         g.add((foodkg_recipe, SCHEMA.sameAs, off_recipe))

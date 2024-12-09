@@ -6,11 +6,12 @@ using an approach with BERT and one similar to the Bari approach
 import csv
 import math
 import numpy as np
-import torch  # type: ignore
-from sentence_transformers import SentenceTransformer, util  # type: ignore
+import torch
+from sentence_transformers import SentenceTransformer, util
 from tqdm import tqdm
-from transformers import AutoModel, AutoTokenizer  # type: ignore
 from sklearn.metrics.pairwise import cosine_similarity
+from transformers import AutoModel, AutoTokenizer
+import gc
 
 
 def find_most_similar_pairs(list1, list2):
@@ -36,7 +37,7 @@ def find_most_similar_pairs(list1, list2):
         cosine_scores = util.cos_sim(embedding1, embeddings2)[0]
         # Find the index of the element with the maximum similarity
         max_index = cosine_scores.argmax().item()
-        max_score = cosine_scores[max_index].item()
+        max_score = cosine_scores[max_index].item()  # type: ignore
         # Add the pair with the maximum similarity to the result list
         most_similar_pairs.append((item, list2[max_index], max_score))
 
@@ -183,7 +184,7 @@ def normalize_columns(data: list) -> list:
     Normalize the values of the specified columns (second, third, and fourth) based on the value of the fifth column.
 
     :param data: List of tuples created by the original script.
-                 Each tuple contains the values for the columns: [title, col2, col3, col4, servingSize].
+                 Each tuple contains the values for the columns: [title, col2, col3, col4, servingSize, title_normalized].
     :return: A new list containing the title and normalized columns.
     """
     normalized_data = []
@@ -191,16 +192,23 @@ def normalize_columns(data: list) -> list:
     for row in data:
         # First column: title
         title = row[0]
+        normalized_title = row[5]
         try:
             # Convert serving size
             serving_size = float(row[4]) if row[4] else 0
             if serving_size == 0:
-                normalized_row = [title] + [0 for i in range(1, 5)]
+                normalized_row = (
+                    [title] + [0 for i in range(1, 5)] + [normalized_title]
+                )
             else:
-                normalized_row = [title] + [
-                    float(row[i]) * 100 / serving_size if row[i] else 0
-                    for i in range(1, 4)
-                ]
+                normalized_row = (
+                    [title]
+                    + [
+                        float(row[i]) * 100 / serving_size if row[i] else 0
+                        for i in range(1, 4)
+                    ]
+                    + [normalized_title]
+                )
             normalized_data.append(normalized_row)
 
         except ValueError as e:
@@ -265,7 +273,7 @@ def find_k_most_similar_pairs_with_indicators(
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # Load the model
-    model = SentenceTransformer(model).to(device)
+    model = SentenceTransformer(model, trust_remote_code=True).to(device)
 
     if not use_indicator:
         # Ensure each element in list1 and list2 has 4 elements by appending (0, 0, 0)
@@ -311,7 +319,13 @@ def find_k_most_similar_pairs_with_indicators(
 
         # Add the k most similar pairs to the result list as tuples with indicators
         for pair in top_k_scores:
-            most_similar_tuples.append((pair[1], item[-1], pair[2]))
+            most_similar_tuples.append(
+                (
+                    pair[1],
+                    item[0],
+                    pair[0],
+                )
+            )
 
     return most_similar_tuples
 
@@ -325,7 +339,10 @@ def read_csv(file_path):
 
 
 def evaluate_entity_linking_method(
-    data, model="paraphrase-MiniLM-L3-v2", show_progress=False
+    data,
+    model="paraphrase-MiniLM-L3-v2",
+    show_progress=False,
+    threshold_list=[0.5],
 ):
     """
     Evaluates the accuracy of an entity linking method.
@@ -347,18 +364,54 @@ def evaluate_entity_linking_method(
     )
 
     # Evaluate results
-    correct_count = 0
-    for i, (similarity, original_off, linked_foodkg) in enumerate(
-        linked_entities
-    ):
+    accuracy_list = []
+    considered_list = []
+    accuracy_considered_list = []
+    for j, threshold in enumerate(threshold_list):
+        correct_count = 0
+        correct_considered_count = 0
+        considered_count = 0
+        for i, (similarity, original_off, linked_foodkg) in enumerate(
+            linked_entities
+        ):
+            if similarity > threshold:
 
-        if show_progress:
-            print(
-                f"Original OFF: {original_off}, Linked FoodKG: {linked_foodkg}, \n  Similarity: {similarity:.2f}, \n  Correct: {linked_foodkg.lower() == data[i][1].lower()}\n"
-            )
-        expected_foodkg = data[i][1]
-        if linked_foodkg.lower().strip() == expected_foodkg.lower().strip():
-            correct_count += 1
+                considered_count += 1
+            if show_progress:
+                print(
+                    f"Original OFF: {original_off}, Linked FoodKG: {linked_foodkg}, \n  Similarity: {similarity:.2f}, \n  Correct: {linked_foodkg.lower() == data[i][1].lower()}\n"
+                )
+            expected_foodkg = data[i][1]
+            if linked_foodkg.lower().strip() == expected_foodkg.lower().strip():
+                correct_count += 1
+                if similarity > threshold:
+                    correct_considered_count += 1
 
-    accuracy = (correct_count / len(data)) * 100
-    return accuracy
+        accuracy = (correct_count / len(data)) * 100
+        accuracy_considered = (
+            correct_considered_count / considered_count
+        ) * 100
+        accuracy_list.append(accuracy)
+        considered_list.append(considered_count)
+        accuracy_considered_list.append(accuracy_considered)
+
+    tokenizer = AutoTokenizer.from_pretrained(model)
+    model1 = AutoModel.from_pretrained(model)
+
+    vocab_size = tokenizer.vocab_size
+    number_of_parameters = model1.num_parameters()
+
+    del model1
+    del tokenizer
+    gc.collect()
+    torch.cuda.empty_cache()
+
+    return (
+        [model for i in range(len(threshold_list))],
+        [vocab_size for i in range(len(threshold_list))],
+        [number_of_parameters for i in range(len(threshold_list))],
+        accuracy_list,
+        accuracy_considered_list,
+        considered_list,
+        threshold_list,
+    )

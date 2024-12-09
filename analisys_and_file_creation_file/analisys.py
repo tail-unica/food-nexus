@@ -4,8 +4,8 @@ File containing scripts and data necessary for analysis of CSV files and ontolog
 
 import csv
 from collections import Counter
-import ollama  # type: ignore
-import pandas as pd  # type: ignore
+import ollama
+import pandas as pd
 
 
 def analisys_quantities(input_file, output_file, n) -> None:

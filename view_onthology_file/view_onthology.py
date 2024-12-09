@@ -3,8 +3,8 @@ File containing scripts and data required for the interactive visualization
 of the ontology
 """
 
-import networkx as nx  # type: ignore
-import rdflib  # type: ignore
+import networkx as nx
+import rdflib
 
 
 # Definition of edge colors representing relationships in the graph

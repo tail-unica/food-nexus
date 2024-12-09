@@ -9,13 +9,13 @@ import re
 import string
 import unicodedata
 
-import nltk  # type: ignore
-import ollama  # type: ignore
-import pint  # type: ignore
-import torch  # type: ignore
-from nltk.corpus import stopwords  # type: ignore
-from nltk.stem import WordNetLemmatizer  # type: ignore
-from spellchecker import SpellChecker  # type: ignore
+import nltk
+import ollama
+import pint
+import torch
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+from spellchecker import SpellChecker
 
 
 # Device on which operations will be performed
@@ -44,10 +44,10 @@ def load_json_file(file_path):
 
 
 # Path of json files
-suffixes_and_prefixes_file = "data/suffixes_and_prefixes.json"
-abbreviations_file = "data/abbreviations.json"
-unit_conversion_map_file = "data/unit_conversion_map.json"
-units_to_remove_file = "data/units_to_remove.json"
+suffixes_and_prefixes_file = "config_file/suffixes_and_prefixes.json"
+abbreviations_file = "config_file/abbreviations.json"
+unit_conversion_map_file = "config_file/unit_conversion_map.json"
+units_to_remove_file = "config_file/units_to_remove.json"
 
 # List of suffixes and prefixes to remove
 suffixes_and_prefixes = load_json_file(suffixes_and_prefixes_file)
@@ -312,9 +312,9 @@ def normalize_quantities(text: str) -> str:
                 # Replace the original with the normalized quantity
                 text = text.replace(original_quantity, normalized_text)
             except (
-                ureg.UndefinedUnitError,
-                ureg.DimensionalityError,
-                ValueError,
+                # ureg.UndefinedUnitError,
+                # ureg.DimensionalityError,
+                ValueError
             ):
                 # If it's not a valid quantity or there's an incompatibility, continue without modification
                 continue
@@ -527,10 +527,14 @@ def pipeline_core(line, show_all=False, show_something=False) -> str:
     return line
 
 
+import csv
+
+
 def pipeline(
     input_file,
     output_file,
     column_name,
+    new_column_name,
     delimiter=",",
     show_all=False,
     show_something=False,
@@ -541,6 +545,7 @@ def pipeline(
     :param input_file: path of the file to normalize
     :param output_file: path of the output file
     :param column_name: name of the column to normalize
+    :param new_column_name: name of the new column for normalized values
     :param delimiter: delimiter used in the input CSV file (default is ',')
     :param show_all: if True, shows all intermediate normalization steps
     :param show_something: if True, shows some normalization steps
@@ -561,6 +566,9 @@ def pipeline(
                 f"Column '{column_name}' not found in the input file."
             )
 
+        # Add the new column to the output file
+        fieldnames.append(new_column_name)
+
         writer = csv.DictWriter(
             outfile, fieldnames=fieldnames, delimiter=delimiter
         )
@@ -573,7 +581,8 @@ def pipeline(
                 show_something=show_something,
                 line=original_line,
             )
-            row[column_name] = transformed_line
+            # Write the normalized value in the new column
+            row[new_column_name] = transformed_line
             writer.writerow(row)
 
     print("Normalization complete")

@@ -7,9 +7,9 @@ import csv
 import re
 import random
 
-import ollama  # type: ignore
-import pandas as pd  # type: ignore
-from nltk import pos_tag, word_tokenize  # type: ignore
+import ollama
+import pandas as pd
+from nltk import pos_tag, word_tokenize
 
 
 # Script to extract recipes from the CSV
