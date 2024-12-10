@@ -265,7 +265,8 @@ def create_namespace(namespace_completo=True) -> None:
     print("namespace created successfully")
 
 
-def convert_hummus_in_rdf() -> None:
+def convert_hummus_in_rdf(use_infered_attributes_description = False, 
+                          use_infered_attributes_review = False) -> None:
     """
     Function to convert hummus data into RDF format
     """
@@ -296,15 +297,22 @@ def convert_hummus_in_rdf() -> None:
     g.add((ontology_iri, OWL.priorVersion, prior_version_iri))
 
     # input file
-    # file_ricette = "../csv_file/pp_recipes.csv"
-    # file_review = "../csv_file/pp_reviews.csv"
-    # file_utenti = "../csv_file/pp_members_normalized.csv"
+    file_ricette = "../csv_file/pp_recipes.csv"
 
-    file_ricette = "../csv_file/pp_recipes_rows.csv"
-    file_review = "../csv_file/pp_reviews_rows.csv"
-    file_utenti = "../csv_file/pp_members_normalized.csv"
+    if use_infered_attributes_description:
+        file_utenti = "../csv_file/pp_members_normalized.csv"
+    else:
+        file_utenti = "../csv_file/pp_members.csv"
 
-    file_output = "../csv_file/ontology_hummus.ttl"
+    if use_infered_attributes_review:
+        file_review = "../csv_file/pp_reviews_normalized.csv"
+    else:   
+        file_review = "../csv_file/pp_reviews.csv"
+
+    if use_infered_attributes_review or use_infered_attributes_description:
+        file_output = "../csv_file/ontology_hummus.ttl"
+    else:
+        file_output = "../csv_file/ontology_hummus_not_infered.ttl"
 
     # Upload the CSV
     df_ricette = pd.read_csv(file_ricette, on_bad_lines="skip")
@@ -355,78 +363,79 @@ def convert_hummus_in_rdf() -> None:
                         Literal(row["member_name"], lang="en"),
                     )
                 )
-            if pd.notna(row["age"]):
-                if isinstance(row["age"], int):
+            if use_infered_attributes_description:
+                if pd.notna(row["age"]):
+                    if isinstance(row["age"], int):
+                        g.add(
+                            (
+                                group_id,
+                                SCHEMA.age,
+                                Literal(row["age"], datatype=XSD.integer),
+                            )
+                        )
+                    else:
+                        g.add(
+                            (
+                                group_id,
+                                SCHEMA.typicalAgeRange,
+                                Literal(row["age"], datatype=XSD.string),
+                            )
+                        )
+                if pd.notna(row["gender"]):
                     g.add(
                         (
                             group_id,
-                            SCHEMA.age,
-                            Literal(row["age"], datatype=XSD.integer),
+                            SCHEMA.gender,
+                            Literal(row["gender"], datatype=XSD.string),
                         )
                     )
-                else:
+                if pd.notna(row["weight"]):
                     g.add(
                         (
                             group_id,
-                            SCHEMA.typicalAgeRange,
-                            Literal(row["age"], datatype=XSD.string),
+                            SCHEMA.weight,
+                            Literal(row["weight"], datatype=XSD.float),
                         )
                     )
-            if pd.notna(row["gender"]):
-                g.add(
-                    (
-                        group_id,
-                        SCHEMA.gender,
-                        Literal(row["gender"], datatype=XSD.string),
+                if pd.notna(row["height"]):
+                    g.add(
+                        (
+                            group_id,
+                            SCHEMA.height,
+                            Literal(row["height"], datatype=XSD.float),
+                        )
                     )
-                )
-            if pd.notna(row["weight"]):
-                g.add(
-                    (
-                        group_id,
-                        SCHEMA.weight,
-                        Literal(row["weight"], datatype=XSD.float),
-                    )
-                )
-            if pd.notna(row["height"]):
-                g.add(
-                    (
-                        group_id,
-                        SCHEMA.height,
-                        Literal(row["height"], datatype=XSD.float),
-                    )
-                )
 
-            if pd.notna(row["user_constraints"]):
-                contraint_list = row["user_constraints"].split(";")
-                for contraint in contraint_list:
-                    constraint_name, constraint_value = contraint.split(":")
-                    tag_id = URIRef(
-                        UNICA[
-                            f"Constraint_{sanitize_for_uri(constraint_name).strip()}_{sanitize_for_uri(constraint_value).strip()}"
-                        ]
-                    )
-                    if tag_id not in constraint_count:
-                        constraint_count[tag_id] = 1
-                        g.add((tag_id, RDF.type, UNICA.UserConstraint))
-                        g.add(
-                            (
-                                tag_id,
-                                SCHEMA.constraintName,
-                                Literal(constraint_name, lang="en"),
-                            )
+                if pd.notna(row["user_constraints"]):
+                    contraint_list = row["user_constraints"].split(";")
+                    for contraint in contraint_list:
+                        constraint_name, constraint_value = contraint.split(":")
+                        tag_id = URIRef(
+                            UNICA[
+                                f"Constraint_{sanitize_for_uri(constraint_name).strip()}_{sanitize_for_uri(constraint_value).strip()}"
+                            ]
                         )
-                        g.add(
-                            (
-                                tag_id,
-                                SCHEMA.constraintDescription,
-                                Literal(
-                                    f"is a user constraint about {constraint_name}",
-                                    lang="en",
-                                ),
+                        if tag_id not in constraint_count:
+                            constraint_count[tag_id] = 1
+                            g.add((tag_id, RDF.type, UNICA.UserConstraint))
+                            g.add(
+                                (
+                                    tag_id,
+                                    SCHEMA.constraintName,
+                                    Literal(constraint_name, lang="en"),
+                                )
                             )
-                        )
-                    g.add((group_id, SCHEMA.hasConstraint, tag_id))
+                            g.add(
+                                (
+                                    tag_id,
+                                    SCHEMA.constraintDescription,
+                                    Literal(
+                                        f"is a user constraint about {constraint_name}",
+                                        lang="en",
+                                    ),
+                                )
+                            )
+                        g.add((group_id, SCHEMA.hasConstraint, tag_id))
 
     # Create the entity Recipe
     for idx, row in df_ricette.iterrows():
@@ -515,7 +524,7 @@ def convert_hummus_in_rdf() -> None:
                         g.add((indicator_id, SCHEMA.unitText, Literal(unit)))
 
                     stringa = str(row[csv_column])
-                    if col in qualitatives_indicators_hummus:
+                    if col in qualitatives_indicators_hummus and row["servingSize [g]"] != 0 and row["servingSize [g]"] != "": 
                         quantità = (
                             float(stringa) / float(row["servingSize [g]"]) * 100
                         )
@@ -583,7 +592,7 @@ def convert_hummus_in_rdf() -> None:
                             ingredient_id_for_recipe,
                         )
                     )
-                    # g.add((ingredient_id_for_recipe, SCHEMA.isPartOf, recipe_id))
+
 
     # Create UserReview entities and relationships
     for idx, row in df_review.iterrows():
@@ -621,17 +630,99 @@ def convert_hummus_in_rdf() -> None:
                     )
                 )
             if pd.notna(row["member_id"]):
-                g.add(
-                    (
-                        URIRef(
+                group_id =URIRef(
                             UNICA[
                                 f"UserGroup_{sanitize_for_uri(row['member_id'])}"
                             ]
-                        ),
+                        )
+                g.add(
+                    (
+                        group_id,
                         SCHEMA.publishesReview,
                         review_id,
                     )
                 )
+            
+
+            if use_infered_attributes_review and pd.notna(row["member_id"]):
+                group_id =URIRef(
+                            UNICA[
+                                f"UserGroup_{sanitize_for_uri(row['member_id'])}"
+                            ]
+                        )
+                if pd.notna(row["age"]):
+                    if isinstance(row["age"], int):
+                        g.add(
+                            (
+                                group_id,
+                                SCHEMA.age,
+                                Literal(row["age"], datatype=XSD.integer),
+                            )
+                        )
+                    else:
+                        g.add(
+                            (
+                                group_id,
+                                SCHEMA.typicalAgeRange,
+                                Literal(row["age"], datatype=XSD.string),
+                            )
+                        )
+                if pd.notna(row["gender"]):
+                    g.add(
+                        (
+                            group_id,
+                            SCHEMA.gender,
+                            Literal(row["gender"], datatype=XSD.string),
+                        )
+                    )
+                if pd.notna(row["weight"]):
+                    g.add(
+                        (
+                            group_id,
+                            SCHEMA.weight,
+                            Literal(row["weight"], datatype=XSD.float),
+                        )
+                    )
+                if pd.notna(row["height"]):
+                    g.add(
+                        (
+                            group_id,
+                            SCHEMA.height,
+                            Literal(row["height"], datatype=XSD.float),
+                        )
+                    )
+
+                if pd.notna(row["user_constraints"]):
+                    contraint_list = row["user_constraints"].split(";")
+                    for contraint in contraint_list:
+                        constraint_name, constraint_value = contraint.split(":")
+                        tag_id = URIRef(
+                            UNICA[
+                                f"Constraint_{sanitize_for_uri(constraint_name).strip()}_{sanitize_for_uri(constraint_value).strip()}"
+                            ]
+                        )
+                        if tag_id not in constraint_count:
+                            constraint_count[tag_id] = 1
+                            g.add((tag_id, RDF.type, UNICA.UserConstraint))
+                            g.add(
+                                (
+                                    tag_id,
+                                    SCHEMA.constraintName,
+                                    Literal(constraint_name, lang="en"),
+                                )
+                            )
+                            g.add(
+                                (
+                                    tag_id,
+                                    SCHEMA.constraintDescription,
+                                    Literal(
+                                        f"is a user constraint about {constraint_name}",
+                                        lang="en",
+                                    ),
+                                )
+                            )
+                        g.add((group_id, SCHEMA.hasConstraint, tag_id))
+
 
     # Save the RDF graph in Turtle format
     g.serialize(destination=file_output, format="turtle")

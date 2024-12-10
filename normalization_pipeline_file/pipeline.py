@@ -15,7 +15,7 @@ import pint
 import torch
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
-from spellchecker import SpellChecker
+#from spellchecker import SpellChecker
 
 
 # Device on which operations will be performed
@@ -24,7 +24,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Initialize the lemmatizer, spell checker, and unit registry
 lemmatizer = WordNetLemmatizer()
-spell_checker = SpellChecker()
+#spell_checker = SpellChecker()
 ureg = pint.UnitRegistry()
 
 # Custom definitions of non-standard units

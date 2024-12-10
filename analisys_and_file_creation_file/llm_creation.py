@@ -70,6 +70,7 @@ def create_attribute_extractor() -> None:
     - If no attributes can be extracted, return the string "none" after "#######". \
     - Do not include any attribute if there is no information to infer or extract. \
     - Do not provide any comments, explanations, or reasoning after the extracted attributes. \
+    - If no attributes can be extracted do not write "none specified", just write "none". \
     \
     ### Examples: \
     - "" -> ####### none \

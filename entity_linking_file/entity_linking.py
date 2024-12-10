@@ -258,7 +258,7 @@ def calculate_macronutrient_similarity(tuple1, tuple2):
 
 
 def find_k_most_similar_pairs_with_indicators(
-    list1, list2, k=1, model="paraphrase-MiniLM-L3-v2", use_indicator=False
+    list1, list2, k=1, model="paraphrase-MiniLM-L3-v2", use_indicator=False, batch_size=2
 ):
     """
     Finds the k most similar items from list2 for each item in list1, considering
@@ -284,13 +284,13 @@ def find_k_most_similar_pairs_with_indicators(
     names2 = [t[0] for t in list2]
 
     # Calculate embeddings for list2
-    embeddings2 = model.encode(names2, convert_to_tensor=True, device=device)
+    embeddings2 = model.encode(names2, convert_to_tensor=True, device=device, batch_size=batch_size)
     most_similar_tuples = []
 
     for item in list1:
         # Calculate the embedding for the current name
         embedding1 = model.encode(
-            [item[0]], convert_to_tensor=True, device=device
+            [item[0]], convert_to_tensor=True, device=device, batch_size=batch_size
         )
         # Calculate cosine similarity
         cosine_scores = util.cos_sim(embedding1, embeddings2)[0]
@@ -388,14 +388,17 @@ def evaluate_entity_linking_method(
                     correct_considered_count += 1
 
         accuracy = (correct_count / len(data)) * 100
-        accuracy_considered = (
-            correct_considered_count / considered_count
-        ) * 100
+        if considered_count != 0:
+            accuracy_considered = (
+                correct_considered_count / considered_count
+            ) * 100
+        else:
+            accuracy_considered = 0
         accuracy_list.append(accuracy)
         considered_list.append(considered_count)
         accuracy_considered_list.append(accuracy_considered)
 
-    tokenizer = AutoTokenizer.from_pretrained(model)
+    tokenizer =  AutoTokenizer.from_pretrained(model)
     model1 = AutoModel.from_pretrained(model)
 
     vocab_size = tokenizer.vocab_size
