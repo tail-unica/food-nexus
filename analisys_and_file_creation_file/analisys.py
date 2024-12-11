@@ -27,7 +27,7 @@ def analisys_quantities(input_file, output_file, n) -> None:
     for chunk in pd.read_csv(
         input_file,
         sep="\t",
-        chunksize=10000,
+        chunksize=120000,
         usecols=["quantity"],
         on_bad_lines="skip",
         low_memory=False,
@@ -125,7 +125,7 @@ def count_products_by_brand_threshold(csv_file, threshold_range) -> None:
 
 def translate_to_english_test(text: str) -> str:
     """
-    Function that translates a string into English
+    Function that translates a string into English used for testing the model
 
     :param text: text to be translated
     :return: response from the translation model
@@ -138,6 +138,10 @@ def translate_to_english_test(text: str) -> str:
 def test_filtering_brand_accuracy(file) -> None:
     """
     Function to test the brand filtering model
+
+    :param file: path to the CSV file to read
+    with brand_name and expected_response with
+    :return: None
     """
     results = []
     correct_count = 0
@@ -201,23 +205,24 @@ def test_attribute_extraction(file) -> None:
             print("Extracted attributes: \n", response["response"])
 
 
-# Function to create a bar plot for populated counts of specified columns
-def plot_populated_counts(csv_file, output_dir, columns):
+def plot_populated_counts(csv_file, output_dir, columns) -> None:
     """
     Creates a bar plot showing how many rows are populated for specified columns in a CSV file.
 
-    Args:
-        csv_file (str): Path to the CSV file.
-        output_dir (str): Directory to save the plot.
-        columns (list): List of columns to analyze.
+    :param csv_file (str): Path to the CSV file.
+    :param output_dir (str): Directory to save the plot.
+    :param columns (list): List of columns to analyze.
+    :return: None
     """
-    # Load the CSV file
+
     df = pd.read_csv(csv_file, delimiter="\t", on_bad_lines="skip")
 
     # Ensure the specified columns exist in the DataFrame
     missing_columns = [col for col in columns if col not in df.columns]
     if missing_columns:
-        print(f"Warning: The following columns are not in the CSV and will be ignored: {missing_columns}")
+        print(
+            f"Warning: The following columns are not in the CSV and will be ignored: {missing_columns}"
+        )
         columns = [col for col in columns if col in df.columns]
 
     # Count the number of non-null values for each specified column
@@ -228,11 +233,13 @@ def plot_populated_counts(csv_file, output_dir, columns):
 
     # Plot the counts as a bar chart
     plt.figure(figsize=(12, 6))
-    sns.barplot(x=populated_counts.index, y=populated_counts.values, palette="viridis")
+    sns.barplot(
+        x=populated_counts.index, y=populated_counts.values, palette="viridis"
+    )
     plt.title("Populated Counts per Specified Column")
     plt.xlabel("Columns")
     plt.ylabel("Number of Populated Rows")
-    plt.xticks(rotation=45, ha='right')
+    plt.xticks(rotation=45, ha="right")
     plt.tight_layout()
 
     # Save the plot

@@ -23,7 +23,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Initialize the lemmatizer, spell checker, and unit registry
 lemmatizer = WordNetLemmatizer()
-#spell_checker = SpellChecker()
+# spell_checker = SpellChecker()
 ureg = pint.UnitRegistry()
 
 # Custom definitions of non-standard units
@@ -566,7 +566,7 @@ def pipeline(
             )
 
         # Add the new column to the output file
-        fieldnames.append(new_column_name)
+        fieldnames.append(new_column_name)  # type: ignore
 
         writer = csv.DictWriter(
             outfile, fieldnames=fieldnames, delimiter=delimiter

@@ -1,5 +1,5 @@
 """
-BETA of the Script for merging the two ontologies
+Script for merging the two ontologies
 """
 
 
@@ -9,7 +9,13 @@ from rdflib import RDF, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL
 
 
-def add_to_sys_path(folder_name):
+def add_to_sys_path(folder_name) -> None:
+    """
+    Function to add a folder to the system path
+    :param folder_name: name of the folder to add
+    :return: None
+    """
+
     utils_path = os.path.abspath(
         os.path.join(os.path.dirname(__file__), folder_name)
     )
@@ -30,14 +36,21 @@ from entity_linking import (  # type: ignore
 
 from create_rdf import sanitize_for_uri  # type: ignore
 from pipeline import pipeline_core, pipeline  # type: ignore
-from attribute_extraction import add_user_attributes #type: ignore
+from attribute_extraction import add_user_attributes  # type: ignore
 
 
 def create_completed_ontology(
-    merge: bool = False, threshold_value: float = 0.85, model = "paraphrase-MiniLM-L3-v2"
+    merge: bool = False,
+    threshold_value: float = 0.85,
+    model="paraphrase-MiniLM-L3-v2",
 ) -> None:
     """
-    Function to create the hummus-off ontology with associate recipe and ingredient
+    Function to create the hummus-off merged ontology
+
+    :param merge: if True, merges the two ontologies
+    :param threshold_value: threshold value for merging
+    :param model: model to use for merging
+    :return: None
     """
 
     # Define the output file path
@@ -83,7 +96,7 @@ def create_completed_ontology(
         temp_graph.parse(file_path, format="turtle")
         g += temp_graph
 
-    # Merge the ontologies
+    ### Merge the ontologies ###
     if merge:
 
         # Columns of the hummus file to be used for the merging
@@ -99,12 +112,9 @@ def create_completed_ontology(
         list_hummus_recipe = read_specified_columns(
             hummus_file_path, hummus_column, delimiter=","
         )
-        # print(list_hummus_recipe[0])
 
         # Normalize the columns by dividing them by serving size
         list_hummus_recipe = normalize_columns(list_hummus_recipe)
-
-        # print(list_hummus_recipe[0])
 
         # Columns of the off file to be used for the merging
         off_file_path = "./csv_file/off_normalized_by_pipeline.csv"
@@ -119,8 +129,6 @@ def create_completed_ontology(
             off_file_path, off_column, delimiter="\t"
         )
 
-        # print(list_off_recipe[0])
-
         # Columns of the foodkg file to be used for the merging
         food_kg_path = (
             "./csv_file/ingredients_food_kg_normalizzed_by_pipeline.csv"
@@ -130,13 +138,11 @@ def create_completed_ontology(
             food_kg_path, foodkg_column, delimiter=","
         )
 
-        # print(list_foodkg[0])
-
         ### Merge hummus and off ###
         most_similar_pairs = find_k_most_similar_pairs_with_indicators(
             list_hummus_recipe,
             list_off_recipe,
-            k=5,
+            k=1,
             model=model,
             use_indicator=True,
         )
@@ -172,7 +178,7 @@ def create_completed_ontology(
         most_similar_pairs = find_k_most_similar_pairs_with_indicators(
             list_off_recipe,
             list_foodkg,
-            k=5,
+            k=1,
             model=model,
             use_indicator=False,
         )

@@ -3,6 +3,7 @@ File containing scripts and data required for the interactive visualization
 of the ontology
 """
 
+
 import networkx as nx
 import rdflib
 

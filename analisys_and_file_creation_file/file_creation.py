@@ -2,17 +2,16 @@
 File containing scripts and data necessary for creating files used as input for other scripts.
 """
 
+
 import ast
 import csv
 import re
 import random
-
 import ollama
 import pandas as pd
 from nltk import pos_tag, word_tokenize
 
 
-# Script to extract recipes from the CSV
 def extract_recipes(
     input_file,
     output_file,
@@ -172,6 +171,7 @@ def extract_adjectives_foodkg(
 
     for text in data[text_column].dropna():
         words = word_tokenize(str(text))
+
         # Identify the POS of each word
         tagged_words = pos_tag(words)
 
@@ -226,7 +226,7 @@ def clean_brand_name(brand_name) -> str | None:
     Function to clean brand names
 
     :param brand_name: the brand name to clean
-    :return: the cleaned brand name
+    :return: the cleaned brand name or None if the brand name is invalid
     """
     # Remove "&quot" strings and replace with nothing
     brand_name = brand_name.replace("&quot", "")
@@ -246,6 +246,7 @@ def extract_clean_brands(input_file, output_file, n=1) -> None:
     :param input_file: path to the file to read
     :param output_file: path to the output file
     :param n: minimum number of occurrences for a brand to be considered valid
+    :return: None
     """
 
     brand_counts = dict()

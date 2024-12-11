@@ -1,6 +1,11 @@
+"""
+File thar contains functions for attribute extraction
+"""
+
 
 import csv
 import ollama
+
 
 def add_user_attributes(
     input_file,
@@ -14,7 +19,15 @@ def add_user_attributes(
     """
     Funcion for infere new attribute about user, given an existing attribute
 
-    :param input_file: 
+    :param input_file: Input file path
+    :param output_file: Output file path
+    :param column_name: Name of the column to extract attributes from
+    :param new_column_names: List of new columns to add
+    :param delimiter: Delimiter of the input file
+    :param delimiter2: Delimiter of the output file
+    :param show_progress: Show progress of the process or not
+
+    :return: None
     """
 
     with (
@@ -42,6 +55,7 @@ def add_user_attributes(
 
         for row in reader:
             extracted_attributes_dictionary = {}
+
             # Initialize new columns with empty values
             for column in new_column_names:
                 row[column] = ""
@@ -49,10 +63,12 @@ def add_user_attributes(
             if row[column_name] != "":
                 original_line = row[column_name]
 
-                # Call the model
+                # Call the model for attribute extraction
                 extracted_attributes_string = ollama.generate(
                     model="attribute_extractor", prompt=original_line
                 )
+
+                # Clean the response
                 extracted_attributes_string = extracted_attributes_string[
                     "response"
                 ].replace("####### ", "")
@@ -63,12 +79,10 @@ def add_user_attributes(
 
                 for attribute in extracted_attributes_string.split(","):
                     if ":" in attribute:
-                        attribute_name, attribute_value = attribute.split(":", 1)
-                        if attribute_name.strip() and attribute_value.strip():
-                            attribute_name, attribute_value = attribute.split(":")
-                            attribute_name = attribute_name.strip()
-                            attribute_value = attribute_value.strip()
-                            # print(attribute_name, attribute_value)
+                        parts = attribute.split(":", 1)
+                        if len(parts) == 2 and ":" not in parts[0]:
+                            attribute_name = parts[0].strip()
+                            attribute_value = parts[1].strip()
                             if attribute_name.strip() in [
                                 "weight",
                                 "height",
@@ -83,7 +97,9 @@ def add_user_attributes(
                                         attribute_name
                                     ] = ""
                                 if (
-                                    extracted_attributes_dictionary[attribute_name]
+                                    extracted_attributes_dictionary[
+                                        attribute_name
+                                    ]
                                     == ""
                                 ):
                                     extracted_attributes_dictionary[
@@ -120,7 +136,9 @@ def add_user_attributes(
                                 ):
                                     extracted_attributes_dictionary[
                                         "user_constraints"
-                                    ] = (attribute_name + ": " + attribute_value)
+                                    ] = (
+                                        attribute_name + ": " + attribute_value
+                                    )
                                 else:
                                     extracted_attributes_dictionary[
                                         "user_constraints"
