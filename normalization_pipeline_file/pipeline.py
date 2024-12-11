@@ -15,7 +15,6 @@ import pint
 import torch
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
-#from spellchecker import SpellChecker
 
 
 # Device on which operations will be performed

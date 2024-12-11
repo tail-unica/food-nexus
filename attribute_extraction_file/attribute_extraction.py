@@ -11,6 +11,11 @@ def add_user_attributes(
     delimiter2=",",
     show_progress=True,
 ) -> None:
+    """
+    Funcion for infere new attribute about user, given an existing attribute
+
+    :param input_file: 
+    """
 
     with (
         open(input_file, "r", encoding="utf-8") as infile,
@@ -57,77 +62,79 @@ def add_user_attributes(
                     print(extracted_attributes_string)
 
                 for attribute in extracted_attributes_string.split(","):
-                    if len(attribute.split(":")) > 1:
-                        attribute_name, attribute_value = attribute.split(":")
-                        attribute_name = attribute_name.strip()
-                        attribute_value = attribute_value.strip()
-                        # print(attribute_name, attribute_value)
-                        if attribute_name.strip() in [
-                            "weight",
-                            "height",
-                            "gender",
-                            "age",
-                        ]:
-                            if (
-                                attribute_name
-                                not in extracted_attributes_dictionary
-                            ):
-                                extracted_attributes_dictionary[
+                    if ":" in attribute:
+                        attribute_name, attribute_value = attribute.split(":", 1)
+                        if attribute_name.strip() and attribute_value.strip():
+                            attribute_name, attribute_value = attribute.split(":")
+                            attribute_name = attribute_name.strip()
+                            attribute_value = attribute_value.strip()
+                            # print(attribute_name, attribute_value)
+                            if attribute_name.strip() in [
+                                "weight",
+                                "height",
+                                "gender",
+                                "age",
+                            ]:
+                                if (
                                     attribute_name
-                                ] = ""
-                            if (
-                                extracted_attributes_dictionary[attribute_name]
-                                == ""
-                            ):
-                                extracted_attributes_dictionary[
-                                    attribute_name
-                                ] = attribute_value
-                            else:
-                                extracted_attributes_dictionary[
-                                    attribute_name
-                                ] = (
+                                    not in extracted_attributes_dictionary
+                                ):
                                     extracted_attributes_dictionary[
                                         attribute_name
-                                    ]
-                                    + ";"
-                                    + attribute_value
-                                )
-                        elif attribute_name.strip() in [
-                            "physical activity category",
-                            "religious constraint",
-                            "food allergies or intolerances",
-                            "dietary preference",
-                        ]:
-                            if (
-                                "user_constraints"
-                                not in extracted_attributes_dictionary
-                            ):
-                                extracted_attributes_dictionary[
+                                    ] = ""
+                                if (
+                                    extracted_attributes_dictionary[attribute_name]
+                                    == ""
+                                ):
+                                    extracted_attributes_dictionary[
+                                        attribute_name
+                                    ] = attribute_value
+                                else:
+                                    extracted_attributes_dictionary[
+                                        attribute_name
+                                    ] = (
+                                        extracted_attributes_dictionary[
+                                            attribute_name
+                                        ]
+                                        + ";"
+                                        + attribute_value
+                                    )
+                            elif attribute_name.strip() in [
+                                "physical activity category",
+                                "religious constraint",
+                                "food allergies or intolerances",
+                                "dietary preference",
+                            ]:
+                                if (
                                     "user_constraints"
-                                ] = ""
-                            if (
-                                extracted_attributes_dictionary[
-                                    "user_constraints"
-                                ]
-                                == ""
-                            ):
-                                extracted_attributes_dictionary[
-                                    "user_constraints"
-                                ] = (attribute_name + ": " + attribute_value)
-                            else:
-                                extracted_attributes_dictionary[
-                                    "user_constraints"
-                                ] = (
+                                    not in extracted_attributes_dictionary
+                                ):
+                                    extracted_attributes_dictionary[
+                                        "user_constraints"
+                                    ] = ""
+                                if (
                                     extracted_attributes_dictionary[
                                         "user_constraints"
                                     ]
-                                    + "; "
-                                    + attribute_name
-                                    + ": "
-                                    + attribute_value
-                                )
-                    else:
-                        attribute = ""
+                                    == ""
+                                ):
+                                    extracted_attributes_dictionary[
+                                        "user_constraints"
+                                    ] = (attribute_name + ": " + attribute_value)
+                                else:
+                                    extracted_attributes_dictionary[
+                                        "user_constraints"
+                                    ] = (
+                                        extracted_attributes_dictionary[
+                                            "user_constraints"
+                                        ]
+                                        + "; "
+                                        + attribute_name
+                                        + ": "
+                                        + attribute_value
+                                    )
+                        else:
+                            attribute = ""
 
             # Add extracted attributes to the row
             for column in new_column_names:

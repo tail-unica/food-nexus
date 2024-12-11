@@ -20,7 +20,7 @@
     "tsp": "milliliter",
     "teaspoon": "milliliter",
     "teaspoons": "milliliter",
-    "oz": "milliliter",
+    "oz": "gram",
     "fluid_ounce": "milliliter",
     "fluid_ounces": "milliliter",
     "cup": "milliliter",

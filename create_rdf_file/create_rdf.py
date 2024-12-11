@@ -1,5 +1,6 @@
 """
-File with various functions and data necessary for converting HUMMUS and Open Food Facts data into an RDF format.
+File with various functions and data necessary for converting HUMMUS and
+Open Food Facts data into an RDF format and for create our custom namespace.
 """
 
 import re
@@ -150,26 +151,26 @@ def create_namespace(namespace_completo=True) -> None:
         # Indicator property
         proprieta_indicator = [
             (
-                "calciumPer100g",
-                "Calcium per 100g (mg)",
-                "Calcium content per 100 grams.",
+                "calcium",
+                "Calcium for 100g",
+                "Calcium content for 100 grams.",
                 XSD.float,
             ),
             (
-                "ironPer100g",
-                "Iron per 100g (mg)",
+                "iron",
+                "Iron for 100g",
                 "Iron content per 100 grams.",
                 XSD.float,
             ),
             (
-                "vitaminCPer100g",
-                "Vitamin C per 100g (mg)",
+                "vitaminC",
+                "Vitamin C for 100g",
                 "Vitamin C content per 100 grams.",
                 XSD.float,
             ),
             (
-                "vitaminAPer100g",
-                "Vitamin A per 100g (mcg)",
+                "vitaminA",
+                "Vitamin A for 100g",
                 "Vitamin A content per 100 grams.",
                 XSD.float,
             ),
@@ -204,8 +205,8 @@ def create_namespace(namespace_completo=True) -> None:
                 XSD.float,
             ),
             (
-                "nutritionScoreFrPer100g",
-                "Nutrition Score FR per 100g",
+                "nutritionScoreFr",
+                "Nutrition Score FR for 100g",
                 "French nutrition score per 100 grams.",
                 XSD.float,
             ),
@@ -266,7 +267,9 @@ def create_namespace(namespace_completo=True) -> None:
 
 
 def convert_hummus_in_rdf(use_infered_attributes_description = False, 
-                          use_infered_attributes_review = False) -> None:
+                          use_infered_attributes_review = False, 
+                          use_row = False
+                        ) -> None:
     """
     Function to convert hummus data into RDF format
     """
@@ -297,17 +300,21 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
     g.add((ontology_iri, OWL.priorVersion, prior_version_iri))
 
     # input file
-    file_ricette = "../csv_file/pp_recipes.csv"
-
-    if use_infered_attributes_description:
-        file_utenti = "../csv_file/pp_members_normalized.csv"
+    if use_row:
+        file_ricette = "../csv_file/pp_recipes_rows.csv"
+        file_utenti = "../csv_file/pp_members_rows.csv"
+        file_review = "../csv_file/pp_reviews_rows.csv"
     else:
-        file_utenti = "../csv_file/pp_members.csv"
+        file_ricette = "../csv_file/pp_recipes.csv"
+        if use_infered_attributes_description:
+            file_utenti = "../csv_file/pp_members_normalized.csv"
+        else:
+            file_utenti = "../csv_file/pp_members.csv"
 
-    if use_infered_attributes_review:
-        file_review = "../csv_file/pp_reviews_normalized.csv"
-    else:   
-        file_review = "../csv_file/pp_reviews.csv"
+        if use_infered_attributes_review:
+            file_review = "../csv_file/pp_reviews_normalized.csv"
+        else:   
+            file_review = "../csv_file/pp_reviews.csv"
 
     if use_infered_attributes_review or use_infered_attributes_description:
         file_output = "../csv_file/ontology_hummus.ttl"
@@ -341,12 +348,11 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
         "nutri_score": None,
     }
 
-    qualitatives_indicators_hummus = [
-        "servingSize",
-        "who_score",
-        "fsa_score",
-        "nutri_score",
-    ]
+    qualitatives_indicators_hummus = {
+        "who_score":"whoScore",
+        "fsa_score":"fsaScore",
+        "nutri_score":"nutriScore",
+    }
 
     # Create the entity UserGroup
     for idx, row in df_utenti.iterrows():
@@ -369,7 +375,7 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
                         g.add(
                             (
                                 group_id,
-                                SCHEMA.age,
+                                SCHEMA.birthDate,
                                 Literal(row["age"], datatype=XSD.integer),
                             )
                         )
@@ -394,7 +400,7 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
                         (
                             group_id,
                             SCHEMA.weight,
-                            Literal(row["weight"], datatype=XSD.float),
+                            Literal(row["weight"], datatype=XSD.string),
                         )
                     )
                 if pd.notna(row["height"]):
@@ -402,7 +408,7 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
                         (
                             group_id,
                             SCHEMA.height,
-                            Literal(row["height"], datatype=XSD.float),
+                            Literal(row["height"], datatype=XSD.string),
                         )
                     )
 
@@ -410,32 +416,42 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
                     contraint_list = row["user_constraints"].split(";")
                     for contraint in contraint_list:
                         constraint_name, constraint_value = contraint.split(":")
-                        tag_id = URIRef(
-                            UNICA[
-                                f"Constraint_{sanitize_for_uri(constraint_name).strip()}_{sanitize_for_uri(constraint_value).strip()}"
-                            ]
-                        )
-                        if tag_id not in constraint_count:
-                            constraint_count[tag_id] = 1
-                            g.add((tag_id, RDF.type, UNICA.UserConstraint))
+                        
+                        if constraint_name == "physical activity category":
                             g.add(
-                                (
-                                    tag_id,
-                                    SCHEMA.constraintName,
-                                    Literal(constraint_name, lang="en"),
+                                    (
+                                        group_id,
+                                        SCHEMA.PhysicalActivityCategory,
+                                        Literal(constraint_value, lang="en"),
+                                    )
                                 )
+                        else:
+                            tag_id = URIRef(
+                                UNICA[
+                                    f"Constraint_{sanitize_for_uri(constraint_name).strip()}_{sanitize_for_uri(constraint_value).strip()}"
+                                ]
                             )
-                            g.add(
-                                (
-                                    tag_id,
-                                    SCHEMA.constraintDescription,
-                                    Literal(
-                                        f"is a user constraint about {constraint_name}",
-                                        lang="en",
-                                    ),
+                            if tag_id not in constraint_count:
+                                constraint_count[tag_id] = 1
+                                g.add((tag_id, RDF.type, UNICA.UserConstraint))
+                                g.add(
+                                    (
+                                        tag_id,
+                                        SCHEMA.constraintName,
+                                        Literal(constraint_name, lang="en"),
+                                    )
                                 )
-                            )
-                        g.add((group_id, SCHEMA.hasConstraint, tag_id))
+                                g.add(
+                                    (
+                                        tag_id,
+                                        SCHEMA.constraintDescription,
+                                        Literal(
+                                            f"is a user constraint about {constraint_name}",
+                                            lang="en",
+                                        ),
+                                    )
+                                )
+                            g.add((group_id, SCHEMA.hasConstraint, tag_id))
 
     # Create the entity Recipe
     for idx, row in df_ricette.iterrows():
@@ -477,28 +493,29 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
                     tag1 = tag
                     tag = sanitize_for_uri(tag.replace("-", "_").lower())
                     tag_id = URIRef(UNICA[f"Tag_{tag}"])
-                    if tag not in tag_count:
-                        tag_count[tag] = 1
-                        g.add((tag_id, RDF.type, UNICA.UserConstraint))
-                        g.add(
-                            (
-                                tag_id,
-                                SCHEMA.constraintName,
-                                Literal(tag, lang="en"),
+                    if tag_id != "Tag_":
+                        if tag not in tag_count:
+                            tag_count[tag] = 1
+                            g.add((tag_id, RDF.type, UNICA.UserConstraint))
+                            g.add(
+                                (
+                                    tag_id,
+                                    SCHEMA.constraintName,
+                                    Literal(tag, lang="en"),
+                                )
                             )
-                        )
-                        g.add(
-                            (
-                                tag_id,
-                                SCHEMA.constraintDescription,
-                                Literal(
-                                    f"is a user constraint about {tag1}",
-                                    lang="en",
-                                ),
+                            g.add(
+                                (
+                                    tag_id,
+                                    SCHEMA.constraintDescription,
+                                    Literal(
+                                        f"is a user constraint about {tag1.replace("-", " ")}",
+                                        lang="en",
+                                    ),
+                                )
                             )
-                        )
 
-                    g.add((tag_id, SCHEMA.suitableForDiet, recipe_id))
+                        g.add((tag_id, SCHEMA.suitableForDiet, recipe_id))
 
             # Indicator
             for col, unit in indicator_fields.items():
@@ -511,11 +528,14 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
                     ),
                     None,
                 )
+                
                 # Continue only if we found a match and the value is not NaN
                 if csv_column and pd.notna(row[csv_column]):
+                    if col in qualitatives_indicators_hummus.keys():
+                        col = qualitatives_indicators_hummus[col]
                     indicator_id = URIRef(
                         UNICA[
-                            f"Indicator_{sanitize_for_uri(col.replace(' ', '_').lower())}_{sanitize_for_uri(row['recipe_id'])}"
+                            f"Indicator_{sanitize_for_uri(value=col.replace(' ', '_').lower())}_{sanitize_for_uri(row['recipe_id'])}"
                         ]
                     )
                     g.add((indicator_id, RDF.type, UNICA.Indicator))
@@ -524,13 +544,12 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
                         g.add((indicator_id, SCHEMA.unitText, Literal(unit)))
 
                     stringa = str(row[csv_column])
-                    if col in qualitatives_indicators_hummus and row["servingSize [g]"] != 0 and row["servingSize [g]"] != "": 
+                    if col in qualitatives_indicators_hummus.values() and row["servingSize [g]"] != 0 and row["servingSize [g]"] != "": 
                         quantità = (
                             float(stringa) / float(row["servingSize [g]"]) * 100
                         )
                     else:
                         quantità = float(stringa)
-
                     g.add(
                         (
                             indicator_id,
@@ -584,7 +603,6 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
                             ingredient_id,
                         )
                     )
-
                     g.add(
                         (
                             recipe_id,
@@ -598,14 +616,13 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
     for idx, row in df_review.iterrows():
         if pd.notna(row["rating"]) and isinstance(row["rating"], (int, float)):
             review_id = URIRef(UNICA[f"Review_{sanitize_for_uri(idx)}"])
-            if pd.notna(row["rating"]):
-                g.add(
-                    (
-                        review_id,
-                        SCHEMA.reviewRating,
-                        Literal(row["rating"], datatype=XSD.float),
-                    )
+            g.add(
+                (
+                    review_id,
+                    SCHEMA.reviewRating,
+                    Literal(row["rating"], datatype=XSD.float),
                 )
+            )
 
             g.add((review_id, RDF.type, SCHEMA.UserReview))
             if pd.notna(row["text"]):
@@ -643,85 +660,84 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
                     )
                 )
             
-
-            if use_infered_attributes_review and pd.notna(row["member_id"]):
-                group_id =URIRef(
-                            UNICA[
-                                f"UserGroup_{sanitize_for_uri(row['member_id'])}"
-                            ]
-                        )
-                if pd.notna(row["age"]):
-                    if isinstance(row["age"], int):
-                        g.add(
-                            (
-                                group_id,
-                                SCHEMA.age,
-                                Literal(row["age"], datatype=XSD.integer),
-                            )
-                        )
-                    else:
-                        g.add(
-                            (
-                                group_id,
-                                SCHEMA.typicalAgeRange,
-                                Literal(row["age"], datatype=XSD.string),
-                            )
-                        )
-                if pd.notna(row["gender"]):
-                    g.add(
-                        (
-                            group_id,
-                            SCHEMA.gender,
-                            Literal(row["gender"], datatype=XSD.string),
-                        )
-                    )
-                if pd.notna(row["weight"]):
-                    g.add(
-                        (
-                            group_id,
-                            SCHEMA.weight,
-                            Literal(row["weight"], datatype=XSD.float),
-                        )
-                    )
-                if pd.notna(row["height"]):
-                    g.add(
-                        (
-                            group_id,
-                            SCHEMA.height,
-                            Literal(row["height"], datatype=XSD.float),
-                        )
-                    )
-
-                if pd.notna(row["user_constraints"]):
-                    contraint_list = row["user_constraints"].split(";")
-                    for contraint in contraint_list:
-                        constraint_name, constraint_value = contraint.split(":")
-                        tag_id = URIRef(
-                            UNICA[
-                                f"Constraint_{sanitize_for_uri(constraint_name).strip()}_{sanitize_for_uri(constraint_value).strip()}"
-                            ]
-                        )
-                        if tag_id not in constraint_count:
-                            constraint_count[tag_id] = 1
-                            g.add((tag_id, RDF.type, UNICA.UserConstraint))
+                if use_infered_attributes_review:
+                    if pd.notna(row["age"]):
+                        if isinstance(row["age"], int):
+                            if not g.value(subject=group_id, predicate=SCHEMA.birthDate):
+                                g.add(
+                                    (
+                                        group_id,
+                                        SCHEMA.birthDate,
+                                        Literal(row["age"], datatype=XSD.integer),
+                                    )
+                                )
+                        else:
+                            if not g.value(subject=group_id, predicate=SCHEMA.typicalAgeRange) and not g.value(subject=group_id, predicate=SCHEMA.birthDate):
+                                g.add(
+                                    (
+                                        group_id,
+                                        SCHEMA.typicalAgeRange,
+                                        Literal(row["age"], datatype=XSD.string),
+                                    )
+                                )
+                    if pd.notna(row["gender"]):
+                        if not g.value(subject=group_id, predicate=SCHEMA.gender):
                             g.add(
                                 (
-                                    tag_id,
-                                    SCHEMA.constraintName,
-                                    Literal(constraint_name, lang="en"),
+                                    group_id,
+                                    SCHEMA.gender,
+                                    Literal(row["gender"], datatype=XSD.string),
                                 )
                             )
+                    if pd.notna(row["weight"]):
+                        if not g.value(subject=group_id, predicate=SCHEMA.weight):
                             g.add(
                                 (
-                                    tag_id,
-                                    SCHEMA.constraintDescription,
-                                    Literal(
-                                        f"is a user constraint about {constraint_name}",
-                                        lang="en",
-                                    ),
+                                    group_id,
+                                    SCHEMA.weight,
+                                    Literal(row["weight"], datatype=XSD.string),
                                 )
                             )
-                        g.add((group_id, SCHEMA.hasConstraint, tag_id))
+                    if pd.notna(row["height"]):
+                        if not g.value(subject=group_id, predicate=SCHEMA.height):
+                            g.add(
+                                (
+                                    group_id,
+                                    SCHEMA.height,
+                                    Literal(row["height"], datatype=XSD.string),
+                                )
+                            )
+
+                    if pd.notna(row["user_constraints"]):
+                        contraint_list = row["user_constraints"].split(";")
+                        for contraint in contraint_list:
+                            constraint_name, constraint_value = contraint.split(":")
+                            tag_id = URIRef(
+                                UNICA[
+                                    f"Constraint_{sanitize_for_uri(constraint_name).strip()}_{sanitize_for_uri(constraint_value).strip()}"
+                                ]
+                            )
+                            if tag_id not in constraint_count:
+                                constraint_count[tag_id] = 1
+                                g.add((tag_id, RDF.type, UNICA.UserConstraint))
+                                g.add(
+                                    (
+                                        tag_id,
+                                        SCHEMA.constraintName,
+                                        Literal(constraint_name, lang="en"),
+                                    )
+                                )
+                                g.add(
+                                    (
+                                        tag_id,
+                                        SCHEMA.constraintDescription,
+                                        Literal(
+                                            f"is a user constraint about {constraint_name}",
+                                            lang="en",
+                                        ),
+                                    )
+                                )
+                            g.add((group_id, SCHEMA.hasConstraint, tag_id))
 
 
     # Save the RDF graph in Turtle format
@@ -729,7 +745,7 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
     print(f"Generated file: {file_output}")
 
 
-def convert_off_in_rdf() -> None:
+def convert_off_in_rdf(use_row = False) -> None:
     """
     Function to convert off data into RDF format
     """
@@ -760,19 +776,46 @@ def convert_off_in_rdf() -> None:
     g.add((ontology_iri, OWL.priorVersion, prior_version_iri))
 
     # File of input and output
-    # off_file = "../csv_file/en.openfoodfacts.org.products.csv"
-    off_file = "../csv_file/off_rows.csv"
+    if use_row:
+        off_file = "../csv_file/off_rows.csv"
+    else:
+        off_file = "../csv_file/en.openfoodfacts.org.products.csv"
     file_output = "../csv_file/ontology_off.ttl"
 
     # Upload the CSV
     df_off = pd.read_csv(off_file, sep="\t", on_bad_lines="skip")
 
-    qualitatives_indicators = [
-        "nutriscore_grade",
-        "nova_group",
-        "ecoscore_grade",
-        "ecoscore_score",
-    ]
+    qualitatives_indicators: dict[str, str] = {
+        "nutriscore_grade":"nutriscoreGrade",
+        "nova_group":"novaGroup",
+        "ecoscore_grade":"ecoscoreGrade",
+        "nutrition-score-fr_100g":"nutritionScoreFr",
+        "nutriscore_score":"nutriscoreScore",
+        "ecoscore_score":"ecoscoreScore"
+    }
+
+    off_indicators = {
+            "calcium_100g":"calcium",
+            "iron_100g":"iron",
+            "vitamin-c_100g":"vitaminC",
+            "vitamin-a_100g":"vitaminA",
+            "nutriscore_score":"nutriscoreScore",
+            "nutrition-score-fr_100g":"nutritionScoreFr",
+            "nutriscore_grade":"nutriscoreGrade",
+            "nova_group":"novaGroup",
+            "ecoscore_grade":"ecoscoreGrade",
+            "ecoscore_score":"ecoscoreScore",
+            "energy_100g":"calories",
+            "energy-from-fat_100g":"caloriesFromFat",
+            "fat_100g":"totalFat",
+            "saturated-fat_100g":"saturatedFat",
+            "cholesterol_100g":"cholesterol",
+            "sodium_100g":"sodium",
+            "carbohydrates_100g":"totalCarbohydrate",
+            "fiber_100g":"dietaryFiber",
+            "sugars_100g":"sugars",
+            "proteins_100g":"protein",
+        }
 
     traces_and_allergies = {}
 
@@ -862,24 +905,23 @@ def convert_off_in_rdf() -> None:
 
             # Indicator
             for column in df_off.columns:
-                if "100g" in column or column in qualitatives_indicators:
+                if column in off_indicators.keys():
                     indicator_value = row[column]
-
                     if (
                         pd.notna(indicator_value)
                         and indicator_value != "unknown"
                     ):
                         # Create the indicator
-                        column = column.replace("-", "_")
+                        column = off_indicators[column]
                         indicator_id = URIRef(
                             UNICA[
-                                f"{sanitize_for_uri(re.sub('_100g', '', column))}_{idx}"
+                                f"{column}_{idx}"
                             ]
                         )
                         g.add((indicator_id, RDF.type, UNICA.Indicator))
                         g.add((indicator_id, SCHEMA.type, Literal(column)))
 
-                        if column not in qualitatives_indicators:
+                        if column not in qualitatives_indicators.values():
                             g.add(
                                 (
                                     indicator_id,
