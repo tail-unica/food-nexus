@@ -232,4 +232,3 @@ def support_add_user_attributes(extracted_attributes_dictionary, original_line, 
                     original_line=original_line,
                     show_progress=show_progress
                     )
-

@@ -7,7 +7,8 @@ import re
 import pandas as pd
 from rdflib import RDF, RDFS, XSD, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL
-
+from sentence_transformers import SentenceTransformer, util
+import ast
 
 def sanitize_for_uri(value) -> str:
     """
@@ -274,6 +275,8 @@ def convert_hummus_in_rdf(
     """
     Function to convert hummus data into RDF format
     """
+
+    model = SentenceTransformer('all-MiniLM-L6-v2')
 
     # Initialize the graph and namespaces
     g = Graph()
@@ -601,20 +604,67 @@ def convert_hummus_in_rdf(
                             SCHEMA.QuantitativeValue,
                         )
                     )
-                    g.add(
-                        (
-                            ingredient_id_for_recipe,
-                            SCHEMA.isRelatedTo,
-                            ingredient_id,
+
+                    if pd.notna(row["ingredients"]):
+                        list1 = [ing]
+                        list2 = row["ingredients"]
+                        list2 = ast.literal_eval(list2)
+                        list2 = list2.get('', [])    
+                        list2_strings = [item[0] for item in list2]
+
+                        for l1 in list1:
+                            match = next((l2 for l2 in list2 if l1 in l2[0]), None)
+                            if match:
+                                # Direct Match
+                                measure_value =  match[1].strip()
+                                measure, unit = measure_value.split('time(s)')
+                                measure = measure.strip()
+                                unit = unit.strip()
+
+
+                            else:
+                                # Find the most similar string with a simple bert
+                                embeddings1 = model.encode(l1, convert_to_tensor=True)
+                                embeddings2 = model.encode(list2_strings, convert_to_tensor=True)
+                                cosine_scores = util.cos_sim(embeddings1, embeddings2)
+                                
+                                best_match_idx = cosine_scores.argmax().item()
+                                best_match = list2[best_match_idx]
+                                
+                                measure_value =  best_match[1].strip()
+                                measure, unit = measure_value.split('time(s)')
+                                measure = measure.strip()
+                                unit = unit.strip()
+
+                            if unit != "":
+                                g.add(
+                                (ingredient_id_for_recipe,
+                                            SCHEMA.quantity,
+                                            Literal(unit, datatype=XSD.string),
+                                        )
+                                    )
+                            if measure != "":
+                                g.add(
+                                (ingredient_id_for_recipe,
+                                            SCHEMA.unitText,
+                                            Literal(measure, datatype=XSD.string),
+                                        )
+                                    )
+
+                        g.add(
+                            (
+                                ingredient_id_for_recipe,
+                                SCHEMA.isRelatedTo,
+                                ingredient_id,
+                            )
                         )
-                    )
-                    g.add(
-                        (
-                            recipe_id,
-                            SCHEMA.hasPart,
-                            ingredient_id_for_recipe,
+                        g.add(
+                            (
+                                recipe_id,
+                                SCHEMA.hasPart,
+                                ingredient_id_for_recipe,
+                            )
                         )
-                    )
 
     # Create UserReview entities and relationships
     for idx, row in df_review.iterrows():

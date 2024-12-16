@@ -6,15 +6,17 @@ import socket
 
 ollama_servers = {}
 
-def find_available_port(start_port=11434, max_attempts=10):
-    for port in range(start_port, start_port + max_attempts):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            try:
-                s.bind(("127.0.0.1", port))
-                return port
-            except OSError:
-                continue
-    raise RuntimeError("No available ports found in the range.")
+#possibile start port da provare: 49152 con 65535-49152 max attempts
+def find_available_port(start_port=11434, max_attempts=15000):
+    for i in range(10):
+        for port in range(start_port, start_port + max_attempts):
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                try:
+                    s.bind(("127.0.0.1", port))
+                    return port
+                except OSError:
+                    continue
+        raise RuntimeError("No available ports found in the range.")
 
 def start_ollama_server(host):
     try:
