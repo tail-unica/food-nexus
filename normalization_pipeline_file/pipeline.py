@@ -8,6 +8,8 @@ import json
 import re
 import string
 import unicodedata
+import os
+import sys
 
 import nltk
 import ollama
@@ -15,6 +17,16 @@ import pint
 import torch
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
+
+
+def add_to_sys_path(folder_name):
+    utils_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), folder_name)
+    )
+    sys.path.append(utils_path)
+add_to_sys_path("../ollama_server_file")
+from ollama_server import OllamaModel  # type: ignore
+
 
 
 # Device on which operations will be performed
@@ -173,15 +185,56 @@ def remove_numeric_values(text: str) -> str:
 # Function to translate to English
 def translate_to_english(text: str) -> str:
     """
-    Translates the text to English using the translation model.
+    Translate the given text to English using the specified model.
 
-    :param text: The text to translate to English.
-    :return: The translated text in English or the original text if translation is not needed.
+    :param text: The text to translate.
+    :param model: An instance of OllamaModel.
+    :return: The translated text or the original text if no translation is needed.
     """
-    response = ollama.generate(model="translation_expert", prompt=text)
-    if response["response"].strip() != "eng":
-        return response["response"]
-    return text
+
+    modelfile = """FROM qwen2.5:32b
+    SYSTEM You are a highly skilled linguist with a specific task: I will provide you with a single string of input related to food names, ingredients, recipes, or culinary terms. \
+    Your objective is to determine the language of the input string. If the string is in English, respond with "eng." If the string is not in English, translate it into English. \
+    Please adhere to the following guidelines: \
+    - Do not add any comments, explanations, or modifications to your response. \
+    - Always respond with either "eng" or the English translation of the provided text. \
+    - Do not remove any punctuation mark, for example (",", ".", ";", ":", "!", "?", "(", ")", "\"") in your response. \
+    - Do not put ani '"' when you are responding "eng". \
+    Here are some examples for clarity: \
+    - "pane al mais" -> "corn bread" \
+    - "apple" -> "eng" \
+    - "frutta" -> "fruit" \
+    - "cibo" -> "food" \
+    - "birne" -> "pear" \
+    - "arroz con pollo y verduras frescas" -> "rice with chicken and fresh vegetables" \
+    - "bánh mì với thịt và rau củ" -> "sandwich with meat and vegetables" \
+    - "パスタとトマトソース" -> "pasta with tomato sauce" \
+    - "gnocchi di patate con burro e salvia" -> "potato dumplings with butter and sage" \
+    - "choucroute garnie avec des saucisses" -> "sauerkraut with sausages" \
+    - "paella de mariscos y arroz amarillo" -> "seafood paella with yellow rice" \
+    - "fish and chips" -> "eng" \
+    - "tonno! ☺️ pizza bio l rustica 1kg (2x500g) - con tonno agli oli evo, una vera bontà" -> "tuna! ☺️ pizza bio l rustic 1kg (2x500g) - with tuna in evo oils, a true delight" \
+    - "cioccolato 🍫 extra fondente - 85% cacao (con aroma di vaniglia naturale)" -> "extra dark chocolate 85 percent cocoa with natural vanilla aroma" \
+    - "queso manchego curado 🧀 - ideal para tapas o gratinar" -> "manchego cheese cured ideal for tapas or gratinating" \
+    - "bánh cuốn nhân thịt 🥢 - món ăn sáng Việt Nam thơm ngon" -> "bánh cuốn with meat a delicious Vietnamese breakfast dish" \
+    - "寿司 🍣 - 新鮮な魚で作られた最高の日本料理" -> "sushi the finest Japanese dish made with fresh fish" \
+    - "pomodoro rosso bio 🍅 (1kg) - perfetto per salse fatte in casa" -> "red organic tomato 1kg perfect for homemade sauces" \
+    Begin processing the input now. 
+    PARAMETER temperature 0
+    PARAMETER top_p 0.8
+    PARAMETER top_k 1
+    """
+
+    model = OllamaModel(modelfile=modelfile, model_name="translation_expert")
+
+    try:
+        response = model.generate(text)
+        if response.strip().lower() == "eng":
+            return text
+        return response
+    except:
+        model._handle_creation_error()
+        return translate_to_english(text)
 
 
 # Function to expand abbreviations
@@ -566,7 +619,7 @@ def pipeline(
             )
 
         # Add the new column to the output file
-        fieldnames.append(new_column_name)
+        fieldnames.append(new_column_name) #type: ignore
 
         writer = csv.DictWriter(
             outfile, fieldnames=fieldnames, delimiter=delimiter

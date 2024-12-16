@@ -1,6 +1,18 @@
 
 import csv
 import ollama
+import os
+import sys
+
+
+def add_to_sys_path(folder_name):
+    utils_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), folder_name)
+    )
+    sys.path.append(utils_path)
+add_to_sys_path("../ollama_server_file")
+from ollama_server import OllamaModel  # type: ignore
+
 
 def add_user_attributes(
     input_file,
@@ -49,92 +61,11 @@ def add_user_attributes(
             if row[column_name] != "":
                 original_line = row[column_name]
 
-                # Call the model
-                extracted_attributes_string = ollama.generate(
-                    model="attribute_extractor", prompt=original_line
-                )
-                extracted_attributes_string = extracted_attributes_string[
-                    "response"
-                ].replace("####### ", "")
-
-                # Parse attributes
-                if show_progress:
-                    print(extracted_attributes_string)
-
-                for attribute in extracted_attributes_string.split(","):
-                    if ":" in attribute:
-                        attribute_name, attribute_value = attribute.split(":", 1)
-                        if attribute_name.strip() and attribute_value.strip():
-                            attribute_name, attribute_value = attribute.split(":")
-                            attribute_name = attribute_name.strip()
-                            attribute_value = attribute_value.strip()
-                            # print(attribute_name, attribute_value)
-                            if attribute_name.strip() in [
-                                "weight",
-                                "height",
-                                "gender",
-                                "age",
-                            ]:
-                                if (
-                                    attribute_name
-                                    not in extracted_attributes_dictionary
-                                ):
-                                    extracted_attributes_dictionary[
-                                        attribute_name
-                                    ] = ""
-                                if (
-                                    extracted_attributes_dictionary[attribute_name]
-                                    == ""
-                                ):
-                                    extracted_attributes_dictionary[
-                                        attribute_name
-                                    ] = attribute_value
-                                else:
-                                    extracted_attributes_dictionary[
-                                        attribute_name
-                                    ] = (
-                                        extracted_attributes_dictionary[
-                                            attribute_name
-                                        ]
-                                        + ";"
-                                        + attribute_value
-                                    )
-                            elif attribute_name.strip() in [
-                                "physical activity category",
-                                "religious constraint",
-                                "food allergies or intolerances",
-                                "dietary preference",
-                            ]:
-                                if (
-                                    "user_constraints"
-                                    not in extracted_attributes_dictionary
-                                ):
-                                    extracted_attributes_dictionary[
-                                        "user_constraints"
-                                    ] = ""
-                                if (
-                                    extracted_attributes_dictionary[
-                                        "user_constraints"
-                                    ]
-                                    == ""
-                                ):
-                                    extracted_attributes_dictionary[
-                                        "user_constraints"
-                                    ] = (attribute_name + ": " + attribute_value)
-                                else:
-                                    extracted_attributes_dictionary[
-                                        "user_constraints"
-                                    ] = (
-                                        extracted_attributes_dictionary[
-                                            "user_constraints"
-                                        ]
-                                        + "; "
-                                        + attribute_name
-                                        + ": "
-                                        + attribute_value
-                                    )
-                        else:
-                            attribute = ""
+                extracted_attributes_dictionary = support_add_user_attributes(
+                    extracted_attributes_dictionary=extracted_attributes_dictionary,
+                    original_line=original_line,
+                    show_progress=show_progress
+                    )
 
             # Add extracted attributes to the row
             for column in new_column_names:
@@ -144,3 +75,148 @@ def add_user_attributes(
             writer.writerow(row)
 
     print("Normalization complete")
+
+
+def support_add_user_attributes(extracted_attributes_dictionary, original_line, show_progress):
+    modelfile = """FROM qwen2.5:32b
+    SYSTEM You are a highly skilled attribute extractor model specialized in user profiling for a food ontology. You will receive a description provided by a user, and your task is to extract personal information and make reasonable inferences using a step-by-step, chain of thoughts approach. Specifically, you need to identify and infer the following attributes: \
+    \
+    - age \
+    - weight \
+    - height \
+    - gender \
+    - physical activity category (type of physical activity) \
+    - religious constraint (e.g., halal, kosher, etc.) \
+    - food allergies or intolerances (related to food only) \
+    - dietary preferences (e.g., vegan, vegetarian, low CO2 emissions, etc.) \
+    \
+    ### Guidelines: \
+    1. **Chain of Thoughts**: Analyze the input description step by step, considering each detail and making logical inferences based on context. Clearly outline your reasoning process internally before extracting attributes, but do not include any reasoning or explanation in the output. \
+    2. **Inferred Values**: For any attribute whose value is inferred but not explicitly stated in the input, append "(inferred)" to the value. If a value is explicitly stated, do not include "(inferred)". \
+    3. **Output Format**: After completing your internal analysis, write "#######" followed directly by the extracted attributes in the format: "attribute: value", separated by commas. \
+    - If no attributes can be extracted, return the string "none" after "#######". \
+    - Do not include any attribute if there is no information to infer or extract. \
+    - Do not provide any comments, explanations, or reasoning after the extracted attributes. \
+    - If no attributes can be extracted do not write "none specified", just write "none". \
+    \
+    ### Examples: \
+    - "" -> ####### none \
+    - "I like dogs" -> ####### none \
+    - "I am a mother and I like Italian cuisine, but I can't eat gluten" -> ####### gender: female, age: 30-50 (inferred), allergies: gluten \
+    - "I love running and I usually avoid dairy products" -> ####### physical activity category: running, allergies: lactose \
+    - "I am a grandfather who loves Mediterranean food" -> ####### gender: male, age: 60+ (inferred) \
+    - "I am a software engineer who follows a vegan diet" -> ####### age: 30-50 (inferred), dietary preference: vegan \
+    - "I have two kids and I enjoy hiking on weekends" -> ####### age: 30-50 (inferred), physical activity category: hiking \
+    - "I work as a teacher and can't eat shellfish" -> ####### age: 30-50 (inferred), allergies: shellfish \
+    - "I am a retired army officer who loves spicy food" -> ####### age: 60+ (inferred), gender: male \
+    - "I only eat plant-based food and do yoga every morning" -> ####### dietary preference: vegan, physical activity category: yoga \
+    - "I have celiac disease and cannot consume any gluten-containing products" -> ####### allergies: gluten \
+    - "As a father of three, I often cook for my family" -> ####### gender: male, age: 30-50 (inferred) \
+    - "I observe Ramadan and avoid eating pork" -> ####### religious constraint: halal \
+    \
+    PARAMETER temperature 0
+    PARAMETER top_p 0.8
+    PARAMETER top_k 1
+    """
+    print("provo a creare il modello")
+    model = OllamaModel(modelfile=modelfile, model_name="attribute_extractor")
+
+    try:
+
+        print("provo a generare")
+
+        # Call the model
+        extracted_attributes_string = model.generate(original_line)
+
+
+        extracted_attributes_string = extracted_attributes_string[
+            "response"
+        ].replace("####### ", "")
+
+        print(extracted_attributes_string)
+
+        # Parse attributes
+        if show_progress:
+            print(extracted_attributes_string)
+
+        for attribute in extracted_attributes_string.split(","):
+            if ":" in attribute:
+                parts = attribute.split(":", 1)  
+                if len(parts) == 2 and ":" not in parts[0]: 
+                    attribute_name = parts[0].strip()
+                    attribute_value = parts[1].strip()
+                    if attribute_name.strip() in [
+                        "weight",
+                        "height",
+                        "gender",
+                        "age",
+                    ]:
+                        if (
+                            attribute_name
+                            not in extracted_attributes_dictionary
+                        ):
+                            extracted_attributes_dictionary[
+                                attribute_name
+                            ] = ""
+                        if (
+                            extracted_attributes_dictionary[attribute_name]
+                            == ""
+                        ):
+                            extracted_attributes_dictionary[
+                                attribute_name
+                            ] = attribute_value
+                        else:
+                            extracted_attributes_dictionary[
+                                attribute_name
+                            ] = (
+                                extracted_attributes_dictionary[
+                                    attribute_name
+                                ]
+                                + ";"
+                                + attribute_value
+                            )
+                    elif attribute_name.strip() in [
+                        "physical activity category",
+                        "religious constraint",
+                        "food allergies or intolerances",
+                        "dietary preference",
+                    ]:
+                        if (
+                            "user_constraints"
+                            not in extracted_attributes_dictionary
+                        ):
+                            extracted_attributes_dictionary[
+                                "user_constraints"
+                            ] = ""
+                        if (
+                            extracted_attributes_dictionary[
+                                "user_constraints"
+                            ]
+                            == ""
+                        ):
+                            extracted_attributes_dictionary[
+                                "user_constraints"
+                            ] = (attribute_name + ": " + attribute_value)
+                        else:
+                            extracted_attributes_dictionary[
+                                "user_constraints"
+                            ] = (
+                                extracted_attributes_dictionary[
+                                    "user_constraints"
+                                ]
+                                + "; "
+                                + attribute_name
+                                + ": "
+                                + attribute_value
+                            )
+                else:
+                    attribute = ""
+        return extracted_attributes_dictionary
+    except:
+        model._handle_creation_error()
+        return support_add_user_attributes(
+                    extracted_attributes_dictionary=extracted_attributes_dictionary,
+                    original_line=original_line,
+                    show_progress=show_progress
+                    )
+
