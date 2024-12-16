@@ -2,12 +2,16 @@
 File containing scripts and data necessary for the creation of LLM models
 """
 
+
 import ollama
 
 
 def create_food_expert() -> None:
     """
-    Function to create a model for brand filtering usable on Ollama
+    Calling this function creates a brand filtering model
+    based on qwen2.5:32b and usable on Ollama
+
+    :return: None
     """
 
     # system prompt
@@ -46,7 +50,10 @@ def create_food_expert() -> None:
 
 def create_attribute_extractor() -> None:
     """
-    Function for create a model of extracting attributes from user descriptions
+    Calling this function creates a attributes extractor model
+    based on qwen2.5:32b and usable on Ollama
+
+    :return: None
     """
 
     # System prompt

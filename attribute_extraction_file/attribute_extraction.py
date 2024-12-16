@@ -1,3 +1,7 @@
+"""
+File thar contains functions for attribute extraction
+"""
+
 
 import csv
 import ollama
@@ -26,7 +30,15 @@ def add_user_attributes(
     """
     Funcion for infere new attribute about user, given an existing attribute
 
-    :param input_file: 
+    :param input_file: Input file path
+    :param output_file: Output file path
+    :param column_name: Name of the column to extract attributes from
+    :param new_column_names: List of new columns to add
+    :param delimiter: Delimiter of the input file
+    :param delimiter2: Delimiter of the output file
+    :param show_progress: Show progress of the process or not
+
+    :return: None
     """
 
     with (
@@ -54,6 +66,7 @@ def add_user_attributes(
 
         for row in reader:
             extracted_attributes_dictionary = {}
+
             # Initialize new columns with empty values
             for column in new_column_names:
                 row[column] = ""

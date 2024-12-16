@@ -266,10 +266,11 @@ def create_namespace(namespace_completo=True) -> None:
     print("namespace created successfully")
 
 
-def convert_hummus_in_rdf(use_infered_attributes_description = False, 
-                          use_infered_attributes_review = False, 
-                          use_row = False
-                        ) -> None:
+def convert_hummus_in_rdf(
+    use_infered_attributes_description=False,
+    use_infered_attributes_review=False,
+    use_row=False,
+) -> None:
     """
     Function to convert hummus data into RDF format
     """
@@ -313,7 +314,7 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
 
         if use_infered_attributes_review:
             file_review = "../csv_file/pp_reviews_normalized.csv"
-        else:   
+        else:
             file_review = "../csv_file/pp_reviews.csv"
 
     if use_infered_attributes_review or use_infered_attributes_description:
@@ -349,9 +350,9 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
     }
 
     qualitatives_indicators_hummus = {
-        "who_score":"whoScore",
-        "fsa_score":"fsaScore",
-        "nutri_score":"nutriScore",
+        "who_score": "whoScore",
+        "fsa_score": "fsaScore",
+        "nutri_score": "nutriScore",
     }
 
     # Create the entity UserGroup
@@ -416,15 +417,15 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
                     contraint_list = row["user_constraints"].split(";")
                     for contraint in contraint_list:
                         constraint_name, constraint_value = contraint.split(":")
-                        
+
                         if constraint_name == "physical activity category":
                             g.add(
-                                    (
-                                        group_id,
-                                        SCHEMA.PhysicalActivityCategory,
-                                        Literal(constraint_value, lang="en"),
-                                    )
+                                (
+                                    group_id,
+                                    SCHEMA.PhysicalActivityCategory,
+                                    Literal(constraint_value, lang="en"),
                                 )
+                            )
                         else:
                             tag_id = URIRef(
                                 UNICA[
@@ -509,7 +510,7 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
                                     tag_id,
                                     SCHEMA.constraintDescription,
                                     Literal(
-                                        f"is a user constraint about {tag1.replace("-", " ")}",
+                                        f"is a user constraint about {tag1.replace('-', ' ')}",
                                         lang="en",
                                     ),
                                 )
@@ -528,7 +529,7 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
                     ),
                     None,
                 )
-                
+
                 # Continue only if we found a match and the value is not NaN
                 if csv_column and pd.notna(row[csv_column]):
                     if col in qualitatives_indicators_hummus.keys():
@@ -544,7 +545,11 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
                         g.add((indicator_id, SCHEMA.unitText, Literal(unit)))
 
                     stringa = str(row[csv_column])
-                    if col in qualitatives_indicators_hummus.values() and row["servingSize [g]"] != 0 and row["servingSize [g]"] != "": 
+                    if (
+                        col in qualitatives_indicators_hummus.values()
+                        and row["servingSize [g]"] != 0
+                        and row["servingSize [g]"] != ""
+                    ):
                         quantità = (
                             float(stringa) / float(row["servingSize [g]"]) * 100
                         )
@@ -611,7 +616,6 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
                         )
                     )
 
-
     # Create UserReview entities and relationships
     for idx, row in df_review.iterrows():
         if pd.notna(row["rating"]) and isinstance(row["rating"], (int, float)):
@@ -647,11 +651,9 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
                     )
                 )
             if pd.notna(row["member_id"]):
-                group_id =URIRef(
-                            UNICA[
-                                f"UserGroup_{sanitize_for_uri(row['member_id'])}"
-                            ]
-                        )
+                group_id = URIRef(
+                    UNICA[f"UserGroup_{sanitize_for_uri(row['member_id'])}"]
+                )
                 g.add(
                     (
                         group_id,
@@ -659,29 +661,42 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
                         review_id,
                     )
                 )
-            
+
                 if use_infered_attributes_review:
                     if pd.notna(row["age"]):
                         if isinstance(row["age"], int):
-                            if not g.value(subject=group_id, predicate=SCHEMA.birthDate):
+                            if not g.value(
+                                subject=group_id, predicate=SCHEMA.birthDate
+                            ):
                                 g.add(
                                     (
                                         group_id,
                                         SCHEMA.birthDate,
-                                        Literal(row["age"], datatype=XSD.integer),
+                                        Literal(
+                                            row["age"], datatype=XSD.integer
+                                        ),
                                     )
                                 )
                         else:
-                            if not g.value(subject=group_id, predicate=SCHEMA.typicalAgeRange) and not g.value(subject=group_id, predicate=SCHEMA.birthDate):
+                            if not g.value(
+                                subject=group_id,
+                                predicate=SCHEMA.typicalAgeRange,
+                            ) and not g.value(
+                                subject=group_id, predicate=SCHEMA.birthDate
+                            ):
                                 g.add(
                                     (
                                         group_id,
                                         SCHEMA.typicalAgeRange,
-                                        Literal(row["age"], datatype=XSD.string),
+                                        Literal(
+                                            row["age"], datatype=XSD.string
+                                        ),
                                     )
                                 )
                     if pd.notna(row["gender"]):
-                        if not g.value(subject=group_id, predicate=SCHEMA.gender):
+                        if not g.value(
+                            subject=group_id, predicate=SCHEMA.gender
+                        ):
                             g.add(
                                 (
                                     group_id,
@@ -690,7 +705,9 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
                                 )
                             )
                     if pd.notna(row["weight"]):
-                        if not g.value(subject=group_id, predicate=SCHEMA.weight):
+                        if not g.value(
+                            subject=group_id, predicate=SCHEMA.weight
+                        ):
                             g.add(
                                 (
                                     group_id,
@@ -699,7 +716,9 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
                                 )
                             )
                     if pd.notna(row["height"]):
-                        if not g.value(subject=group_id, predicate=SCHEMA.height):
+                        if not g.value(
+                            subject=group_id, predicate=SCHEMA.height
+                        ):
                             g.add(
                                 (
                                     group_id,
@@ -711,7 +730,9 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
                     if pd.notna(row["user_constraints"]):
                         contraint_list = row["user_constraints"].split(";")
                         for contraint in contraint_list:
-                            constraint_name, constraint_value = contraint.split(":")
+                            constraint_name, constraint_value = contraint.split(
+                                ":"
+                            )
                             tag_id = URIRef(
                                 UNICA[
                                     f"Constraint_{sanitize_for_uri(constraint_name).strip()}_{sanitize_for_uri(constraint_value).strip()}"
@@ -739,13 +760,12 @@ def convert_hummus_in_rdf(use_infered_attributes_description = False,
                                 )
                             g.add((group_id, SCHEMA.hasConstraint, tag_id))
 
-
     # Save the RDF graph in Turtle format
     g.serialize(destination=file_output, format="turtle")
     print(f"Generated file: {file_output}")
 
 
-def convert_off_in_rdf(use_row = False) -> None:
+def convert_off_in_rdf(use_row=False) -> None:
     """
     Function to convert off data into RDF format
     """
@@ -786,36 +806,36 @@ def convert_off_in_rdf(use_row = False) -> None:
     df_off = pd.read_csv(off_file, sep="\t", on_bad_lines="skip")
 
     qualitatives_indicators: dict[str, str] = {
-        "nutriscore_grade":"nutriscoreGrade",
-        "nova_group":"novaGroup",
-        "ecoscore_grade":"ecoscoreGrade",
-        "nutrition-score-fr_100g":"nutritionScoreFr",
-        "nutriscore_score":"nutriscoreScore",
-        "ecoscore_score":"ecoscoreScore"
+        "nutriscore_grade": "nutriscoreGrade",
+        "nova_group": "novaGroup",
+        "ecoscore_grade": "ecoscoreGrade",
+        "nutrition-score-fr_100g": "nutritionScoreFr",
+        "nutriscore_score": "nutriscoreScore",
+        "ecoscore_score": "ecoscoreScore",
     }
 
     off_indicators = {
-            "calcium_100g":"calcium",
-            "iron_100g":"iron",
-            "vitamin-c_100g":"vitaminC",
-            "vitamin-a_100g":"vitaminA",
-            "nutriscore_score":"nutriscoreScore",
-            "nutrition-score-fr_100g":"nutritionScoreFr",
-            "nutriscore_grade":"nutriscoreGrade",
-            "nova_group":"novaGroup",
-            "ecoscore_grade":"ecoscoreGrade",
-            "ecoscore_score":"ecoscoreScore",
-            "energy_100g":"calories",
-            "energy-from-fat_100g":"caloriesFromFat",
-            "fat_100g":"totalFat",
-            "saturated-fat_100g":"saturatedFat",
-            "cholesterol_100g":"cholesterol",
-            "sodium_100g":"sodium",
-            "carbohydrates_100g":"totalCarbohydrate",
-            "fiber_100g":"dietaryFiber",
-            "sugars_100g":"sugars",
-            "proteins_100g":"protein",
-        }
+        "calcium_100g": "calcium",
+        "iron_100g": "iron",
+        "vitamin-c_100g": "vitaminC",
+        "vitamin-a_100g": "vitaminA",
+        "nutriscore_score": "nutriscoreScore",
+        "nutrition-score-fr_100g": "nutritionScoreFr",
+        "nutriscore_grade": "nutriscoreGrade",
+        "nova_group": "novaGroup",
+        "ecoscore_grade": "ecoscoreGrade",
+        "ecoscore_score": "ecoscoreScore",
+        "energy_100g": "calories",
+        "energy-from-fat_100g": "caloriesFromFat",
+        "fat_100g": "totalFat",
+        "saturated-fat_100g": "saturatedFat",
+        "cholesterol_100g": "cholesterol",
+        "sodium_100g": "sodium",
+        "carbohydrates_100g": "totalCarbohydrate",
+        "fiber_100g": "dietaryFiber",
+        "sugars_100g": "sugars",
+        "proteins_100g": "protein",
+    }
 
     traces_and_allergies = {}
 
@@ -913,11 +933,7 @@ def convert_off_in_rdf(use_row = False) -> None:
                     ):
                         # Create the indicator
                         column = off_indicators[column]
-                        indicator_id = URIRef(
-                            UNICA[
-                                f"{column}_{idx}"
-                            ]
-                        )
+                        indicator_id = URIRef(UNICA[f"{column}_{idx}"])
                         g.add((indicator_id, RDF.type, UNICA.Indicator))
                         g.add((indicator_id, SCHEMA.type, Literal(column)))
 
