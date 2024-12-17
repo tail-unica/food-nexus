@@ -49,7 +49,7 @@ def load_graph_from_ttl(file_path: str, filter_edges: bool = False) -> nx.Graph:
         obj = str(obj).split("/")[-1]
 
         # Filter relationships if the flag is set
-        if filter_edges and pred not in edge_colors:
+        if filter_edges and pred not in edge_colors.keys():
             continue
 
         # Add nodes
@@ -58,7 +58,7 @@ def load_graph_from_ttl(file_path: str, filter_edges: bool = False) -> nx.Graph:
 
         # Get the edge color
         edge_color = (
-            edge_colors[pred] if pred in edge_colors else edge_colors["default"]
+            edge_colors[pred] if pred in edge_colors.keys() else edge_colors["default"]
         )
 
         # Add the edge with the custom color

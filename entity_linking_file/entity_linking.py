@@ -354,7 +354,7 @@ def evaluate_entity_linking_method(
     :return: accuracy as a percentage
     """
     # Prepare data for the entity linking method
-    list1 = [(row[0], 0, 0, 0, row[0]) for row in data]  # Off entities
+    list1 = [(row[0], 0, 0, 0, row[0]) for row in data]  # off entities
     list2 = [(row[1], 0, 0, 0, row[1]) for row in data]  # FoodKG entities
 
     # Apply the method

@@ -1,14 +1,30 @@
+"""
+File containing script for create a ollama server and manage the reconnection 
+to the server in a new port in case of error
+"""
+
+
 import atexit
 import os
 import subprocess
 import ollama
 import socket
 
+
 ollama_servers = {}
 
-#possibile start port da provare: 49152 con 65535-49152 max attempts
-def find_available_port(start_port=11434, max_attempts=15000):
-    for i in range(10):
+
+#possible start port to try: 49152 with 65535-49152 max attempts#######
+#idk well the client server teory
+def find_available_port(start_port=11434, max_attempts=10000) -> int | None:
+    """
+    Function for searching an available port for the ollama server
+
+    :param start_port: The port from which you start checking the first available one
+    :param max_attempts: the number of port checked
+    :return: the port available | None
+    """
+    for i in range(3):
         for port in range(start_port, start_port + max_attempts):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 try:
@@ -18,7 +34,14 @@ def find_available_port(start_port=11434, max_attempts=15000):
                     continue
         raise RuntimeError("No available ports found in the range.")
 
-def start_ollama_server(host):
+
+def start_ollama_server(host) -> None:
+    """
+    Function to start the ollama server
+
+    :param host: the adress where to start the service
+    :return: None
+    """
     try:
         process = subprocess.Popen(
             ["ollama", "serve"],
@@ -29,6 +52,7 @@ def start_ollama_server(host):
         ollama_servers[host] = process
     except Exception as e:
         print(f"Failed to start Ollama on port {host}: {e}")
+
 
 def stop_ollama_server(host):
     if host in ollama_servers:
@@ -41,8 +65,12 @@ def stop_ollama_server(host):
         del ollama_servers[host]
         print(f"Stopped Ollama server on port {host}.")
 
+
 class OllamaModel:
-    def __init__(self, model_name, modelfile, host=None):
+    """
+    Class for manage the ollama Model on a server
+    """
+    def __init__(self, model_name, modelfile, host=None) -> None:
         self.modelfile = modelfile
         self.model_name = model_name
         self.host = host or "127.0.0.1:11434"
@@ -60,15 +88,17 @@ class OllamaModel:
             print(f"Error creating model: {e}")
             self._handle_creation_error()
 
+
     def _extract_model_name(self):
         for line in self.modelfile.splitlines():
             if line.startswith("FROM"):
                 return line.split()[1]
         raise ValueError("Model name not found in modelfile.")
 
+
     def _handle_creation_error(self):
         current_port = int(self.host.split(":")[-1])
-        new_port = find_available_port(start_port=current_port + 1, max_attempts=10)
+        new_port = find_available_port(start_port=current_port + 1, max_attempts=10000)
         new_host = f"127.0.0.1:{new_port}"
         print(f"Restarting server on {new_host}")
         stop_ollama_server(self.host)
@@ -77,11 +107,19 @@ class OllamaModel:
         self.client = ollama.Client(new_host)
         self.client.create(self.model_name, modelfile=self.modelfile)
 
+
     def _initialize_server(self):
         start_ollama_server(self.host)
         atexit.register(stop_ollama_server, self.host)
 
-    def generate(self, prompt):
+
+    def generate(self, prompt) -> str:
+        """
+        Function to generate the model response
+
+        :param prompt: the prompt to give to the model
+        :return: the model rensponse
+        """
         try:
             return self.client.generate(self.model_name, prompt).response
         except Exception as e:

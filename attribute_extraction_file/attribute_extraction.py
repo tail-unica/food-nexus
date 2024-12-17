@@ -131,12 +131,11 @@ def support_add_user_attributes(extracted_attributes_dictionary, original_line, 
     PARAMETER top_p 0.8
     PARAMETER top_k 1
     """
-    print("provo a creare il modello")
+
+
     model = OllamaModel(modelfile=modelfile, model_name="attribute_extractor")
 
     try:
-
-        print("provo a generare")
 
         # Call the model
         extracted_attributes_string = model.generate(original_line)
@@ -145,8 +144,6 @@ def support_add_user_attributes(extracted_attributes_dictionary, original_line, 
         extracted_attributes_string = extracted_attributes_string[
             "response"
         ].replace("####### ", "")
-
-        print(extracted_attributes_string)
 
         # Parse attributes
         if show_progress:

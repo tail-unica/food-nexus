@@ -1,5 +1,5 @@
 """
-File for calcolate the statistic on the ontology
+File for calcolate the statistic on a list of ontology
 """
 
 
@@ -8,7 +8,7 @@ from rdflib import Graph, Literal, RDF
 import csv
 
 
-def analyze_turtle_file(file_path):
+def analyze_turtle_file(file_path) -> dict:
     """
     Analyze a Turtle file for ontology statistics, including counts of instances.
 
@@ -54,7 +54,7 @@ def analyze_turtle_file(file_path):
     }
 
 
-def ontology_statistics(turtle_files, output_csv):
+def ontology_statistics(turtle_files, output_csv) -> None:
     """
     Analyze Turtle files and write statistics to a CSV, including instance counts.
 

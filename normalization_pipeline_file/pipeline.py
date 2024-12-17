@@ -10,7 +10,6 @@ import string
 import unicodedata
 import os
 import sys
-
 import nltk
 import ollama
 import pint
@@ -33,9 +32,8 @@ from ollama_server import OllamaModel  # type: ignore
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
-# Initialize the lemmatizer, spell checker, and unit registry
+# Initialize the lemmatizer and the unit registry
 lemmatizer = WordNetLemmatizer()
-# spell_checker = SpellChecker()
 ureg = pint.UnitRegistry()
 
 # Custom definitions of non-standard units
@@ -152,7 +150,6 @@ def remove_text_after_comma_or_colon(text: str) -> str:
     return re.split(r"[,:]", text, maxsplit=1)[0].strip()
 
 
-# Function to remove all remaining punctuation
 def remove_or_replace_punctuation(text: str) -> str:
     """
     Removes or replaces punctuation in the text.
@@ -182,7 +179,6 @@ def remove_numeric_values(text: str) -> str:
     return re.sub(r"\b\d+[.,]?\d*\b", "", text).strip()
 
 
-# Function to translate to English
 def translate_to_english(text: str) -> str:
     """
     Translate the given text to English using the specified model.
@@ -237,7 +233,6 @@ def translate_to_english(text: str) -> str:
         return translate_to_english(text)
 
 
-# Function to expand abbreviations
 def replace_abbreviations(text: str) -> str:
     """
     Replaces abbreviations in the text with their full form.
@@ -252,7 +247,6 @@ def replace_abbreviations(text: str) -> str:
     return text
 
 
-# Function to remove suffixes and prefixes
 def remove_suffixes_prefixes(text: str) -> str:
     """
     Removes suffixes and prefixes from standalone words in the text.
@@ -266,7 +260,6 @@ def remove_suffixes_prefixes(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-# Function to remove brand names
 def remove_brands(text: str) -> str:
     """
     Removes brand names from the text.
@@ -282,7 +275,6 @@ def remove_brands(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-# Function to convert text to lowercase
 def convert_to_lowercase(text: str) -> str:
     """
     Converts the text to lowercase.
@@ -293,7 +285,6 @@ def convert_to_lowercase(text: str) -> str:
     return text.lower()
 
 
-# Function to normalize special characters
 def normalize_special_characters(text: str) -> str:
     """
     Normalizes special characters by removing accents and non-ASCII characters.
@@ -313,7 +304,6 @@ def normalize_special_characters(text: str) -> str:
     )
 
 
-# Function to sort words alphabetically
 def sort_words_alphabetically(text: str) -> str:
     """
     Sorts the words in the text alphabetically.
@@ -326,7 +316,6 @@ def sort_words_alphabetically(text: str) -> str:
     return " ".join(sorted_words)
 
 
-# Function to normalize quantities
 def normalize_quantities(text: str) -> str:
     """
     Normalizes quantities in the text, handling units with optional spaces.
@@ -374,7 +363,6 @@ def normalize_quantities(text: str) -> str:
     return text
 
 
-# Function to remove stopwords
 def remove_stopwords(text: str) -> str:
     """
     Removes stopwords from the text.
@@ -391,7 +379,6 @@ def remove_stopwords(text: str) -> str:
     return " ".join(filtered_words)
 
 
-# Function to lemmatize the text
 def lemmatize_text(text: str) -> str:
     """
     Lemmatizes the text, reducing words to their base form.
@@ -404,7 +391,6 @@ def lemmatize_text(text: str) -> str:
     return " ".join(lemmatized_words)
 
 
-# Function to remove units of measure
 def remove_units(text: str) -> str:
     """
     Removes units of measure from the text.
@@ -417,7 +403,6 @@ def remove_units(text: str) -> str:
     return " ".join(cleaned_words)
 
 
-# Function to remove unwanted parts of speech (verbs, adverbs, and adjectives not in the allowed list)
 def remove_unwanted_pos(text: str) -> str:
     """
     Removes verbs, adverbs, and adjectives not included in the allowed list.

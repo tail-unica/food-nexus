@@ -14,7 +14,7 @@ import os
 
 def analisys_quantities(input_file, output_file, n) -> None:
     """
-    Function to analyze the quantities column of OFF (for analysis purposes)
+    Function to analyze the quantities column of OFF (for analysis purposes only)
 
     :param input_file: path to the CSV file to analyze
     :param output_file: path to the CSV file where the analysis will be saved
@@ -205,7 +205,6 @@ def test_attribute_extraction(file) -> None:
             print("Extracted attributes: \n", response["response"])
 
 
-# Function to create a bar plot for populated counts of specified columns
 def plot_populated_counts(csv_file, output_dir, columns, output_file):
     """
     Creates a bar plot showing how many rows are populated for specified columns in a CSV file.
@@ -228,11 +227,8 @@ def plot_populated_counts(csv_file, output_dir, columns, output_file):
 
     # Count the number of non-null values for each specified column
     populated_counts = df[columns].notnull().sum()
-
-    # Create the output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
 
-    # Plot the counts as a bar chart
     plt.figure(figsize=(12, 6))
     sns.barplot(
         x=populated_counts.index, y=populated_counts.values, palette="viridis"
@@ -243,7 +239,6 @@ def plot_populated_counts(csv_file, output_dir, columns, output_file):
     plt.xticks(rotation=45, ha="right")
     plt.tight_layout()
 
-    # Save the plot
     plot_path = os.path.join(output_dir, output_file)
     plt.savefig(plot_path)
     plt.close()
