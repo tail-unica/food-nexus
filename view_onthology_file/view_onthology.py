@@ -19,7 +19,7 @@ edge_colors = {
     "hasPart": "#8B0000",  # dark red
     "isPartOf": "#FF69B4",  # pink
     "suitableForDiet": "#008000",  # dark green
-    "default": "#FFFFFF",  # black
+    "default": "#000000",  # black
 }
 
 
@@ -58,7 +58,9 @@ def load_graph_from_ttl(file_path: str, filter_edges: bool = False) -> nx.Graph:
 
         # Get the edge color
         edge_color = (
-            edge_colors[pred] if pred in edge_colors.keys() else edge_colors["default"]
+            edge_colors[pred]
+            if pred in edge_colors.keys()
+            else edge_colors["default"]
         )
 
         # Add the edge with the custom color
