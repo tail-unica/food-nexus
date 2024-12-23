@@ -83,7 +83,7 @@ class RecipeTransformer:
         return np.vstack(embeddings)
 
 
-def compute_embeddings(text_list, transformer, batch_size=1500):
+def compute_embeddings(text_list, transformer, batch_size=1):
     """
     Function to compute embeddings for a list of texts using the transformer
 
@@ -258,7 +258,7 @@ def calculate_macronutrient_similarity(tuple1, tuple2):
 
 
 def find_k_most_similar_pairs_with_indicators(
-    list1, list2, k=1, model="paraphrase-MiniLM-L3-v2", use_indicator=False, batch_size=2
+    list1, list2, k=1, model="paraphrase-MiniLM-L3-v2", use_indicator=False, batch_size=1
 ):
     """
     Finds the k most similar items from list2 for each item in list1, considering
@@ -374,7 +374,7 @@ def evaluate_entity_linking_method(
         for i, (similarity, original_off, linked_foodkg) in enumerate(
             linked_entities
         ):
-            if similarity > threshold:
+            if float(similarity) > float(threshold):
 
                 considered_count += 1
             if show_progress:
@@ -384,7 +384,7 @@ def evaluate_entity_linking_method(
             expected_foodkg = data[i][1]
             if linked_foodkg.lower().strip() == expected_foodkg.lower().strip():
                 correct_count += 1
-                if similarity > threshold:
+                if float(similarity) > float(threshold):
                     correct_considered_count += 1
 
         accuracy = (correct_count / len(data)) * 100

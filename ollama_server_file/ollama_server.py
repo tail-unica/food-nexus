@@ -1,128 +1,99 @@
-"""
-File containing script for create a ollama server and manage the reconnection 
-to the server in a new port in case of error
-"""
-
-
-import atexit
-import os
+from typing import Optional
+import time
+import httpx
 import subprocess
-import ollama
 import socket
+import os
 
+class OllamaServer:
+    def __init__(self, base_port: int = 11434):
+        self.base_port = base_port
+        self.current_port = None
+        self.process: Optional[subprocess.Popen] = None
+        self.host = None
 
-ollama_servers = {}
-
-
-#possible start port to try: 49152 with 65535-49152 max attempts#######
-#idk well the client server teory
-def find_available_port(start_port=11434, max_attempts=10000) -> int | None:
-    """
-    Function for searching an available port for the ollama server
-
-    :param start_port: The port from which you start checking the first available one
-    :param max_attempts: the number of port checked
-    :return: the port available | None
-    """
-    for i in range(3):
-        for port in range(start_port, start_port + max_attempts):
+    def _find_available_port(self, start_port: int = 11434) -> Optional[int]:
+        for port in range(start_port, start_port + 10000):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 try:
-                    s.bind(("127.0.0.1", port))
+                    s.bind(('127.0.0.1', port))
                     return port
                 except OSError:
                     continue
-        raise RuntimeError("No available ports found in the range.")
+        return None
 
-
-def start_ollama_server(host) -> None:
-    """
-    Function to start the ollama server
-
-    :param host: the adress where to start the service
-    :return: None
-    """
-    try:
-        process = subprocess.Popen(
-            ["ollama", "serve"],
-            env={**os.environ.copy(), "OLLAMA_HOST": host},
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.PIPE
-        )
-        ollama_servers[host] = process
-    except Exception as e:
-        print(f"Failed to start Ollama on port {host}: {e}")
-
-
-def stop_ollama_server(host):
-    if host in ollama_servers:
-        process = ollama_servers[host]
-        process.terminate()
+    def _is_server_responsive(self, host: str, timeout: int = 2) -> bool:
         try:
-            process.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            process.kill()
-        del ollama_servers[host]
-        print(f"Stopped Ollama server on port {host}.")
+            with httpx.Client(timeout=timeout) as client:
+                response = client.get(f"{host}/api/version")
+                return response.status_code == 200
+        except Exception:
+            return False
+
+    def start(self) -> str:
+        if self.current_port:
+            self._cleanup()
+
+        port = self._find_available_port(self.base_port)
+        if not port:
+            raise RuntimeError("No available ports found")
+        
+        self.current_port = port
+        self.host = f"http://127.0.0.1:{port}"
+        
+        self.process = subprocess.Popen(
+            ["ollama", "serve"],
+            env={**os.environ.copy(), "OLLAMA_HOST": f"127.0.0.1:{port}"},
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        
+        start_time = time.time()
+        while time.time() - start_time < 5:
+            if self._is_server_responsive(self.host):
+                return self.host
+            time.sleep(0.5)
+
+        raise TimeoutError("Server failed to start")
+
+    def _cleanup(self) -> None:
+        if self.process:
+            self.process.terminate()
+            self.process = None
+
+        if self.current_port:
+            self.current_port = None
 
 
 class OllamaModel:
-    """
-    Class for manage the ollama Model on a server
-    """
-    def __init__(self, model_name, modelfile, host=None) -> None:
+    def __init__(self, modelfile: str, model_name: Optional[str] = None) -> None:
         self.modelfile = modelfile
-        self.model_name = model_name
-        self.host = host or "127.0.0.1:11434"
+        self.model_name = model_name or self._extract_model_name() + "_custom"
+        self.server = OllamaServer()
+        self.host = self.server.start()
+        self.client = httpx.Client(base_url=self.host)
 
-        if "localhost" in self.host or "127.0.0.1" in self.host:
-            self._initialize_server()
+        self._create_model()
 
-        self.client = ollama.Client(self.host)
-        if self.model_name is None:
-            self.model_name = self._extract_model_name() + "_custom"
-
-        try:
-            self.client.create(self.model_name, modelfile=self.modelfile)
-        except Exception as e:
-            print(f"Error creating model: {e}")
-            self._handle_creation_error()
-
-
-    def _extract_model_name(self):
+    def _extract_model_name(self) -> str:
         for line in self.modelfile.splitlines():
             if line.startswith("FROM"):
                 return line.split()[1]
         raise ValueError("Model name not found in modelfile.")
 
+    def _create_model(self) -> None:
+        response = self.client.post(
+            "/api/models", json={"name": self.model_name, "modelfile": self.modelfile}
+        )
+        if response.status_code != 200:
+            raise RuntimeError("Failed to create model")
 
-    def _handle_creation_error(self):
-        current_port = int(self.host.split(":")[-1])
-        new_port = find_available_port(start_port=current_port + 1, max_attempts=10000)
-        new_host = f"127.0.0.1:{new_port}"
-        print(f"Restarting server on {new_host}")
-        stop_ollama_server(self.host)
-        start_ollama_server(new_host)
-        self.host = new_host
-        self.client = ollama.Client(new_host)
-        self.client.create(self.model_name, modelfile=self.modelfile)
-
-
-    def _initialize_server(self):
-        start_ollama_server(self.host)
-        atexit.register(stop_ollama_server, self.host)
-
-
-    def generate(self, prompt) -> str:
-        """
-        Function to generate the model response
-
-        :param prompt: the prompt to give to the model
-        :return: the model rensponse
-        """
-        try:
-            return self.client.generate(self.model_name, prompt).response
-        except Exception as e:
-            print(f"Error generating response: {e}")
-            self._handle_creation_error()
-            return self.generate(prompt)
+    def generate(self, prompt: str, keep_alive: int = -1) -> str:
+        response = self.client.post(
+            f"/api/models/{self.model_name}/generate",
+            json={"prompt": prompt, "keep_alive": keep_alive},
+        )
+        if response.status_code == 200:
+            return response.json().get("response", "")
+        else:
+            raise RuntimeError(f"Failed to generate response: {response.text}")
