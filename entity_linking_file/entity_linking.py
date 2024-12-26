@@ -374,6 +374,8 @@ def evaluate_entity_linking_method(
         for i, (similarity, original_off, linked_foodkg) in enumerate(
             linked_entities
         ):
+            if(threshold == "."):
+                print(threshold, original_off, linked_foodkg)
             if float(similarity) > float(threshold):
 
                 considered_count += 1
@@ -398,8 +400,8 @@ def evaluate_entity_linking_method(
         considered_list.append(considered_count)
         accuracy_considered_list.append(accuracy_considered)
 
-    tokenizer =  AutoTokenizer.from_pretrained(model)
-    model1 = AutoModel.from_pretrained(model)
+    tokenizer =  AutoTokenizer.from_pretrained(model, trust_remote_code=True)
+    model1 = AutoModel.from_pretrained(model, trust_remote_code=True)
 
     vocab_size = tokenizer.vocab_size
     number_of_parameters = model1.num_parameters()
