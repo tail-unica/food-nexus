@@ -17,6 +17,7 @@ import torch
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from typing import Optional
+import time
 
 
 def add_to_sys_path(folder_name):
@@ -183,10 +184,36 @@ _model_instance = None
 def translate_to_english(text: str) -> str:
     global _model_instance
     modelfile = """FROM qwen2.5:32b
-    SYSTEM translate to english the text
-    PARAMETER temperature 0
-    PARAMETER top_p 0.8
-    PARAMETER top_k 1
+SYSTEM You are a highly skilled linguist with a specific task: I will provide you with a single string of input related to food names, ingredients, recipes, or culinary terms. \
+Your objective is to determine the language of the input string. If the string is in English, respond with "eng." If the string is not in English, translate it into English. \
+Please adhere to the following guidelines: \
+- Do not add any comments, explanations, or modifications to your response. \
+- Always respond with either "eng" or the English translation of the provided text. \
+- Do not remove any punctuation mark, for example (",", ".", ";", ":", "!", "?", "(", ")", "\"") in your response. \
+- Do not put ani '"' when you are responding "eng". \
+Here are some examples for clarity: \
+- "pane al mais" -> "corn bread" \
+- "apple" -> "eng" \
+- "frutta" -> "fruit" \
+- "cibo" -> "food" \
+- "birne" -> "pear" \
+- "arroz con pollo y verduras frescas" -> "rice with chicken and fresh vegetables" \
+- "bánh mì với thịt và rau củ" -> "sandwich with meat and vegetables" \
+- "パスタとトマトソース" -> "pasta with tomato sauce" \
+- "gnocchi di patate con burro e salvia" -> "potato dumplings with butter and sage" \
+- "choucroute garnie avec des saucisses" -> "sauerkraut with sausages" \
+- "paella de mariscos y arroz amarillo" -> "seafood paella with yellow rice" \
+- "fish and chips" -> "eng" \
+- "tonno! ☺️ pizza bio l rustica 1kg (2x500g) - con tonno agli oli evo, una vera bontà" -> "tuna! ☺️ pizza bio l rustic 1kg (2x500g) - with tuna in evo oils, a true delight" \
+- "cioccolato 🍫 extra fondente - 85% cacao (con aroma di vaniglia naturale)" -> "extra dark chocolate 85 percent cocoa with natural vanilla aroma" \
+- "queso manchego curado 🧀 - ideal para tapas o gratinar" -> "manchego cheese cured ideal for tapas or gratinating" \
+- "bánh cuốn nhân thịt 🥢 - món ăn sáng Việt Nam thơm ngon" -> "bánh cuốn with meat a delicious Vietnamese breakfast dish" \
+- "寿司 🍣 - 新鮮な魚で作られた最高の日本料理" -> "sushi the finest Japanese dish made with fresh fish" \
+- "pomodoro rosso bio 🍅 (1kg) - perfetto per salse fatte in casa" -> "red organic tomato 1kg perfect for homemade sauces" \
+Begin processing the input now.
+PARAMETER temperature 0
+PARAMETER top_p 0.8
+PARAMETER top_k 1
     """
 
     try:
@@ -195,11 +222,17 @@ def translate_to_english(text: str) -> str:
                 modelfile=modelfile, model_name="translation_expert"
             )
         response = _model_instance.generate(text)
-        return response.strip()
+        response = response.strip()
+
+        if response == "eng":
+            return text
+        else:
+            return response
+        
     except Exception as e:
         print(f"Translation failed: {e}")
         _model_instance = None
-        return text
+        return translate_to_english(text)
     
     
 def replace_abbreviations(text: str) -> str:
@@ -416,7 +449,7 @@ def remove_lenght1_words(line):
     return " ".join(word for word in line.split() if len(word) > 1)
 
 
-def pipeline_core(line, show_all=False, show_something=False) -> str:
+def pipeline_core(line, show_all=False, show_something=False, translation_nedded=True, only_translation=True) -> str:
     """
     Function to execute the normalization pipeline on a single line
 
@@ -443,97 +476,96 @@ def pipeline_core(line, show_all=False, show_something=False) -> str:
         print("brand removed:".ljust(40), line)
 
     # Translate text to English
-    line = translate_to_english(line)
-    if show_all:
-        print("text translated to English:".ljust(40), line)
+    if translation_nedded:
+        line = translate_to_english(line)
+        if show_all:
+            print("text translated to English:".ljust(40), line)
 
-    # Convert to lowercase
-    line = convert_to_lowercase(line)
-    if show_all:
-        print("lowercase:".ljust(40), line)
+    if only_translation == False:
+        # Convert to lowercase
+        line = convert_to_lowercase(line)
+        if show_all:
+            print("lowercase:".ljust(40), line)
 
-    # Expand abbreviations
-    line = replace_abbreviations(line)
-    if show_all:
-        print("abbreviations expanded:".ljust(40), line)
+        # Expand abbreviations
+        line = replace_abbreviations(line)
+        if show_all:
+            print("abbreviations expanded:".ljust(40), line)
 
-    # Remove unwanted adjectives, adverbs, and verbs
-    line = remove_unwanted_pos(line)
-    if show_all:
-        print("remove adjectives:".ljust(40), line)
+        # Remove unwanted adjectives, adverbs, and verbs
+        line = remove_unwanted_pos(line)
+        if show_all:
+            print("remove adjectives:".ljust(40), line)
 
-    # Remove suffixes and prefixes
-    line = remove_suffixes_prefixes(line)
-    if show_all:
-        print("remove suffixes and prefixes:".ljust(40), line)
+        # Remove suffixes and prefixes
+        line = remove_suffixes_prefixes(line)
+        if show_all:
+            print("remove suffixes and prefixes:".ljust(40), line)
 
-    # Remove text in parentheses
-    line = remove_text_in_parentheses(line)
-    if show_all:
-        print("remove text in parentheses:".ljust(40), line)
+        # Remove text in parentheses
+        line = remove_text_in_parentheses(line)
+        if show_all:
+            print("remove text in parentheses:".ljust(40), line)
 
-    # Remove text after the first comma or ":"
-    line = remove_text_after_comma_or_colon(line)
-    if show_all:
-        print("remove text after comma:".ljust(40), line)
+        # Remove text after the first comma or ":"
+        line = remove_text_after_comma_or_colon(line)
+        if show_all:
+            print("remove text after comma:".ljust(40), line)
 
-    # Remove remaining punctuation
-    line = remove_or_replace_punctuation(line)
-    if show_all:
-        print("remove punctuation:".ljust(40), line)
+        # Remove remaining punctuation
+        line = remove_or_replace_punctuation(line)
+        if show_all:
+            print("remove punctuation:".ljust(40), line)
 
-    # Remove stopwords
-    line = remove_stopwords(line)
-    if show_all:
-        print("remove stopwords:".ljust(40), line)
+        # Remove stopwords
+        line = remove_stopwords(line)
+        if show_all:
+            print("remove stopwords:".ljust(40), line)
 
-    # Normalize quantities
-    line = normalize_quantities(line)
-    if show_all:
-        print("normalize quantities:".ljust(40), line)
+        # Normalize quantities
+        line = normalize_quantities(line)
+        if show_all:
+            print("normalize quantities:".ljust(40), line)
 
-    # Remove units of measurement
-    line = remove_units(line)
-    if show_all:
-        print("remove units of measurement:".ljust(40), line)
+        # Remove units of measurement
+        line = remove_units(line)
+        if show_all:
+            print("remove units of measurement:".ljust(40), line)
 
-    # Remove numeric values
-    line = remove_numeric_values(line)
-    if show_all:
-        print("remove numeric values:".ljust(40), line)
+        # Remove numeric values
+        line = remove_numeric_values(line)
+        if show_all:
+            print("remove numeric values:".ljust(40), line)
 
-    # Convert text to singular
-    line = lemmatize_text(line)
-    if show_all:
-        print("convert text to singular:".ljust(40), line)
+        # Convert text to singular
+        line = lemmatize_text(line)
+        if show_all:
+            print("convert text to singular:".ljust(40), line)
 
-    # Normalize special characters
-    line = normalize_special_characters(line)
-    if show_all:
-        print("normalize special characters:".ljust(40), line)
+        # Normalize special characters
+        line = normalize_special_characters(line)
+        if show_all:
+            print("normalize special characters:".ljust(40), line)
 
-    # Remove duplicate words
-    line = remove_duplicate_words(line)
-    if show_all:
-        print("remove duplicate words:".ljust(40), line)
+        # Remove duplicate words
+        line = remove_duplicate_words(line)
+        if show_all:
+            print("remove duplicate words:".ljust(40), line)
 
-    # Remove single-character words
-    line = remove_lenght1_words(line)
-    if show_all:
-        print("remove single-character words:".ljust(40), line)
+        # Remove single-character words
+        line = remove_lenght1_words(line)
+        if show_all:
+            print("remove single-character words:".ljust(40), line)
 
-    # Sort words alphabetically
-    line = sort_words_alphabetically(line)
-    if show_all:
-        print("alphabetical sorting:".ljust(40), line)
+        # Sort words alphabetically
+        line = sort_words_alphabetically(line)
+        if show_all:
+            print("alphabetical sorting:".ljust(40), line)
 
     if show_something or show_all:
         print("complete normalization:".ljust(40), line, "\n")
 
     return line
-
-
-import csv
 
 
 def pipeline(
@@ -544,9 +576,11 @@ def pipeline(
     delimiter=",",
     show_all=False,
     show_something=False,
+    translation_nedded=True,
+    only_translation=False
 ) -> None:
     """
-    Function to execute the normalization pipeline on a specific column of a csv file.
+    Function to execute the normalization pipeline on a specific column of a CSV file.
 
     :param input_file: path of the file to normalize
     :param output_file: path of the output file
@@ -557,9 +591,17 @@ def pipeline(
     :param show_something: if True, shows some normalization steps
     """
 
+    # Check if output file exists and get the number of lines already processed
+    start_row = 0
+    if os.path.exists(output_file):
+        with open(output_file, "r", encoding="utf-8") as outfile:
+            existing_lines = sum(1 for _ in outfile) - 1  # Subtract header
+            start_row = existing_lines
+
+    # Open input and output files
     with (
         open(input_file, "r", encoding="utf-8") as infile,
-        open(output_file, "w", encoding="utf-8", newline="") as outfile,
+        open(output_file, "a" if start_row > 0 else "w", encoding="utf-8", newline="") as outfile,
     ):
         reader = csv.DictReader(infile, delimiter=delimiter)
         fieldnames = reader.fieldnames
@@ -573,22 +615,44 @@ def pipeline(
             )
 
         # Add the new column to the output file
-        fieldnames.append(new_column_name) #type: ignore  # type: ignore
+        if start_row == 0:  # Write header only if starting from scratch
+            fieldnames.append(new_column_name)
+            writer = csv.DictWriter(outfile, fieldnames=fieldnames, delimiter=delimiter)
+            writer.writeheader()
+        else:
+            writer = csv.DictWriter(outfile, fieldnames=fieldnames + [new_column_name], delimiter=delimiter)
 
-        writer = csv.DictWriter(
-            outfile, fieldnames=fieldnames, delimiter=delimiter
-        )
-        writer.writeheader()
+        # Skip rows that are already processed
+        for _ in range(start_row):
+            next(reader)
 
-        for row in reader:
+        total_rows = sum(1 for _ in open(input_file, "r", encoding="utf-8")) - 1  # Subtract header
+        print(f"Resuming from row {start_row + 1}. Total rows to process: {total_rows}")
+
+        start_time = time.time()
+
+        for i, row in enumerate(reader, start=start_row + 1):
             original_line = row[column_name]
             transformed_line = pipeline_core(
                 show_all=show_all,
                 show_something=show_something,
                 line=original_line,
+                translation_nedded=translation_nedded,
+                only_translation=only_translation
             )
             # Write the normalized value in the new column
             row[new_column_name] = transformed_line
             writer.writerow(row)
 
-    print("Normalization complete")
+            # Calculate time remaining
+            elapsed_time = time.time() - start_time
+            avg_time_per_row = elapsed_time / (i - start_row)
+            remaining_time = avg_time_per_row * (total_rows - i)
+
+            print(
+                f"Processed {i}/{total_rows} rows. "
+                f"Estimated time remaining: {remaining_time:.2f} seconds",
+                end="\r"
+            )
+
+    print(f"\nNormalization complete. Process resumed from row {start_row + 1}.")
