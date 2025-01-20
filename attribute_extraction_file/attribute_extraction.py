@@ -2,11 +2,13 @@
 File thar contains functions for attribute extraction
 """
 
-
 import csv
 import ollama
 import os
 import sys
+import time
+
+csv.field_size_limit(new_limit=sys.maxsize)
 
 
 def add_to_sys_path(folder_name):
@@ -64,7 +66,13 @@ def add_user_attributes(
         )
         writer.writeheader()
 
-        for row in reader:
+        total_lines = sum(1 for _ in reader)
+        infile.seek(0)
+        next(reader)
+
+        start_time = time.time()
+
+        for idx, row in enumerate(reader, start=1):
             extracted_attributes_dictionary = {}
 
             # Initialize new columns with empty values
@@ -86,6 +94,16 @@ def add_user_attributes(
                     row[column] = extracted_attributes_dictionary[column]
 
             writer.writerow(row)
+
+            if idx % 5 == 0:
+                elapsed_time = time.time() - start_time
+                estimated_total_time = (elapsed_time / idx) * total_lines
+                remaining_time = estimated_total_time - elapsed_time
+                days, remainder = divmod(int(remaining_time), 86400)
+                hours, remainder = divmod(remainder, 3600)
+                minutes, _ = divmod(remainder, 60)
+                print(f"Estimated time remaining: {days} days, {hours} hours, {minutes} minutes")
+
 
     print("Normalization complete")
 
@@ -132,18 +150,15 @@ def support_add_user_attributes(extracted_attributes_dictionary, original_line, 
     PARAMETER top_k 1
     """
 
-
-    model = OllamaModel(modelfile=modelfile, model_name="attribute_extractor")
+    _model_instance = None
 
     try:
 
-        # Call the model
-        extracted_attributes_string = model.generate(original_line)
+        if _model_instance is None:
+            _model_instance = OllamaModel(modelfile=modelfile, model_name="attribute_extractor")
 
-
-        extracted_attributes_string = extracted_attributes_string[
-            "response"
-        ].replace("####### ", "")
+        extracted_attributes_string = _model_instance.generate(original_line).strip()
+        extracted_attributes_string = extracted_attributes_string.replace("####### ", "")
 
         # Parse attributes
         if show_progress:
@@ -222,10 +237,7 @@ def support_add_user_attributes(extracted_attributes_dictionary, original_line, 
                 else:
                     attribute = ""
         return extracted_attributes_dictionary
-    except:
-        model._handle_creation_error()
-        return support_add_user_attributes(
-                    extracted_attributes_dictionary=extracted_attributes_dictionary,
-                    original_line=original_line,
-                    show_progress=show_progress
-                    )
+    except Exception as e:
+        print(f"Attribute extraction failed: {e}")
+        _model_instance = None
+        return support_add_user_attributes(extracted_attributes_dictionary, original_line, show_progress)

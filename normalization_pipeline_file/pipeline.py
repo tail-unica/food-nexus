@@ -19,6 +19,7 @@ from nltk.stem import WordNetLemmatizer
 from typing import Optional
 import time
 
+csv.field_size_limit(sys.maxsize)
 
 def add_to_sys_path(folder_name):
     utils_path = os.path.abspath(
@@ -641,8 +642,12 @@ def pipeline(
                 only_translation=only_translation
             )
             # Write the normalized value in the new column
-            row[new_column_name] = transformed_line
-            writer.writerow(row)
+            for i, row in enumerate(reader, start=start_row + 1):
+                if None in row:
+                    print(f"Row {i} contains None keys: {row}")
+                row[new_column_name] = transformed_line
+                writer.writerow(row)
+            
 
             # Calculate time remaining
             elapsed_time = time.time() - start_time
