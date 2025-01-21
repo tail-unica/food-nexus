@@ -20,6 +20,29 @@ add_to_sys_path("../ollama_server_file")
 from ollama_server import OllamaModel  # type: ignore
 
 
+def count_lines_in_csv(filename, delimiter):
+    """
+    Count lines in a CSV file, properly handling quoted fields with newlines and delimiters.
+    
+    :param filename: Path to the CSV file
+    :param delimiter: CSV delimiter
+    :return: Number of lines (excluding header)
+    """
+    try:
+        with open(filename, 'r', encoding='utf-8') as file:
+            reader = csv.reader(
+                file, 
+                delimiter=delimiter,
+                quotechar='"',
+                quoting=csv.QUOTE_MINIMAL
+            )
+            next(reader, None)  # Skip header
+            return sum(1 for _ in reader)
+    except Exception as e:
+        print(f"Error counting lines: {str(e)}")
+        return 0
+
+
 def add_user_attributes(
     input_file,
     output_file,
@@ -30,7 +53,7 @@ def add_user_attributes(
     show_progress=True,
 ) -> None:
     """
-    Funcion for infere new attribute about user, given an existing attribute
+    Function for infere new attribute about user, given an existing attribute with checkpoint system
 
     :param input_file: Input file path
     :param output_file: Output file path
@@ -42,12 +65,31 @@ def add_user_attributes(
 
     :return: None
     """
-
+    
+    # Check if output file exists and count its lines
+    skip_rows = 0
+    if os.path.exists(output_file):
+        skip_rows = count_lines_in_csv(output_file, delimiter2)
+        print(f"Found existing output file with {skip_rows} processed rows. Continuing from this point.")
+        
+        # Verify input file total
+        input_total = count_lines_in_csv(input_file, delimiter)
+        if skip_rows > input_total:
+            print(f"Warning: Output file has more rows ({skip_rows}) than input file ({input_total})")
+            return
+    
+    mode = "a" if skip_rows > 0 else "w"
+    
     with (
         open(input_file, "r", encoding="utf-8") as infile,
-        open(output_file, "w", encoding="utf-8", newline="") as outfile,
+        open(output_file, mode, encoding="utf-8", newline="") as outfile,
     ):
-        reader = csv.DictReader(infile, delimiter=delimiter)
+        reader = csv.DictReader(
+            infile, 
+            delimiter=delimiter,
+            quotechar='"',
+            quoting=csv.QUOTE_MINIMAL
+        )
         fieldnames = reader.fieldnames
 
         if fieldnames is None:
@@ -62,17 +104,33 @@ def add_user_attributes(
         fieldnames.extend(new_column_names)  # type: ignore
 
         writer = csv.DictWriter(
-            outfile, fieldnames=fieldnames, delimiter=delimiter2
+            outfile, 
+            fieldnames=fieldnames, 
+            delimiter=delimiter2,
+            quotechar='"',
+            quoting=csv.QUOTE_MINIMAL
         )
-        writer.writeheader()
+        
+        if mode == "w":
+            writer.writeheader()
 
-        total_lines = sum(1 for _ in reader)
         infile.seek(0)
-        next(reader)
+        total_lines = sum(1 for _ in infile)
+        infile.seek(0)
+        next(reader)  # Skip header after seek
+        
+        for _ in range(skip_rows):
+            try:
+                next(reader)
+            except StopIteration:
+                print("Warning: Reached end of file while skipping rows")
+                return
 
         start_time = time.time()
+        rows_processed = 0
 
-        for idx, row in enumerate(reader, start=1):
+        for idx, row in enumerate(reader, start=skip_rows+1):
+            rows_processed += 1
             extracted_attributes_dictionary = {}
 
             # Initialize new columns with empty values
@@ -95,15 +153,17 @@ def add_user_attributes(
 
             writer.writerow(row)
 
-            if idx % 5 == 0:
+            if rows_processed % 20 == 0:
                 elapsed_time = time.time() - start_time
-                estimated_total_time = (elapsed_time / idx) * total_lines
-                remaining_time = estimated_total_time - elapsed_time
-                days, remainder = divmod(int(remaining_time), 86400)
-                hours, remainder = divmod(remainder, 3600)
-                minutes, _ = divmod(remainder, 60)
-                print(f"Estimated time remaining: {days} days, {hours} hours, {minutes} minutes")
-
+                remaining_rows = total_lines - (skip_rows + rows_processed)
+                if rows_processed > 0:
+                    time_per_row = elapsed_time / rows_processed
+                    estimated_remaining_time = remaining_rows * time_per_row
+                    days, remainder = divmod(int(estimated_remaining_time), 86400)
+                    hours, remainder = divmod(remainder, 3600)
+                    minutes, seconds = divmod(remainder, 60)
+                    print(f"Processed {skip_rows + rows_processed} of {total_lines} rows")
+                    print(f"Estimated time remaining: {days} days, {hours} hours, {minutes} minutes, {seconds} seconds")
 
     print("Normalization complete")
 

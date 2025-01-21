@@ -617,11 +617,11 @@ def pipeline(
 
         # Add the new column to the output file
         if start_row == 0:  # Write header only if starting from scratch
-            fieldnames.append(new_column_name)
+            fieldnames.append(new_column_name) #type: ignore
             writer = csv.DictWriter(outfile, fieldnames=fieldnames, delimiter=delimiter)
             writer.writeheader()
         else:
-            writer = csv.DictWriter(outfile, fieldnames=fieldnames + [new_column_name], delimiter=delimiter)
+            writer = csv.DictWriter(outfile, fieldnames=fieldnames + [new_column_name], delimiter=delimiter) #type: ignore
 
         # Skip rows that are already processed
         for _ in range(start_row):
