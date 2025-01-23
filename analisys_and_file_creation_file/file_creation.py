@@ -339,3 +339,37 @@ def extract_description(
                         writer.writerow([row[column_name]])
                 else:
                     break
+
+
+def transform_groups_in_tags(
+    input_file,
+    output_file,
+    columns_name,
+    delimiter1=",",
+    delimiter2=","  
+):
+    """
+    Function to transform specified columns into new tags within the 'tags' column.
+
+    :param input_file: Path to the CSV file to read.
+    :param output_file: Path to the output CSV file.
+    :param columns_name: List of column names to be transformed.
+    :param delimiter1: Delimiter for the input CSV file.
+    :param delimiter2: Delimiter for the output CSV file.
+    :return: None
+    """
+    # Load the CSV file
+    df = pd.read_csv(input_file, delimiter=delimiter1)
+
+    # Ensure 'tags' column is treated as a string and missing values are handled
+    df['tags'] = df['tags'].fillna("[]").astype(str)
+
+    # Process each row
+    for col in columns_name:
+        if col in df.columns:
+            df[col] = df[col].astype(str).str.replace(" ", "_")
+            df['tags'] = df.apply(lambda row: row['tags'].rstrip("]") + ", '" + row[col] + "']" if row['tags'].endswith("]") else row['tags'] + ", '" + row[col] + "']", axis=1)
+    
+    # Save the updated DataFrame
+    df.to_csv(output_file, index=False, sep=delimiter2)
+    print(f"File saved successfully to {output_file}")

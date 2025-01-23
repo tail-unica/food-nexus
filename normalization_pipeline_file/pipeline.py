@@ -592,14 +592,16 @@ def pipeline(
     :param show_something: if True, shows some normalization steps
     """
 
-    # Check if output file exists and get the number of lines already processed
+    def count_rows(file_path, delimiter):
+        with open(file_path, "r", encoding="utf-8") as f:
+            reader = csv.reader(f, delimiter=delimiter)
+            return sum(1 for _ in reader) - 1  # Subtract header
+
+    # Check if output file exists and count its processed rows
     start_row = 0
     if os.path.exists(output_file):
-        with open(output_file, "r", encoding="utf-8") as outfile:
-            existing_lines = sum(1 for _ in outfile) - 1  # Subtract header
-            start_row = existing_lines
+        start_row = count_rows(output_file, delimiter)
 
-    # Open input and output files
     with (
         open(input_file, "r", encoding="utf-8") as infile,
         open(output_file, "a" if start_row > 0 else "w", encoding="utf-8", newline="") as outfile,
@@ -615,19 +617,16 @@ def pipeline(
                 f"Column '{column_name}' not found in the input file."
             )
 
-        # Add the new column to the output file
-        if start_row == 0:  # Write header only if starting from scratch
-            fieldnames.append(new_column_name) #type: ignore
-            writer = csv.DictWriter(outfile, fieldnames=fieldnames, delimiter=delimiter)
-            writer.writeheader()
-        else:
-            writer = csv.DictWriter(outfile, fieldnames=fieldnames + [new_column_name], delimiter=delimiter) #type: ignore
+        fieldnames.append(new_column_name)
+        writer = csv.DictWriter(outfile, fieldnames=fieldnames, delimiter=delimiter)
 
-        # Skip rows that are already processed
+        if start_row == 0:
+            writer.writeheader()
+
         for _ in range(start_row):
             next(reader)
 
-        total_rows = sum(1 for _ in open(input_file, "r", encoding="utf-8")) - 1  # Subtract header
+        total_rows = count_rows(input_file, delimiter)
         print(f"Resuming from row {start_row + 1}. Total rows to process: {total_rows}")
 
         start_time = time.time()
@@ -641,23 +640,20 @@ def pipeline(
                 translation_nedded=translation_nedded,
                 only_translation=only_translation
             )
-            # Write the normalized value in the new column
-            for i, row in enumerate(reader, start=start_row + 1):
-                if None in row:
-                    print(f"Row {i} contains None keys: {row}")
-                row[new_column_name] = transformed_line
-                writer.writerow(row)
-            
+            row[new_column_name] = transformed_line
+            writer.writerow(row)
 
-            # Calculate time remaining
-            elapsed_time = time.time() - start_time
-            avg_time_per_row = elapsed_time / (i - start_row)
-            remaining_time = avg_time_per_row * (total_rows - i)
+            if i % 20 == 0:
+                elapsed_time = time.time() - start_time
+                avg_time_per_row = elapsed_time / (i - start_row)
+                remaining_time = avg_time_per_row * (total_rows - i)
+                days, remainder = divmod(int(remaining_time), 86400)
+                hours, remainder = divmod(remainder, 3600)
+                minutes, seconds = divmod(remainder, 60)
 
-            print(
-                f"Processed {i}/{total_rows} rows. "
-                f"Estimated time remaining: {remaining_time:.2f} seconds",
-                end="\r"
-            )
+                print(
+                    f"Processed {i}/{total_rows} rows. Estimated time remaining: {days} days, {hours} hours, {minutes} minutes",
+                    end="\r"
+                )
 
     print(f"\nNormalization complete. Process resumed from row {start_row + 1}.")
