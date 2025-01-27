@@ -83,7 +83,13 @@ class OllamaModel:
             self.model_name = self._extract_model_name() + "_custom"
 
         try:
-            self.client.create(self.model_name, modelfile=self.modelfile)
+            with open(self.modelfile, "r") as file:
+                model_definition = file.read()
+            self.client.create(
+                model=self.model_name,
+                from_="qwen2.5:32b", 
+                system=model_definition  
+            )
         except Exception as e:
             print(f"Error creating model: {e}")
             self._handle_creation_error()
@@ -105,7 +111,14 @@ class OllamaModel:
         start_ollama_server(new_host)
         self.host = new_host
         self.client = ollama.Client(new_host)
-        self.client.create(self.model_name, modelfile=self.modelfile)
+        with open(self.modelfile, "r") as file:
+            model_definition = file.read()
+        self.client.create(
+            model=self.model_name,
+            from_="qwen2.5:32b", 
+            system=model_definition 
+        )
+
 
 
     def _initialize_server(self):
