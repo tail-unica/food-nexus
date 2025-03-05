@@ -258,8 +258,7 @@ def calculate_macronutrient_similarity(tuple1, tuple2):
 
 
 def find_k_most_similar_pairs_with_indicators(
-    list1, list2, k=1, model="paraphrase-MiniLM-L3-v2", use_indicator=False, batch_size=1
-):
+    list1, list2, k=1, model="paraphrase-MiniLM-L3-v2", use_indicator=False, batch_size=1):
     """
     Finds the k most similar items from list2 for each item in list1, considering
     both cosine similarity and the macronutrient similarity index.
@@ -284,7 +283,7 @@ def find_k_most_similar_pairs_with_indicators(
     names2 = [t[0] for t in list2]
 
     # Calculate embeddings for list2
-    embeddings2 = model.encode(names2, convert_to_tensor=True, device=device, batch_size=batch_size)
+    embeddings2 = model.encode(sentences=names2, convert_to_tensor=True, device=device, batch_size=batch_size)
     most_similar_tuples = []
 
     for item in list1:
@@ -298,9 +297,13 @@ def find_k_most_similar_pairs_with_indicators(
         # Calculate the total combined score for each item in list2
         total_scores = []
         for j, tuple2 in enumerate(list2):
-            macronutrient_similarity = calculate_macronutrient_similarity(
-                item[1:4], tuple2[1:4]
-            )
+            if use_indicator != False:
+                macronutrient_similarity = calculate_macronutrient_similarity(
+                    item[1:4], tuple2[1:4]
+                )
+            else:
+                macronutrient_similarity = 0
+                 
             total_score = cosine_scores[j].item() + macronutrient_similarity
             total_scores.append(
                 (tuple2[0], total_score, tuple2[-1])

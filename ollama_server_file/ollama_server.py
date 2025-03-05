@@ -9,6 +9,7 @@ import os
 import subprocess
 import ollama
 import socket
+import signal
 
 
 ollama_servers = {}
@@ -59,11 +60,20 @@ def stop_ollama_server(host):
         process = ollama_servers[host]
         process.terminate()
         try:
-            process.wait(timeout=5)
+            process.wait(timeout=3)
         except subprocess.TimeoutExpired:
+            print("timeout reached")
             process.kill()
         del ollama_servers[host]
         print(f"Stopped Ollama server on port {host}.")
+
+
+class TimeoutException(Exception):
+    pass
+
+
+def timeout_handler(signum, frame):
+    raise TimeoutException("Timeout: no response from Ollama server.")
 
 
 class OllamaModel:
@@ -133,8 +143,17 @@ class OllamaModel:
         :param prompt: the prompt to give to the model
         :return: the model rensponse
         """
+        signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(10)  
+
         try:
-            return self.client.generate(self.model_name, prompt)["response"]
+            response = self.client.generate(self.model_name, prompt)["response"]
+            signal.alarm(0) 
+            return response
+        except TimeoutException:
+            print("Timeout reached: Restarting Ollama server.")
+            self._handle_creation_error()
+            return self.generate(prompt)
         except Exception as e:
             print(f"Error generating response: {e}")
             self._handle_creation_error()

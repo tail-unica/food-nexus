@@ -5,6 +5,8 @@ Script for merging the two ontologies
 
 import os
 import sys
+import time
+import csv
 from rdflib import RDF, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL
 
@@ -54,7 +56,7 @@ def create_completed_ontology(
     """
 
     # Define the output file path
-    file_output = "./csv_file/unica_food_ontology.ttl"
+    file_output = "./csv_file/complete_food_ontology.ttl"
 
     # Initialize the graph and namespaces
     g = Graph()
@@ -68,7 +70,7 @@ def create_completed_ontology(
     g.bind("schema", SCHEMA)
 
     # Ontology versioning
-    link_ontology = "https://github.com/tail-unica/kgeats/unica_food_ontology"
+    link_ontology = "https://github.com/tail-unica/kgeats/unica_complete_food_ontology"
     ontology_iri = URIRef(f"{link_ontology}")
     version_iri = URIRef(f"{link_ontology}/1.0")
     version_info = Literal("Version 1.0 - Initial release", lang="en")
@@ -96,12 +98,25 @@ def create_completed_ontology(
         temp_graph.parse(file_path, format="turtle")
         g += temp_graph
 
+        print(f"added to onthology the subonthology {file_path}")
+
+
+
     ### Merge the ontologies ###
     if merge:
 
+        print(f"starting the merging process")
+
+        file_off_hummus = "./csv_file/file_off_hummus.csv"
+        file_off_foodkg = "./csv_file/file_off_foodkg.csv"
+        header1 = ["Score", "hummus_recipes", "off_recipe"]
+        header2 = ["Score", "off_recipe", "foodkg_recipe"]
+        set_off_hummus = set()
+        set_off_foodkg = set()
+
         # Columns of the hummus file to be used for the merging
         hummus_file_path = "./csv_file/pp_recipes_normalized_by_pipeline.csv"
-        hummus_column = [
+        hummus_column: list[str] = [
             "title",
             "totalFat [g]",
             "totalCarbohydrate [g]",
@@ -138,38 +153,70 @@ def create_completed_ontology(
             food_kg_path, foodkg_column, delimiter=","
         )
 
+
+
         ### Merge hummus and off ###
         most_similar_pairs = find_k_most_similar_pairs_with_indicators(
             list_hummus_recipe,
             list_off_recipe,
-            k=1,
+            k=-1,
             model=model,
             use_indicator=True,
         )
 
-        for score, original_name1, original_name2 in most_similar_pairs:
-            if float(score) > threshold_value:
+        with open(file_off_hummus, mode="w", newline="", encoding="utf-8") as file:
+            writer = csv.writer(file)
+            writer.writerow(header1)
 
-                hummus_recipes = [
-                    recipe
-                    for recipe in g.subjects(RDF.type, SCHEMA.Recipe)
-                    if (recipe, SCHEMA.name, Literal(original_name1, lang="en"))
-                    in g
-                    and recipe.startswith(str(UNICA) + "Recipe_hummus")  # type: ignore
-                ]
+            length_pair = len(most_similar_pairs)
+            print_every = 1000
+            count_pair = 0
+            start_time = time.time()
 
-                off_recipes = [
-                    recipe
-                    for recipe in g.subjects(RDF.type, SCHEMA.Recipe)
-                    if (recipe, SCHEMA.name, Literal(original_name2, lang="en"))
-                    in g
-                    and recipe.startswith(str(UNICA) + "Recipe_off")  # type: ignore
-                ]
+            for score, original_name1, original_name2 in most_similar_pairs:
 
-                for hummus_recipe in hummus_recipes:
-                    for off_recipe in off_recipes:
-                        g.add((hummus_recipe, SCHEMA.sameAs, off_recipe))
-                        g.add((off_recipe, SCHEMA.sameAs, hummus_recipe))
+                if length_pair % print_every == 0:
+                    elapsed_time = time.time() - start_time
+                    avg_time_per_row = elapsed_time / count_pair
+                    remaining_time = avg_time_per_row * (length_pair - count_pair)
+                    days, remainder = divmod(int(remaining_time), 86400)
+                    hours, remainder = divmod(remainder, 3600)
+                    minutes, seconds = divmod(remainder, 60)
+
+                    print(
+                        f"\n\n(off-hum) Processed {count_pair}/{length_pair} rows. Estimated time remaining: {days} days, {hours} hours, {minutes} minutes\n\n",
+                        end="\r"
+                    )
+
+                if float(score) > threshold_value:
+
+                    element = [score, original_name1, original_name2]
+                    if tuple(element) not in set_off_hummus:
+                        set_off_hummus.add(tuple(element))
+                        writer.writerow(element)
+
+                        hummus_recipes = [
+                            recipe
+                            for recipe in g.subjects(RDF.type, SCHEMA.Recipe)
+                            if (recipe, SCHEMA.name, Literal(original_name1, lang="en"))
+                            in g
+                            and recipe.startswith(str(UNICA) + "Recipe_hummus")  # type: ignore
+                        ]
+
+                        off_recipes = [
+                            recipe
+                            for recipe in g.subjects(RDF.type, SCHEMA.Recipe)
+                            if (recipe, SCHEMA.name, Literal(original_name2, lang="en"))
+                            in g
+                            and recipe.startswith(str(UNICA) + "Recipe_off")  # type: ignore
+                        ]
+
+                        for hummus_recipe in hummus_recipes:
+                            for off_recipe in off_recipes:
+                                g.add((hummus_recipe, SCHEMA.sameAs, off_recipe))
+                                g.add((off_recipe, SCHEMA.sameAs, hummus_recipe))
+
+
 
         ### Merge foodkg and off ###
         for i, item in enumerate(list_off_recipe):
@@ -178,43 +225,72 @@ def create_completed_ontology(
         most_similar_pairs = find_k_most_similar_pairs_with_indicators(
             list_off_recipe,
             list_foodkg,
-            k=1,
+            k=-1,
             model=model,
             use_indicator=False,
         )
 
-        for score, original_name1, original_name2 in most_similar_pairs:
+        with open(file_off_foodkg, mode="w", newline="", encoding="utf-8") as file:
+            writer = csv.writer(file)
+            writer.writerow(header2)
 
-            if float(score) > threshold_value:
+            length_pair = len(most_similar_pairs)
+            print_every = 1000
+            count_pair = 0
 
-                off_recipes = [
-                    recipe
-                    for recipe in g.subjects(RDF.type, SCHEMA.Recipe)
-                    if (recipe, SCHEMA.name, Literal(original_name1, lang="en"))
-                    in g
-                    and recipe.startswith(str(UNICA) + "Recipe_off")  # type: ignore
-                ]
+            for score, original_name1, original_name2 in most_similar_pairs:
+                
+                if length_pair % print_every == 0:
+                    elapsed_time = time.time() - start_time
+                    avg_time_per_row = elapsed_time / count_pair
+                    remaining_time = avg_time_per_row * (length_pair - count_pair)
+                    days, remainder = divmod(int(remaining_time), 86400)
+                    hours, remainder = divmod(remainder, 3600)
+                    minutes, seconds = divmod(remainder, 60)
 
-                foodkg_recipes = [
-                    recipe
-                    for recipe in g.subjects(RDF.type, SCHEMA.Recipe)
-                    if (
-                        recipe,
-                        SCHEMA.identifier,
-                        Literal(
-                            sanitize_for_uri(
-                                original_name2.replace(" ", "_").lower()
-                            )
-                        ),
+                    print(
+                        f"\n\n(off-fkg) Processed {count_pair}/{length_pair} rows. Estimated time remaining: {days} days, {hours} hours, {minutes} minutes\n\n",
+                        end="\r"
                     )
-                    in g
-                    and recipe.startswith(str(UNICA) + "Recipe_Ingredient")  # type: ignore
-                ]
 
-                for foodkg_recipe in foodkg_recipes:
-                    for off_recipe in off_recipes:
-                        g.add((foodkg_recipe, SCHEMA.sameAs, off_recipe))
-                        g.add((off_recipe, SCHEMA.sameAs, foodkg_recipe))
+                if float(score) > threshold_value:
+                    
+                    element = [score, original_name1, original_name2]
+
+                    if tuple(element) not in set_off_foodkg:
+                        set_off_foodkg.add(tuple(element))
+                        writer.writerow(element)
+
+                        off_recipes = [
+                            recipe
+                            for recipe in g.subjects(RDF.type, SCHEMA.Recipe)
+                            if (recipe, SCHEMA.name, Literal(original_name1, lang="en"))
+                            in g
+                            and recipe.startswith(str(UNICA) + "Recipe_off")  # type: ignore
+                        ]
+
+                        foodkg_recipes = [
+                            recipe
+                            for recipe in g.subjects(RDF.type, SCHEMA.Recipe)
+                            if (
+                                recipe,
+                                SCHEMA.identifier,
+                                Literal(
+                                    sanitize_for_uri(
+                                        original_name2.replace(" ", "_").lower()
+                                    )
+                                ),
+                            )
+                            in g
+                            and recipe.startswith(str(UNICA) + "Recipe_Ingredient")  # type: ignore
+                        ]
+
+                        for foodkg_recipe in foodkg_recipes:
+                            for off_recipe in off_recipes:
+                                g.add((foodkg_recipe, SCHEMA.sameAs, off_recipe))
+                                g.add((off_recipe, SCHEMA.sameAs, foodkg_recipe))
+
+
 
     # Save the RDF graph in Turtle format
     g.serialize(destination=file_output, format="turtle")

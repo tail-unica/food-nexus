@@ -205,7 +205,7 @@ def test_attribute_extraction(file) -> None:
             print("Extracted attributes: \n", response["response"])
 
 
-def plot_populated_counts(csv_file, output_dir, columns, output_file):
+def plot_populated_counts(csv_file, output_dir, columns, output_file) -> None:
     """
     Creates a bar plot showing how many rows are populated for specified columns in a CSV file.
 
@@ -244,3 +244,4 @@ def plot_populated_counts(csv_file, output_dir, columns, output_file):
     plt.close()
 
     print(f"Plot saved at: {plot_path}")
+

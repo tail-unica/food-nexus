@@ -28,6 +28,7 @@ def create_food_expert() -> None:
         }
     )
 
+
 def create_attribute_extractor() -> None:
     """
     Calling this function creates a attributes extractor model
@@ -49,6 +50,7 @@ def create_attribute_extractor() -> None:
         }
     )
 
+
 def create_translation_model() -> None:
     """
     Calling this function creates a translation model
@@ -69,3 +71,5 @@ def create_translation_model() -> None:
             "top_k": 1
         }
     )
+
+    

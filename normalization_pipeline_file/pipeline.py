@@ -586,7 +586,7 @@ def pipeline(
                 f"Column '{column_name}' not found in the input file."
             )
 
-        fieldnames.append(new_column_name)
+        fieldnames.append(new_column_name) #type:ignore
         writer = csv.DictWriter(outfile, fieldnames=fieldnames, delimiter=delimiter)
 
         if start_row == 0:
@@ -610,7 +610,11 @@ def pipeline(
                 only_translation=only_translation
             )
             row[new_column_name] = transformed_line
-            writer.writerow(row)
+
+            row = {key: value for key, value in row.items() if key in fieldnames}
+
+            if row != None:
+                writer.writerow(row)
 
             if i % 20 == 0:
                 elapsed_time = time.time() - start_time
@@ -621,7 +625,7 @@ def pipeline(
                 minutes, seconds = divmod(remainder, 60)
 
                 print(
-                    f"Processed {i}/{total_rows} rows. Estimated time remaining: {days} days, {hours} hours, {minutes} minutes",
+                    f"\n\nProcessed {i}/{total_rows} rows. Estimated time remaining: {days} days, {hours} hours, {minutes} minutes\n\n",
                     end="\r"
                 )
 

@@ -9,6 +9,10 @@ from rdflib import RDF, RDFS, XSD, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL
 from sentence_transformers import SentenceTransformer, util
 import ast
+import gc 
+import os
+    
+
 
 def sanitize_for_uri(value) -> str:
     """
@@ -303,6 +307,8 @@ def convert_hummus_in_rdf(
     prior_version_iri = URIRef(f"{link_ontology}/0.0")
     g.add((ontology_iri, OWL.priorVersion, prior_version_iri))
 
+    print("added the versioning info")
+
     # input file
     if use_row:
         file_recipes = "../csv_file/pp_recipes_rows.csv"
@@ -311,12 +317,12 @@ def convert_hummus_in_rdf(
     else:
         file_recipes = "../csv_file/pp_recipes.csv"
         if use_infered_attributes_description:
-            file_users = "../csv_file/pp_members_normalized.csv"
+            file_users = "../csv_file/pp_members_with_attributes.csv"
         else:
             file_users = "../csv_file/pp_members.csv"
 
         if use_infered_attributes_review:
-            file_review = "../csv_file/pp_reviews_normalized.csv"
+            file_review = "../csv_file/pp_reviews_with_attributes.csv"
         else:
             file_review = "../csv_file/pp_reviews.csv"
 
@@ -326,9 +332,9 @@ def convert_hummus_in_rdf(
         file_output = "../csv_file/ontology_hummus_not_infered.ttl"
 
     # Upload the CSV
-    df_ricette = pd.read_csv(file_recipes, on_bad_lines="skip")
-    df_review = pd.read_csv(file_review, on_bad_lines="skip")
-    df_utenti = pd.read_csv(file_users, on_bad_lines="skip")
+    df_ricette = pd.read_csv(file_recipes, on_bad_lines="skip", low_memory=False)
+    df_review = pd.read_csv(file_review, on_bad_lines="skip", low_memory=False)
+    df_utenti = pd.read_csv(file_users, on_bad_lines="skip", low_memory=False)
 
     tag_count = {}
     ingredient_count = {}
@@ -357,6 +363,8 @@ def convert_hummus_in_rdf(
         "fsa_score": "fsaScore",
         "nutri_score": "nutriScore",
     }
+
+    print("starting user creation")
 
     # Create the entity UserGroup
     for idx, row in df_utenti.iterrows():
@@ -418,7 +426,12 @@ def convert_hummus_in_rdf(
                 if pd.notna(row["user_constraints"]):
                     contraint_list = row["user_constraints"].split(";")
                     for contraint in contraint_list:
-                        constraint_name, constraint_value = contraint.split(":")
+                        #constraint_name, constraint_value = contraint.split(":")
+                        try: 
+                            constraint_name, constraint_value = contraint.split(":", 1)
+                        except ValueError:
+                            #print(f"Bad format: {contraint}, idx: {idx}")
+                            continue
 
                         if constraint_name == "physical activity category":
                             g.add(
@@ -456,8 +469,17 @@ def convert_hummus_in_rdf(
                                 )
                             g.add((group_id, SCHEMA.hasConstraint, tag_id))
 
+
+    print("starting recipe creation")
+
     # Create the entity Recipe
+    conta = 0
     for idx, row in df_ricette.iterrows():
+        conta +=1
+        if conta % 10000 == 0:
+            print(f"row: {conta}")
+
+
         if pd.notna(row["recipe_id"]):
             recipe_id = URIRef(
                 UNICA[f"Recipe_hummus{sanitize_for_uri(row['recipe_id'])}"]
@@ -533,7 +555,7 @@ def convert_hummus_in_rdf(
                 )
 
                 # Continue only if we found a match and the value is not NaN
-                if csv_column and pd.notna(row[csv_column]):
+                if csv_column and pd.notna(row[csv_column]): #type: ignore
                     if col in qualitatives_indicators_hummus.keys():
                         col = qualitatives_indicators_hummus[col]
                     indicator_id = URIRef(
@@ -671,8 +693,15 @@ def convert_hummus_in_rdf(
                             )
                         )
 
+    print("starting review creation")
+
+    conta = 0
     # Create UserReview entities and relationships
     for idx, row in df_review.iterrows():
+        conta += 1
+        if conta % 10000 == 0:
+            print(f"row: {conta}")
+    
         if pd.notna(row["rating"]) and isinstance(row["rating"], (int, float)):
             review_id = URIRef(UNICA[f"Review_{sanitize_for_uri(idx)}"])
             g.add(
@@ -785,9 +814,12 @@ def convert_hummus_in_rdf(
                     if pd.notna(row["user_constraints"]):
                         contraint_list = row["user_constraints"].split(";")
                         for contraint in contraint_list:
-                            constraint_name, constraint_value = contraint.split(
-                                ":"
-                            )
+                            try: 
+                                constraint_name, constraint_value = contraint.split(":", 1)
+                            except ValueError:
+                                print(f"Bad format: {contraint}")
+                                continue
+                            
                             tag_id = URIRef(
                                 UNICA[
                                     f"Constraint_{sanitize_for_uri(constraint_name).strip()}_{sanitize_for_uri(constraint_value).strip()}"
@@ -825,38 +857,18 @@ def convert_off_in_rdf(use_row=False) -> None:
     Function to convert off data into RDF format
     """
 
-    # Initialize the graph and namespaces
-    g = Graph()
-
-    # Define namespaces
-    UNICA = Namespace("https://github.com/tail-unica/kgeats/")
-    SCHEMA = Namespace("https://schema.org/")
-
-    # Associate namespaces with the graph
-    g.bind("unica", UNICA)
-    g.bind("schema", SCHEMA)
-
-    # Ontology versioning
-    link_ontology = "https://github.com/tail-unica/kgeats/off"
-    ontology_iri = URIRef(f"{link_ontology}")
-    version_iri = URIRef(f"{link_ontology}/1.0")
-    version_info = Literal("Version 1.0 - Initial release", lang="en")
-
-    g.add((ontology_iri, RDF.type, OWL.Ontology))
-    g.add((ontology_iri, OWL.versionIRI, version_iri))
-    g.add((ontology_iri, OWL.versionInfo, version_info))
-
-    # Reference to the previous version
-    prior_version_iri = URIRef(f"{link_ontology}/0.0")
-    g.add((ontology_iri, OWL.priorVersion, prior_version_iri))
-
-    # File of input and output
+    # File paths
     if use_row:
         off_file = "../csv_file/off_rows.csv"
     else:
-        off_file = "../csv_file/en.openfoodfacts.org.products.csv"
-    file_output = "../csv_file/ontology_off.ttl"
-
+        off_file = "../csv_file/off_english.csv"
+    
+    # Create output directory if it doesn't exist
+    output_dir = "../csv_file/chunks/"
+    os.makedirs(output_dir, exist_ok=True)
+    
+    final_output = "../csv_file/ontology_off.ttl"
+    
     qualitatives_indicators: dict[str, str] = {
         "nutriscore_grade": "nutriscoreGrade",
         "nova_group": "novaGroup",
@@ -888,192 +900,172 @@ def convert_off_in_rdf(use_row=False) -> None:
         "sugars_100g": "sugars",
         "proteins_100g": "protein",
     }
+    
+    # Initialize a set to track already processed allergens and traces
+    processed_constraints = set()
+    
+    # Define namespaces (will be used in each chunk)
+    UNICA = Namespace("https://github.com/tail-unica/kgeats/")
+    SCHEMA = Namespace("https://schema.org/")
+    
+    # Process in smaller chunks for better memory management
+    chunksize = 50000  #10000 if the code run out of memory
+    chunk_files = []
+    
+    # First, create a graph with just the ontology information
+    ontology_graph = Graph()
+    ontology_graph.bind("unica", UNICA)
+    ontology_graph.bind("schema", SCHEMA)
+    
+    # Ontology versioning
+    link_ontology = "https://github.com/tail-unica/kgeats/off"
+    ontology_iri = URIRef(f"{link_ontology}")
+    version_iri = URIRef(f"{link_ontology}/1.0")
+    version_info = Literal("Version 1.0 - Initial release", lang="en")
 
-    traces_and_allergies = {}
+    ontology_graph.add((ontology_iri, RDF.type, OWL.Ontology))
+    ontology_graph.add((ontology_iri, OWL.versionIRI, version_iri))
+    ontology_graph.add((ontology_iri, OWL.versionInfo, version_info))
 
-    chunksize = 100000
-
-    # Iterate through each row to create Recipe, UserConstraint and Indicator entities
-    for df_off_chunk in pd.read_csv(off_file, sep="\t", on_bad_lines="skip", chunksize=chunksize):
+    # Reference to the previous version
+    prior_version_iri = URIRef(f"{link_ontology}/0.0")
+    ontology_graph.add((ontology_iri, OWL.priorVersion, prior_version_iri))
+    
+    # Save the ontology information
+    ontology_file = f"{output_dir}ontology_header.ttl"
+    ontology_graph.serialize(destination=ontology_file, format="turtle")
+    chunk_files.append(ontology_file)
+    
+    # Process the CSV in chunks
+    cont_chunk = 0
+    for df_off_chunk in pd.read_csv(off_file, sep="\t", on_bad_lines="skip", chunksize=chunksize, low_memory=False):
+        print(f"Processing rows from {chunksize * cont_chunk} to {chunksize * (cont_chunk+1)}")
+        
+        # Create a new graph for each chunk
+        chunk_graph = Graph()
+        chunk_graph.bind("unica", UNICA)
+        chunk_graph.bind("schema", SCHEMA)
+        
+        # Track constraints processed in this chunk
+        chunk_constraints = set()
+        
         for idx, row in df_off_chunk.iterrows():
             if pd.notna(row["product_name"]) and row["product_name"].strip() != "":
                 # Create the recipe
-                recipe_id = URIRef(
-                    UNICA[f"Recipe_off_{idx}"]
-                )  # I put _off to differentiate them from the hummus ids
-                g.add((recipe_id, RDF.type, SCHEMA.Recipe))
-                g.add(
-                    (
-                        recipe_id,
-                        SCHEMA.name,
-                        Literal(row["product_name"], lang="en"),
-                    )
-                )
-                g.add(
-                    (
-                        recipe_id,
-                        SCHEMA.identifier,
-                        Literal(idx, datatype=XSD.integer),
-                    )
-                )
+                recipe_id = URIRef(UNICA[f"Recipe_off_{idx}"]) # I put _off to differentiate them from the hummus ids
+                chunk_graph.add((recipe_id, RDF.type, SCHEMA.Recipe))
+                chunk_graph.add((recipe_id, SCHEMA.name, Literal(row["product_name"], lang="en")))
+                chunk_graph.add((recipe_id, SCHEMA.identifier, Literal(idx, datatype=XSD.integer)))
 
-                # UserConstraint
+                # Process allergens
                 if pd.notna(row["allergens"]):
                     for allergen in row["allergens"].split(","):
-                        allergen1 = allergen.replace("en:", "")
-                        allergen = sanitize_for_uri(
-                            allergen.replace("en:", "").replace("-", "_").lower()
-                        )
-                        allergen = URIRef(
-                            UNICA[f"allergen_{sanitize_for_uri(allergen)}"]
-                        )
-                        if allergen not in traces_and_allergies:
-                            traces_and_allergies[allergen] = 1
-                            g.add((allergen, RDF.type, UNICA.UserConstraint))
-                            g.add(
-                                (
-                                    allergen,
-                                    SCHEMA.constraintName,
-                                    Literal(allergen1, lang="en"),
-                                )
-                            )
-                            g.add(
-                                (
-                                    allergen,
-                                    SCHEMA.constraintDescription,
-                                    Literal(
-                                        f"is a user constraint about having an allergy to {allergen1}",
-                                        lang="en",
-                                    ),
-                                )
-                            )
+                        allergen1 = re.sub(r"..:", "", str(allergen))
+                        allergen_uri = sanitize_for_uri(allergen.replace("en:", "").replace("-", "_").lower())
+                        allergen_ref = URIRef(UNICA[f"allergen_{allergen_uri}"])
+                        
+                        # Check if we've already processed this allergen
+                        if allergen_ref not in processed_constraints:
+                            processed_constraints.add(allergen_ref)
+                            chunk_constraints.add(allergen_ref)
+                            
+                            chunk_graph.add((allergen_ref, RDF.type, UNICA.UserConstraint))
+                            chunk_graph.add((allergen_ref, SCHEMA.constraintName, Literal(allergen1, lang="en")))
+                            chunk_graph.add((
+                                allergen_ref, 
+                                SCHEMA.constraintDescription, 
+                                Literal(f"is a user constraint about having an allergy to {allergen1}", lang="en")
+                            ))
+                        
+                        chunk_graph.add((allergen_ref, SCHEMA.suitableForDiet, recipe_id))
 
-                        g.add((allergen, SCHEMA.suitableForDiet, recipe_id))
-
+                # Process traces
                 if pd.notna(row["traces_en"]):
                     for trace in row["traces_en"].split(","):
                         trace1 = trace
-                        trace = sanitize_for_uri(trace.replace("-", "_").lower())
-                        trace = URIRef(UNICA[f"trace_{sanitize_for_uri(trace)}"])
-                        if trace not in traces_and_allergies:
-                            traces_and_allergies[trace] = 1
-                            g.add((trace, RDF.type, UNICA.UserConstraint))
-                            g.add(
-                                (
-                                    trace,
-                                    SCHEMA.constraintName,
-                                    Literal(trace1, lang="en"),
-                                )
-                            )
-                            g.add(
-                                (
-                                    trace,
-                                    SCHEMA.constraintDescription,
-                                    Literal(
-                                        f"is a user constraint about having a trace of {trace1} in the product",
-                                        lang="en",
-                                    ),
-                                )
-                            )
+                        trace_uri = sanitize_for_uri(trace.replace("-", "_").lower())
+                        trace_ref = URIRef(UNICA[f"trace_{trace_uri}"])
+                        
+                        if trace_ref not in processed_constraints:
+                            processed_constraints.add(trace_ref)
+                            chunk_constraints.add(trace_ref)
+                            
+                            chunk_graph.add((trace_ref, RDF.type, UNICA.UserConstraint))
+                            chunk_graph.add((trace_ref, SCHEMA.constraintName, Literal(trace1, lang="en")))
+                            chunk_graph.add((
+                                trace_ref, 
+                                SCHEMA.constraintDescription, 
+                                Literal(f"is a user constraint about having a trace of {trace1} in the product", lang="en")
+                            ))
+                        
+                        chunk_graph.add((trace_ref, SCHEMA.suitableForDiet, recipe_id))
 
-                        g.add((trace, SCHEMA.suitableForDiet, recipe_id))
-
-                # Indicator
-                for column in df_off_chunk.columns:
-                    if column in off_indicators.keys():
+                # Process indicators
+                for column in off_indicators.keys():
+                    if column in df_off_chunk.columns:
                         indicator_value = row[column]
-                        if (
-                            pd.notna(indicator_value)
-                            and indicator_value != "unknown"
-                        ):
-                            # Create the indicator
-                            column = off_indicators[column]
-                            indicator_id = URIRef(UNICA[f"{column}_{idx}"])
-                            g.add((indicator_id, RDF.type, UNICA.Indicator))
-                            g.add((indicator_id, SCHEMA.type, Literal(column)))
+                        if pd.notna(indicator_value) and indicator_value != "unknown":
+                            column_name = off_indicators[column]
+                            indicator_id = URIRef(UNICA[f"{column_name}_{idx}"])
+                            
+                            chunk_graph.add((indicator_id, RDF.type, UNICA.Indicator))
+                            chunk_graph.add((indicator_id, SCHEMA.type, Literal(column_name)))
 
-                            if column not in qualitatives_indicators.values():
-                                g.add(
-                                    (
-                                        indicator_id,
-                                        SCHEMA.unitText,
-                                        Literal("grams"),
-                                    )
-                                )
-                                g.add(
-                                    (
-                                        indicator_id,
-                                        SCHEMA.quantity,
-                                        Literal(
-                                            indicator_value, datatype=XSD.float
-                                        ),
-                                    )
-                                )
+                            is_qualitative = column_name in qualitatives_indicators.values()
+                            
+                            is_numeric = False
+                            if not is_qualitative:
+                                try:
+                                    float(indicator_value)
+                                    is_numeric = True
+                                except (ValueError, TypeError):
+                                    is_numeric = False
+                            
+                            if is_numeric:
+                                chunk_graph.add((indicator_id, SCHEMA.unitText, Literal("grams")))
+                                chunk_graph.add((
+                                    indicator_id, 
+                                    SCHEMA.quantity, 
+                                    Literal(float(indicator_value), datatype=XSD.float)
+                                ))
                             else:
-                                g.add(
-                                    (
-                                        indicator_id,
-                                        SCHEMA.quantity,
-                                        Literal(
-                                            indicator_value, datatype=XSD.string
-                                        ),
-                                    )
-                                )
+                                chunk_graph.add((
+                                    indicator_id, 
+                                    SCHEMA.quantity, 
+                                    Literal(indicator_value, datatype=XSD.string)
+                                ))
 
                             # Add the relationship between the recipe and the indicator
-                            g.add(
-                                (
-                                    recipe_id,
-                                    SCHEMA.NutritionInformation,
-                                    indicator_id,
-                                )
-                            )
+                            chunk_graph.add((recipe_id, SCHEMA.NutritionInformation, indicator_id))
+        
+        # Save this chunk
+        chunk_file = f"{output_dir}chunk_{cont_chunk}.ttl"
+        chunk_graph.serialize(destination=chunk_file, format="turtle")
+        chunk_files.append(chunk_file)
+        
+        cont_chunk += 1
+        
+        # Force garbage collection after each chunk
+        del chunk_graph
+        gc.collect()
+    
+    print(f"Generated {len(chunk_files)} chunk files")
+    print("Combining all files into the final output...")
+    
+    # Combine all the chunks into a single file
+    with open(final_output, 'w') as outfile:
+        for chunk_file in chunk_files:
+            with open(chunk_file, 'r') as infile:
+                outfile.write(infile.read())
+                outfile.write("\n")
+    
+    print(f"Generated final file: {final_output}")
+    
+    # Optional: clean up temporary chunk files
+    for chunk_file in chunk_files:
+        try:
+            os.remove(chunk_file)
+        except:
+            print(f"Could not remove {chunk_file}")
+    print("Temporary files deleted")
 
-    # Relationship of alternative between recipes, is ingredient, has ingredient
-    for df_off_chunk in pd.read_csv(filepath_or_buffer=off_file, sep="\t", on_bad_lines="skip", chunksize=chunksize):
-        for idx1, row1 in df_off_chunk.iterrows():
-            for df_off_chunk2 in pd.read_csv(filepath_or_buffer=off_file, sep="\t", on_bad_lines="skip", chunksize=chunksize):
-                for idx2, row2 in df_off_chunk2.iterrows():
-                    if (
-                        idx1 != idx2
-                        and pd.notna(row1["product_name"])
-                        and row1["product_name"].strip() != ""
-                        and pd.notna(row2["product_name"])
-                        and row2["product_name"].strip() != ""
-                    ):
-                        # Relationdhip Alternative Recipe
-                        if (
-                            pd.notna(row1["generic_name"])
-                            and pd.notna(row2["generic_name"])
-                            and row1["generic_name"] == row2["generic_name"]
-                        ):
-                            g.add(
-                                (
-                                    URIRef(UNICA[f"recipe_{idx1}"]),
-                                    SCHEMA.isSimilarTo,
-                                    URIRef(UNICA[f"recipe_{idx2}"]),
-                                )
-                            )
-
-                        # Relationship of has ingredient / is ingredient
-                        if pd.notna(row2["ingredients_text"]) and row1[
-                            "generic_name"
-                        ] in str(row2["ingredients_text"]).split(", "):
-                            g.add(
-                                (
-                                    URIRef(UNICA[f"recipe_{idx1}"]),
-                                    SCHEMA.isRelatedTo,
-                                    URIRef(UNICA[f"recipe_{idx2}"]),
-                                )
-                            )
-                            g.add(
-                                (
-                                    URIRef(UNICA[f"recipe_{idx2}"]),
-                                    SCHEMA.hasPart,
-                                    URIRef(UNICA[f"recipe_{idx1}"]),
-                                )
-                            )
-
-    # Save the RDF graph in Turtle format
-    g.serialize(destination=file_output, format="turtle")
-    print(f"Generated file: {file_output}")
