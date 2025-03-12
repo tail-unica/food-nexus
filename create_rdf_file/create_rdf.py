@@ -332,7 +332,7 @@ def convert_hummus_in_rdf(
         file_output = "../csv_file/ontology_hummus_not_infered.ttl"
 
     # Upload the CSV
-    df_ricette = pd.read_csv(file_recipes, on_bad_lines="skip", low_memory=False)
+    df_ricette = pd.read_csv(filepath_or_buffer=file_recipes, on_bad_lines="skip", low_memory=False)
     df_review = pd.read_csv(file_review, on_bad_lines="skip", low_memory=False)
     df_utenti = pd.read_csv(file_users, on_bad_lines="skip", low_memory=False)
 
@@ -564,7 +564,7 @@ def convert_hummus_in_rdf(
                         ]
                     )
                     g.add((indicator_id, RDF.type, UNICA.Indicator))
-                    g.add((indicator_id, SCHEMA.type, Literal(col)))
+                    g.add((indicator_id, SCHEMA.type, Literal(lexical_or_value=col)))
                     if unit:
                         g.add((indicator_id, SCHEMA.unitText, Literal(unit)))
 
@@ -846,6 +846,40 @@ def convert_hummus_in_rdf(
                                     )
                                 )
                             g.add((group_id, SCHEMA.hasConstraint, tag_id))
+
+
+    df_sustainability = pd.read_csv(filepath_or_buffer=file_recipes, on_bad_lines="skip", low_memory=False)
+    print("starting sustainability creation")
+
+    conta = 0
+    # Create UserReview entities and relationships
+    for idx, row in df_sustainability.iterrows():
+        conta += 1
+        if conta % 1000 == 0:
+            print(f"row: {conta}")
+        if pd.notna(row["recipe_id"]) and isinstance(row["recipe_id"], (int, float)):
+            
+            for colonna in ["recipe_CF_kg", "recipe_WF_kg"]:
+                tipo = colonna.replace('recipe_', '')
+                indicator_id = URIRef(
+                        UNICA[
+                            f"Indicator_{sanitize_for_uri(value=tipo.lower())}_{sanitize_for_uri(row['recipe_id'])}"
+                        ]
+                    )   
+
+                g.add((indicator_id, RDF.type, UNICA.Indicator))
+                g.add((indicator_id, SCHEMA.type, Literal(lexical_or_value=tipo)))
+                g.add((indicator_id, SCHEMA.unitText, Literal(lexical_or_value="kg")))
+                g.add(
+                (
+                    indicator_id,
+                    SCHEMA.quantity,
+                    Literal(row[colonna], datatype=XSD.float),
+                )
+                )
+                g.add(
+                    (row["recipe_id"], SCHEMA.NutritionInformation, indicator_id)
+                )
 
     # Save the RDF graph in Turtle format
     g.serialize(destination=file_output, format="turtle")

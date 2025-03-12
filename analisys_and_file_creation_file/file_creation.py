@@ -5,6 +5,7 @@ File containing scripts and data necessary for creating files used as input for 
 
 import ast
 import csv
+import sys
 import re
 import random
 import ollama
@@ -61,6 +62,9 @@ def extract_rows(input_file, output_file, delimiter=",", rows=100) -> None:
     :param rows: number of rows to extract
     :return: None
     """
+
+    csv.field_size_limit(sys.maxsize)
+
     with open(input_file, mode="r", newline="", encoding="utf-8") as csv_input:
         reader = csv.DictReader(csv_input, delimiter=delimiter)
 

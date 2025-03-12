@@ -193,12 +193,13 @@ def normalize_columns(data: list) -> list:
         # First column: title
         title = row[0]
         normalized_title = row[5]
+        id = row[6]
         try:
             # Convert serving size
             serving_size = float(row[4]) if row[4] else 0
             if serving_size == 0:
                 normalized_row = (
-                    [title] + [0 for i in range(1, 5)] + [normalized_title]
+                    [title] + [0 for i in range(1, 5)] + [normalized_title] + [id]
                 )
             else:
                 normalized_row = (
@@ -207,7 +208,7 @@ def normalize_columns(data: list) -> list:
                         float(row[i]) * 100 / serving_size if row[i] else 0
                         for i in range(1, 4)
                     ]
-                    + [normalized_title]
+                    + [normalized_title]+ [id]
                 )
             normalized_data.append(normalized_row)
 
@@ -240,6 +241,14 @@ def calculate_macronutrient_similarity(tuple1, tuple2):
             or carbs2 == ""
             or fats2 == ""
             or proteins2 == ""
+        ) 
+        or (
+            carbs1 == None
+            or fats1 == None
+            or proteins1 == None
+            or carbs2 == None
+            or fats2 == None
+            or proteins2 == None
         )
     ):
         return 0.0
@@ -258,38 +267,50 @@ def calculate_macronutrient_similarity(tuple1, tuple2):
 
 
 def find_k_most_similar_pairs_with_indicators(
-    list1, list2, k=1, model="paraphrase-MiniLM-L3-v2", use_indicator=False, batch_size=1):
+    list1, list2, k=1, model="paraphrase-MiniLM-L3-v2", use_indicator=False, batch_size=1, device=None):
+    
     """
     Finds the k most similar items from list2 for each item in list1, considering
     both cosine similarity and the macronutrient similarity index.
 
-    :param list1: list of tuples (name, carbohydrates, fats, proteins, optional string)
-    :param list2: list of tuples (name, carbohydrates, fats, proteins, optional string)
+    :param list1: list of tuples (name, carbohydrates, fats, proteins, id, name_normalized)
+    :param list2: list of tuples (name, carbohydrates, fats, proteins, id, name_normalized)
     :param k: number of most similar items to return
     :param use_indicator: whether to use indicators or not
-    :return: list of tuples (item1, item2, similarity_value, indicator1, indicator2)
-    """
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    :return: list of tuples (item1, item2, similarity_value, id1, id2)
+    """    
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        gc.collect()
+
+    if device == None:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # Load the model
     model = SentenceTransformer(model, trust_remote_code=True).to(device)
 
+    #use both the GPU
+    #model = SentenceTransformer(model, trust_remote_code=True)
+    #model = torch.nn.DataParallel(model, device_ids=[0, 1])
+    #model.to("cuda")
+
     if not use_indicator:
         # Ensure each element in list1 and list2 has 4 elements by appending (0, 0, 0)
-        list1 = [(item[0], 0, 0, 0, item[-1]) for item in list1]
-        list2 = [(item[0], 0, 0, 0, item[-1]) for item in list2]
+        list1 = [(item[0], 0, 0, 0, 0, item[-1]) for item in list1]
+        list2 = [(item[0], 0, 0, 0, 0, item[-1]) for item in list2]
 
     # Extract only the names to calculate embeddings
-    names2 = [t[0] for t in list2]
+    names2 = [t[-1] for t in list2]
 
     # Calculate embeddings for list2
     embeddings2 = model.encode(sentences=names2, convert_to_tensor=True, device=device, batch_size=batch_size)
+
     most_similar_tuples = []
 
     for item in list1:
         # Calculate the embedding for the current name
         embedding1 = model.encode(
-            [item[0]], convert_to_tensor=True, device=device, batch_size=batch_size
+            [item[-1]], convert_to_tensor=True, device=device, batch_size=batch_size
         )
         # Calculate cosine similarity
         cosine_scores = util.cos_sim(embedding1, embeddings2)[0]
@@ -306,9 +327,10 @@ def find_k_most_similar_pairs_with_indicators(
                  
             total_score = cosine_scores[j].item() + macronutrient_similarity
             total_scores.append(
-                (tuple2[0], total_score, tuple2[-1])
+                (tuple2[0], total_score, tuple2[-2], tuple2[-1])
             )  # Name, score, and indicator
 
+            #print(total_scores[0])
         # If k<0, take all items
         if k > 0:
             # Sort by score in descending order and take the top k items
@@ -327,6 +349,8 @@ def find_k_most_similar_pairs_with_indicators(
                     pair[1],
                     item[0],
                     pair[0],
+                    pair[-2],
+                    item[-2]
                 )
             )
 
