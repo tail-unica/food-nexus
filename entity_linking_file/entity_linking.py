@@ -5,14 +5,16 @@ using an approach with BERT and one similar to the Bari approach
 
 import csv
 import math
+from math import ceil
 import numpy as np
 import torch
+import time
 from sentence_transformers import SentenceTransformer, util
 from tqdm import tqdm
 from sklearn.metrics.pairwise import cosine_similarity
 from transformers import AutoModel, AutoTokenizer
 import gc
-
+import os
 
 def find_most_similar_pairs(list1, list2):
     """
@@ -243,12 +245,12 @@ def calculate_macronutrient_similarity(tuple1, tuple2):
             or proteins2 == ""
         ) 
         or (
-            carbs1 == None
-            or fats1 == None
-            or proteins1 == None
-            or carbs2 == None
-            or fats2 == None
-            or proteins2 == None
+            carbs1 is None
+            or fats1 is None
+            or proteins1 is None
+            or carbs2 is None
+            or fats2 is None
+            or proteins2 is None
         )
     ):
         return 0.0
@@ -266,12 +268,73 @@ def calculate_macronutrient_similarity(tuple1, tuple2):
         return similarity
 
 
+def calculate_batch_macronutrient_similarities(list1_macros, list2_macros):
+    """
+    Vectorized calculation of macronutrient similarities for all pairs.
+    
+    :param list1_macros: list of macronutrient tuples from list1
+    :param list2_macros: list of macronutrient tuples from list2
+    :return: matrix of similarity values
+    """
+    results = torch.zeros((len(list1_macros), len(list2_macros)))
+    
+    # Filter out invalid macronutrient values
+    valid_list1_indices = []
+    valid_list1_macros = []
+    for i, (carbs1, fats1, proteins1) in enumerate(list1_macros):
+        if (carbs1 == 0 and fats1 == 0 and proteins1 == 0) or \
+           (carbs1 == "" or fats1 == "" or proteins1 == "") or \
+           (carbs1 is None or fats1 is None or proteins1 is None):
+            continue
+        valid_list1_indices.append(i)
+        valid_list1_macros.append((float(carbs1), float(fats1), float(proteins1)))
+    
+    valid_list2_indices = []
+    valid_list2_macros = []
+    for j, (carbs2, fats2, proteins2) in enumerate(list2_macros):
+        if (carbs2 == 0 and fats2 == 0 and proteins2 == 0) or \
+           (carbs2 == "" or fats2 == "" or proteins2 == "") or \
+           (carbs2 is None or fats2 is None or proteins2 is None):
+            continue
+        valid_list2_indices.append(j)
+        valid_list2_macros.append((float(carbs2), float(fats2), float(proteins2)))
+    
+    # If either list is empty after filtering, return the zero matrix
+    if not valid_list1_macros or not valid_list2_macros:
+        return results
+    
+    # Convert to tensors for faster computation
+    list1_tensor = torch.tensor(valid_list1_macros, dtype=torch.float32)
+    list2_tensor = torch.tensor(valid_list2_macros, dtype=torch.float32)
+    
+    # Calculate Euclidean distances using broadcasting
+    # Shape: [len(valid_list1_macros), len(valid_list2_macros), 3]
+    diff = list1_tensor.unsqueeze(1) - list2_tensor.unsqueeze(0)
+    
+    # Square the differences and sum over the last dimension
+    # Shape: [len(valid_list1_macros), len(valid_list2_macros)]
+    squared_distances = torch.sum(diff ** 2, dim=2)
+    
+    # Square root to get the Euclidean distances
+    distances = torch.sqrt(squared_distances)
+    
+    # Normalize and convert to similarity
+    normalized_distances = distances / math.sqrt(2 * 100**2)
+    similarities = 0.05 - (normalized_distances * 0.1)
+    
+    # Fill the results tensor with the calculated similarities
+    for i_idx, i in enumerate(valid_list1_indices):
+        for j_idx, j in enumerate(valid_list2_indices):
+            results[i, j] = similarities[i_idx, j_idx]
+    
+    return results
+
+
 def find_k_most_similar_pairs_with_indicators(
     list1, list2, k=1, model="paraphrase-MiniLM-L3-v2", use_indicator=False, batch_size=1, device=None):
-    
     """
-    Finds the k most similar items from list2 for each item in list1, considering
-    both cosine similarity and the macronutrient similarity index.
+    finds the k most similar items from list2 for each item in list1,
+    considering both cosine similarity and the macronutrient similarity index.
 
     :param list1: list of tuples (name, carbohydrates, fats, proteins, id, name_normalized)
     :param list2: list of tuples (name, carbohydrates, fats, proteins, id, name_normalized)
@@ -283,79 +346,83 @@ def find_k_most_similar_pairs_with_indicators(
         torch.cuda.empty_cache()
         gc.collect()
 
-    if device == None:
+    if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # Load the model
     model = SentenceTransformer(model, trust_remote_code=True).to(device)
-
-    #use both the GPU
-    #model = SentenceTransformer(model, trust_remote_code=True)
-    #model = torch.nn.DataParallel(model, device_ids=[0, 1])
-    #model.to("cuda")
 
     if not use_indicator:
         # Ensure each element in list1 and list2 has 4 elements by appending (0, 0, 0)
         list1 = [(item[0], 0, 0, 0, 0, item[-1]) for item in list1]
         list2 = [(item[0], 0, 0, 0, 0, item[-1]) for item in list2]
 
-    # Extract only the names to calculate embeddings
+    # Extract only the normalized names to calculate embeddings
+    names1 = [t[-1] for t in list1]
     names2 = [t[-1] for t in list2]
 
-    # Calculate embeddings for list2
+    # Calculate embeddings for both lists at once
+    embeddings1 = model.encode(sentences=names1, convert_to_tensor=True, device=device, batch_size=batch_size)
     embeddings2 = model.encode(sentences=names2, convert_to_tensor=True, device=device, batch_size=batch_size)
+
+    # Calculate all cosine similarities at once
+    cosine_scores = util.cos_sim(embeddings1, embeddings2)
+    #cosine_scores = model.similarity(embeddings1, embeddings2)
+
+    # Get macronutrient data if needed
+    if use_indicator:
+        list1_macros = [item[1:4] for item in list1]
+        list2_macros = [item[1:4] for item in list2]
+        
+        # Calculate all macronutrient similarities at once
+        macro_similarities = calculate_batch_macronutrient_similarities(list1_macros, list2_macros)
+        
+        # Add to cosine scores
+        total_scores = cosine_scores + macro_similarities.to(device)
+    else:
+        total_scores = cosine_scores
 
     most_similar_tuples = []
 
-    for item in list1:
-        # Calculate the embedding for the current name
-        embedding1 = model.encode(
-            [item[-1]], convert_to_tensor=True, device=device, batch_size=batch_size
-        )
-        # Calculate cosine similarity
-        cosine_scores = util.cos_sim(embedding1, embeddings2)[0]
-
-        # Calculate the total combined score for each item in list2
-        total_scores = []
-        for j, tuple2 in enumerate(list2):
-            if use_indicator != False:
-                macronutrient_similarity = calculate_macronutrient_similarity(
-                    item[1:4], tuple2[1:4]
-                )
-            else:
-                macronutrient_similarity = 0
-                 
-            total_score = cosine_scores[j].item() + macronutrient_similarity
-            total_scores.append(
-                (tuple2[0], total_score, tuple2[-2], tuple2[-1])
-            )  # Name, score, and indicator
-
-            #print(total_scores[0])
-        # If k<0, take all items
+    # Process each item to find top k matches
+    for i, item1 in enumerate(list1):
+        # Get scores for this item
+        item_scores = total_scores[i]
         if k > 0:
-            # Sort by score in descending order and take the top k items
-            top_k_scores = sorted(
-                total_scores, key=lambda x: x[1], reverse=True
-            )[:k]
+            # Convert to CPU for sorting
+            item_scores_cpu = item_scores.cpu()
+            
+            # Get indices of top k scores
+            top_k_indices: torch.Tensor = torch.topk(item_scores_cpu, min(k, len(list2)), dim=0).indices
         else:
-            top_k_scores = sorted(
-                total_scores, key=lambda x: x[1], reverse=True
-            )
+            item_scores_cpu = item_scores.cpu()
+            # Sort all scores
+            top_k_indices = indices = torch.arange(len(item_scores_cpu))
 
-        # Add the k most similar pairs to the result list as tuples with indicators
-        for pair in top_k_scores:
+            
+        # Add results
+        for idx in top_k_indices:
+            idx = idx.item()
+            item2 = list2[idx]  #type: ignore
+            score = item_scores_cpu[idx].item()  #type: ignore
             most_similar_tuples.append(
                 (
-                    pair[1],
-                    item[0],
-                    pair[0],
-                    pair[-2],
-                    item[-2]
+                    score,
+                    item1[0],
+                    item2[0],
+                    item2[-2],
+                    item1[-2]
                 )
             )
 
-    return most_similar_tuples
+    # Clean up GPU memory
+    del embeddings1, embeddings2, cosine_scores, total_scores
+    if use_indicator and 'macro_similarities' in locals():
+        del macro_similarities  #type: ignore
+    torch.cuda.empty_cache()
+    gc.collect()
 
+    return most_similar_tuples
 
 def read_csv(file_path):
     """Reads a CSV file and returns a list of tuples."""
@@ -447,3 +514,126 @@ def evaluate_entity_linking_method(
         considered_list,
         threshold_list,
     )
+
+
+def calcolate_embeddings(header, file_input, file_output, chunk_size, batch_size, model1):
+
+    if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            gc.collect()
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model: SentenceTransformer = SentenceTransformer(model_name_or_path=model1, trust_remote_code=True).to(device)
+
+    with open(file_input, newline="", encoding="utf-8") as f:
+        reader = csv.reader(f)
+        next(reader)  
+        list_foodkg_recipe = [row[0] for row in reader]  
+
+    len_1 = 0
+    if os.path.exists(file_output):
+        with open(file_output) as f:
+            len_1 = sum(1 for _ in f) - 1
+        mode = "a"
+        list_foodkg_recipe = list_foodkg_recipe[len_1:]  
+    else:
+        mode = "w"
+
+    print(f"Modalità: {mode}, Partenza da riga: {len_1}")
+    numero_chunk = ceil(len(list_foodkg_recipe)/chunk_size)
+    print(f"numero chunk: {numero_chunk}")
+
+    with open(file_output, mode=mode, newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        if mode == "w":
+            writer.writerow(header)
+
+        for chunk_count in  range(numero_chunk):
+            print(f"chunk {chunk_count} of {numero_chunk}")
+            if chunk_count*(chunk_size+1) >= len(list_foodkg_recipe):
+                list_foodkg_recipe_temp = list_foodkg_recipe[chunk_count*chunk_size:]
+            else:
+                list_foodkg_recipe_temp = list_foodkg_recipe[chunk_count*chunk_size:(chunk_count+1)*chunk_size]
+
+            embeddings1 = model.encode(sentences=list_foodkg_recipe_temp, convert_to_tensor=False, device=device, batch_size=batch_size)
+
+            writer.writerows(zip(list_foodkg_recipe_temp, map(lambda x: x.tolist(), embeddings1)))
+            
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                gc.collect()
+
+
+
+
+def merge_embedding(header, file1, file2, file_output, chunk_size, batch_size, model1, threshold=0.85):
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    def read_file_rows(file):
+        with open(file, newline="", encoding="utf-8") as f:
+            return sum(1 for _ in f) - 1 
+
+    num_rows1 = read_file_rows(file1)
+    num_rows2 = read_file_rows(file2)
+    num_chunks1 = (num_rows1 + chunk_size - 1) // chunk_size
+    num_chunks2 = (num_rows2 + chunk_size - 1) // chunk_size
+
+    print(f"File 1: {num_rows1} righe ({num_chunks1} chunk)")
+    print(f"File 2: {num_rows2} righe ({num_chunks2} chunk)")
+    
+    with open(file_output, mode="w", newline="", encoding="utf-8") as fout:
+        writer = csv.writer(fout)
+        writer.writerow(["name_file1", "name_file2", "cosine_similarity"])  
+
+        with open(file1, newline="", encoding="utf-8") as f1:
+            reader1 = csv.reader(f1)
+            next(reader1)  
+            
+            start_time = time.time()
+            
+            for chunk1_idx in range(num_chunks1):
+                chunk_start_time = time.time()
+                print(f"Processing chunk {chunk1_idx+1}/{num_chunks1} of file 1...")
+
+                chunk1 = [next(reader1, None) for _ in range(chunk_size)]
+                chunk1 = [row for row in chunk1 if row] 
+                
+                names1 = [row[0] for row in chunk1]
+                embeddings1 = torch.tensor([eval(row[1]) for row in chunk1]).to(device)
+
+                with open(file2, newline="", encoding="utf-8") as f2:
+                    reader2 = csv.reader(f2)
+                    next(reader2)  
+                    
+                    for chunk2_idx in range(num_chunks2):
+                        print(f"  Processing chunk {chunk2_idx+1}/{num_chunks2} of file 2 {chunk1_idx}/{num_chunks1} of file 1")
+                        
+                        chunk2 = [next(reader2, None) for _ in range(chunk_size)]
+                        chunk2 = [row for row in chunk2 if row]
+
+                        names2 = [row[0] for row in chunk2]
+                        embeddings2 = torch.tensor([eval(row[1]) for row in chunk2]).to(device)
+
+                        cosine_similarities = util.cos_sim(embeddings1, embeddings2)
+
+                        for i, name1 in enumerate(names1):
+                            for j, name2 in enumerate(names2):
+                                similarity = cosine_similarities[i][j].item()
+                                if similarity >= threshold:
+                                    writer.writerow([name1, name2, similarity])
+                        
+                        del embeddings2
+                        torch.cuda.empty_cache()
+
+                del embeddings1
+                torch.cuda.empty_cache()
+                
+                chunk_time = time.time() - chunk_start_time
+                remaining_chunks = num_chunks1 - (chunk1_idx + 1)
+                estimated_time_remaining = (chunk_time * remaining_chunks) / 60 
+                
+                print(f"Chunk {chunk1_idx+1} completato in {chunk_time:.2f} sec. Tempo stimato rimanente: {estimated_time_remaining:.2f} min")
+
+    total_time = time.time() - start_time
+    print(f"Processo completato in {total_time / 60:.2f} minuti.")
+
