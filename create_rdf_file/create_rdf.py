@@ -891,6 +891,8 @@ def convert_off_in_rdf(use_row=False) -> None:
     Function to convert off data into RDF format
     """
 
+    use_addictional_information = True
+
     # File paths
     if use_row:
         off_file = "../csv_file/off_rows.csv"
@@ -1071,7 +1073,74 @@ def convert_off_in_rdf(use_row=False) -> None:
 
                             # Add the relationship between the recipe and the indicator
                             chunk_graph.add((recipe_id, SCHEMA.NutritionInformation, indicator_id))
-        
+            
+            if use_addictional_information:
+                pass
+            #    #Process brand
+            #    brands    Crous Resto',Crous
+#
+            #    brands_tags     crous-resto,crous
+#
+            #     
+            #    #Process new tag
+            #    categories   Condiments, Sauces, Moutardes, en:groceries
+#
+            #    categories_en  Dietary supplements,Bodybuilding supplements,Protein powders
+#
+            #    categories_tags   en:dietary-supplements,en:bodybuilding-supplements,en:protein-powders
+#
+#
+            #    #Process image
+            #    image_nutrition_url
+#
+#
+            #    main_category_en
+#
+            #    nutrient_levels_tags   en:fat-in-moderate-quantity,en:saturated-fat-in-moderate-quantity,en:sugars-in-moderate-quantity,en:salt-in-moderate-quantity
+#
+            #    brand_owner
+#
+            #    food_groups_en    Fats and sauces,Dressings and sauces
+#
+            #    food_groups_tags   en:fats-and-sauces,en:dressings-and-sauces
+#
+            #    ingredients_analysis_tags en:palm-oil-content-unknown,en:vegan-status-unknown,en:vegetarian-status-unknown
+#
+            #    ingredients_tags
+#
+            #    countries_en
+#
+            #    countries_tags Germany,United States
+#
+            #    countries  Vereinigte Staaten von Amerika, Germany
+#
+            #    stores
+#
+            #    purchase_places
+#
+            #    cities_tags
+#
+            #    cities
+#
+            #    labels_en   No gluten,Vegetarian,No artificial flavors,Vegan,Made in Germany,No lactose
+#
+            #    labels_tags   en:no-gluten,en:vegetarian,en:no-artificial-flavors,en:vegan,en:made-in-germany,en:no-lactose
+#
+            #    labels    No gluten, Vegetarian, No artificial flavors, Vegan, No lactose, en:made-in-germany
+#
+            #    manufacturing_places_tags
+#
+            #    manufacturing_places 
+#
+            #    origins_en
+#
+            #    origins
+#
+            #    origins_tags
+
+
+
+
         # Save this chunk
         chunk_file = f"{output_dir}chunk_{cont_chunk}.ttl"
         chunk_graph.serialize(destination=chunk_file, format="turtle")

@@ -10,6 +10,10 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import os
+import numpy as np
+from thefuzz import fuzz
+from collections import defaultdict
+import re
 
 
 def analisys_quantities(input_file, output_file, n) -> None:
@@ -245,3 +249,76 @@ def plot_populated_counts(csv_file, output_dir, columns, output_file) -> None:
 
     print(f"Plot saved at: {plot_path}")
 
+
+
+def extract_values(constraint):
+    if not isinstance(constraint, str):
+        return {} 
+    
+    extracted = defaultdict(list)
+    for c in constraint.split(";"):
+        if ":" in c:
+            key, value = c.split(":", 1)
+            value = value.strip()
+            if value: 
+                extracted[key.strip()].append(value)
+    
+    return dict(extracted) 
+
+
+def text_similarity(val1, val2):
+    if pd.isna(val1) and pd.isna(val2):  
+        return 100
+    if pd.isna(val1) or pd.isna(val2):
+        return 0
+    return fuzz.ratio(str(val1), str(val2))  
+
+
+def user_constraints_similarity(uc1, uc2):
+    uc1_values = extract_values(uc1)
+    uc2_values = extract_values(uc2)
+
+    all_keys = set(uc1_values.keys()).union(set(uc2_values.keys()))
+    
+    if not all_keys:
+        return 100
+
+    scores = []
+    for key in all_keys:
+        values1 = uc1_values.get(key, [])
+        values2 = uc2_values.get(key, [])
+
+        if not values1 or not values2:
+            scores.append(0)
+        else:
+            scores.append(np.mean([max(fuzz.ratio(v1, v2) for v2 in values2) for v1 in values1]))
+
+    return np.mean(scores)
+
+
+def compute_similarity(row):
+    sim_age = text_similarity(row['age_1'], row['age_2'])
+    sim_weight = text_similarity(row['weight_1'], row['weight_2'])
+    sim_height = text_similarity(row['height_1'], row['height_2'])
+    sim_gender = text_similarity(row['gender_1'], row['gender_2'])
+    sim_user_constraints = user_constraints_similarity(row['user_constraints_1'], row['user_constraints_2'])
+    
+    weights = {'age': 1, 'weight': 1, 'height': 1, 'gender': 1, 'user_constraints': 2}  
+
+    total_score = (
+        sim_age * weights['age'] +
+        sim_weight * weights['weight'] +
+        sim_height * weights['height'] +
+        sim_gender * weights['gender'] +
+        sim_user_constraints * weights['user_constraints']
+    )
+    
+    return total_score / sum(weights.values())
+
+def clean_text(value):
+    pattern = re.compile(r'\s*\(*\b(?:inferred|none specified|none|unknown)\b\)*\s*', re.IGNORECASE)
+    
+    if isinstance(value, str):
+        cleaned = pattern.sub(' ', value).strip() 
+        return re.sub(r'\s+', ' ', cleaned)
+    return value

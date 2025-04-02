@@ -3,13 +3,13 @@ Script for merging the two ontologies
 """
 
 
-from _csv import _writer
 import os
 import sys
 import time
 import csv
 from rdflib import RDF, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL
+from csv import writer
 
 
 def add_to_sys_path(folder_name) -> None:
