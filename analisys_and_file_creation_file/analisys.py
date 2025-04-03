@@ -296,7 +296,7 @@ def user_constraints_similarity(uc1, uc2):
     return np.mean(scores)
 
 
-def compute_similarity(row):
+def compute_similarity(row, threshold = 70):
     sim_age = text_similarity(row['age_1'], row['age_2'])
     sim_weight = text_similarity(row['weight_1'], row['weight_2'])
     sim_height = text_similarity(row['height_1'], row['height_2'])
@@ -313,7 +313,17 @@ def compute_similarity(row):
         sim_user_constraints * weights['user_constraints']
     )
     
-    return total_score / sum(weights.values())
+    similarity = [sim_age, sim_weight, sim_height, sim_gender, sim_user_constraints]
+    count_sim = 0
+
+    for sim in similarity:
+        if sim > threshold:
+            count_sim += 1 
+
+    total_score = total_score / sum(weights.values())
+
+    return pd.Series({'similarity_score': total_score, 'count_sim': count_sim})  # Returning a Series
+
 
 def clean_text(value):
     pattern = re.compile(r'\s*\(*\b(?:inferred|none specified|none|unknown)\b\)*\s*', re.IGNORECASE)

@@ -115,7 +115,7 @@ def create_completed_ontology(
             file_off_hummus, off_hummus_columns, delimiter=","
         )
 
-        for hummus_id, off_id in file_off_hummus:
+        for hummus_id, off_id in list_off_hummus_recipe:
             hummus_recipes = [
                 recipe
                 for recipe in g.subjects(RDF.type, SCHEMA.Recipe)
@@ -126,7 +126,7 @@ def create_completed_ontology(
 
             off_recipes = [
                 recipe
-                for recipe in g.subjects(RDF.type, SCHEMA.Recipe)
+                for recipe in g.subjects(RDF.type, SCHEMA.Product)
                 if (recipe, SCHEMA.identifier, Literal(off_id))
                 in g
                 and recipe.startswith(str(UNICA) + "Recipe_off")  # type: ignore
@@ -143,14 +143,14 @@ def create_completed_ontology(
         file_off_foodkg = "./csv_file/file_off_foodkg.csv"
         off_foodkg_columns = ["off_recipe", "foodkg_recipe"]
         list_off_fgk_recipe = read_specified_columns(
-            file_off_hummus, off_foodkg_columns, delimiter=","
+            file_off_foodkg, off_foodkg_columns, delimiter=","
         )
 
-        for original_name1, original_name2 in file_off_foodkg:
+        for original_name1, original_name2 in list_off_fgk_recipe:
 
             off_recipes = [
                 recipe
-                for recipe in g.subjects(RDF.type, SCHEMA.Recipe)
+                for recipe in g.subjects(RDF.type, SCHEMA.Product)
                 if (recipe, SCHEMA.name, Literal(original_name1, lang="en"))
                 in g
                 and recipe.startswith(str(UNICA) + "Recipe_off")  # type: ignore
