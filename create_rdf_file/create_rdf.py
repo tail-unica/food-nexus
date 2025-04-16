@@ -36,239 +36,239 @@ def clean_column_name(col_name) -> str:
     return re.sub(r"\s*\[.*?\]", "", col_name).strip()
 
 
-def create_namespace(namespace_completo=True) -> None:
-    """
-    Function to create the TTL file with the custom namespace for UNICA
-    """
-
-    # Create the graph
-    g = Graph()
-
-    # Define the namespaces
-    SCHEMA = Namespace("https://schema.org/")
-    UNICA = Namespace(
-        "https://github.com/tail-unica/kgeats/"
-    )
-    XSD_NS = Namespace("http://www.w3.org/2001/XMLSchema#")
-    RDFS_NS = Namespace("http://www.w3.org/2000/01/rdf-schema#")
-    RDF_NS = Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
-
-    # Add prefixes to the graph
-    g.bind("schema", SCHEMA)
-    g.bind("unica", UNICA)
-    g.bind("xsd", XSD_NS)
-    g.bind("rdfs", RDFS_NS)
-    g.bind("rdf", RDF_NS)
-
-    if namespace_completo:
-        # Create classes
-        g.add((UNICA.FoodProducer, RDF.type, RDFS.Class))
-        g.add((UNICA.FoodProducer, RDFS.subClassOf, SCHEMA.Organization))
-        g.add(
-            (
-                UNICA.FoodProducer,
-                RDFS.label,
-                Literal("Food Producer", lang="en"),
-            )
-        )
-        g.add(
-            (
-                UNICA.FoodProducer,
-                RDFS.comment,
-                Literal(
-                    "Information about the producer of a food item.", lang="en"
-                ),
-            )
-        )
-
-    g.add((UNICA.UserConstraint, RDF.type, RDFS.Class))
-    g.add((UNICA.UserConstraint, RDFS.subClassOf, SCHEMA.Intangible))
-    g.add(
-        (
-            UNICA.UserConstraint,
-            RDFS.label,
-            Literal("User Constraint", lang="en"),
-        )
-    )
-    g.add(
-        (
-            UNICA.UserConstraint,
-            RDFS.comment,
-            Literal(
-                "Constraint about what a user can or want to eat.", lang="en"
-            ),
-        )
-    )
-
-    # Propriety for UserConstraint
-    g.add((UNICA.constraintName, RDF.type, RDF.Property))
-    g.add((UNICA.constraintName, RDFS.domain, UNICA.UserConstraint))
-    g.add((UNICA.constraintName, RDFS.range, XSD.string))
-    g.add(
-        (
-            UNICA.constraintName,
-            RDFS.label,
-            Literal("Constraint Name", lang="en"),
-        )
-    )
-    g.add(
-        (
-            UNICA.constraintName,
-            RDFS.comment,
-            Literal("Name of the constraint.", lang="en"),
-        )
-    )
-
-    g.add((UNICA.constraintDescription, RDF.type, RDF.Property))
-    g.add((UNICA.constraintDescription, RDFS.domain, UNICA.UserConstraint))
-    g.add((UNICA.constraintDescription, RDFS.range, XSD.string))
-    g.add(
-        (
-            UNICA.constraintDescription,
-            RDFS.label,
-            Literal("Constraint Description", lang="en"),
-        )
-    )
-    g.add(
-        (
-            UNICA.constraintDescription,
-            RDFS.comment,
-            Literal("Description of the constraint.", lang="en"),
-        )
-    )
-
-    # Create the Indicator class
-    g.add((UNICA.Indicator, RDF.type, RDFS.Class))
-    g.add((UNICA.Indicator, RDFS.subClassOf, SCHEMA.NutritionInformation))
-    g.add((UNICA.Indicator, RDFS.label, Literal("Indicator", lang="en")))
-    g.add(
-        (
-            UNICA.Indicator,
-            RDFS.comment,
-            Literal(
-                "Represents nutritional and sustainability indicators for food items.",
-                lang="en",
-            ),
-        )
-    )
-
-    if namespace_completo:
-        # Indicator property
-        proprieta_indicator = [
-            (
-                "calcium",
-                "Calcium for 100g",
-                "Calcium content for 100 grams.",
-                XSD.float,
-            ),
-            (
-                "iron",
-                "Iron for 100g",
-                "Iron content per 100 grams.",
-                XSD.float,
-            ),
-            (
-                "vitaminC",
-                "Vitamin C for 100g",
-                "Vitamin C content per 100 grams.",
-                XSD.float,
-            ),
-            (
-                "vitaminA",
-                "Vitamin A for 100g",
-                "Vitamin A content per 100 grams.",
-                XSD.float,
-            ),
-            (
-                "whoScore",
-                "WHO Score",
-                "A score indicating WHO healthfulness assessment.",
-                XSD.float,
-            ),
-            (
-                "fsaScore",
-                "FSA Score",
-                "A score based on the Food Standards Agency's healthfulness criteria.",
-                XSD.float,
-            ),
-            (
-                "nutriScore",
-                "Nutri-Score",
-                "A score indicating the nutritional value based on the Nutri-Score system.",
-                XSD.float,
-            ),
-            (
-                "nutriscoreScore",
-                "Nutri-Score Score",
-                "A numeric score for Nutri-Score system.",
-                XSD.float,
-            ),
-            (
-                "ecoscoreScore",
-                "Eco-Score Score",
-                "A numeric score for Eco-Score system.",
-                XSD.float,
-            ),
-            (
-                "nutritionScoreFr",
-                "Nutrition Score FR for 100g",
-                "French nutrition score per 100 grams.",
-                XSD.float,
-            ),
-            (
-                "nutriscoreGrade",
-                "Nutri-Score Grade",
-                "A grade indicating the Nutri-Score nutritional level.",
-                XSD.string,
-            ),
-            (
-                "ecoscoreGrade",
-                "Eco-Score Grade",
-                "A grade indicating the Eco-Score environmental impact level.",
-                XSD.string,
-            ),
-            (
-                "novaGroup",
-                "NOVA Group",
-                "Group classification of processing level based on NOVA system.",
-                XSD.string,
-            ),
-        ]
-    else:
-        # Indicator Property
-        proprieta_indicator = [
-            (
-                "whoScore",
-                "WHO Score",
-                "A score indicating WHO healthfulness assessment.",
-                XSD.float,
-            ),
-            (
-                "fsaScore",
-                "FSA Score",
-                "A score based on the Food Standards Agency's healthfulness criteria.",
-                XSD.float,
-            ),
-            (
-                "nutriScore",
-                "Nutri-Score",
-                "A score indicating the nutritional value based on the Nutri-Score system.",
-                XSD.float,
-            ),
-        ]
-
-    for prop, label, comment, range_type in proprieta_indicator:
-        g.add((UNICA[prop], RDF.type, RDF.Property))
-        g.add((UNICA[prop], RDFS.domain, UNICA.Indicator))
-        g.add((UNICA[prop], RDFS.range, range_type))
-        g.add((UNICA[prop], RDFS.label, Literal(label, lang="en")))
-        g.add((UNICA[prop], RDFS.comment, Literal(comment, lang="en")))
-
-    # Save in Turtle format with the name 'namespace_unica.ttl'
-    with open("../csv_file/namespace_unica.ttl", "w") as f:
-        f.write(g.serialize(format="turtle"))
-
-    print("namespace created successfully")
+#def create_namespace(namespace_completo=True) -> None:
+#    """
+#    Function to create the TTL file with the custom namespace for UNICA
+#    """
+#
+#    # Create the graph
+#    g = Graph()
+#
+#    # Define the namespaces
+#    SCHEMA = Namespace("https://schema.org/")
+#    UNICA = Namespace(
+#        "https://github.com/tail-unica/kgeats/"
+#    )
+#    XSD_NS = Namespace("http://www.w3.org/2001/XMLSchema#")
+#    RDFS_NS = Namespace("http://www.w3.org/2000/01/rdf-schema#")
+#    RDF_NS = Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+#
+#    # Add prefixes to the graph
+#    g.bind("schema", SCHEMA)
+#    g.bind("unica", UNICA)
+#    g.bind("xsd", XSD_NS)
+#    g.bind("rdfs", RDFS_NS)
+#    g.bind("rdf", RDF_NS)
+#
+#    if namespace_completo:
+#        # Create classes
+#        g.add((UNICA.FoodProducer, RDF.type, RDFS.Class))
+#        g.add((UNICA.FoodProducer, RDFS.subClassOf, SCHEMA.Organization))
+#        g.add(
+#            (
+#                UNICA.FoodProducer,
+#                RDFS.label,
+#                Literal("Food Producer", lang="en"),
+#            )
+#        )
+#        g.add(
+#            (
+#                UNICA.FoodProducer,
+#                RDFS.comment,
+#                Literal(
+#                    "Information about the producer of a food item.", lang="en"
+#                ),
+#            )
+#        )
+#
+#    g.add((UNICA.UserConstraint, RDF.type, RDFS.Class))
+#    g.add((UNICA.UserConstraint, RDFS.subClassOf, SCHEMA.Intangible))
+#    g.add(
+#        (
+#            UNICA.UserConstraint,
+#            RDFS.label,
+#            Literal("User Constraint", lang="en"),
+#        )
+#    )
+#    g.add(
+#        (
+#            UNICA.UserConstraint,
+#            RDFS.comment,
+#            Literal(
+#                "Constraint about what a user can or want to eat.", lang="en"
+#            ),
+#        )
+#    )
+#
+#    # Propriety for UserConstraint
+#    g.add((UNICA.constraintName, RDF.type, RDF.Property))
+#    g.add((UNICA.constraintName, RDFS.domain, UNICA.UserConstraint))
+#    g.add((UNICA.constraintName, RDFS.range, XSD.string))
+#    g.add(
+#        (
+#            UNICA.constraintName,
+#            RDFS.label,
+#            Literal("Constraint Name", lang="en"),
+#        )
+#    )
+#    g.add(
+#        (
+#            UNICA.constraintName,
+#            RDFS.comment,
+#            Literal("Name of the constraint.", lang="en"),
+#        )
+#    )
+#
+#    g.add((UNICA.constraintDescription, RDF.type, RDF.Property))
+#    g.add((UNICA.constraintDescription, RDFS.domain, UNICA.UserConstraint))
+#    g.add((UNICA.constraintDescription, RDFS.range, XSD.string))
+#    g.add(
+#        (
+#            UNICA.constraintDescription,
+#            RDFS.label,
+#            Literal("Constraint Description", lang="en"),
+#        )
+#    )
+#    g.add(
+#        (
+#            UNICA.constraintDescription,
+#            RDFS.comment,
+#            Literal("Description of the constraint.", lang="en"),
+#        )
+#    )
+#
+#    # Create the Indicator class
+#    g.add((UNICA.Indicator, RDF.type, RDFS.Class))
+#    g.add((UNICA.Indicator, RDFS.subClassOf, SCHEMA.NutritionInformation))
+#    g.add((UNICA.Indicator, RDFS.label, Literal("Indicator", lang="en")))
+#    g.add(
+#        (
+#            UNICA.Indicator,
+#            RDFS.comment,
+#            Literal(
+#                "Represents nutritional and sustainability indicators for food items.",
+#                lang="en",
+#            ),
+#        )
+#    )
+#
+#    if namespace_completo:
+#        # Indicator property
+#        proprieta_indicator = [
+#            (
+#                "calcium",
+#                "Calcium for 100g",
+#                "Calcium content for 100 grams.",
+#                XSD.float,
+#            ),
+#            (
+#                "iron",
+#                "Iron for 100g",
+#                "Iron content per 100 grams.",
+#                XSD.float,
+#            ),
+#            (
+#                "vitaminC",
+#                "Vitamin C for 100g",
+#                "Vitamin C content per 100 grams.",
+#                XSD.float,
+#            ),
+#            (
+#                "vitaminA",
+#                "Vitamin A for 100g",
+#                "Vitamin A content per 100 grams.",
+#                XSD.float,
+#            ),
+#            (
+#                "whoScore",
+#                "WHO Score",
+#                "A score indicating WHO healthfulness assessment.",
+#                XSD.float,
+#            ),
+#            (
+#                "fsaScore",
+#                "FSA Score",
+#                "A score based on the Food Standards Agency's healthfulness criteria.",
+#                XSD.float,
+#            ),
+#            (
+#                "nutriScore",
+#                "Nutri-Score",
+#                "A score indicating the nutritional value based on the Nutri-Score system.",
+#                XSD.float,
+#            ),
+#            (
+#                "nutriscoreScore",
+#                "Nutri-Score Score",
+#                "A numeric score for Nutri-Score system.",
+#                XSD.float,
+#            ),
+#            (
+#                "ecoscoreScore",
+#                "Eco-Score Score",
+#                "A numeric score for Eco-Score system.",
+#                XSD.float,
+#            ),
+#            (
+#                "nutritionScoreFr",
+#                "Nutrition Score FR for 100g",
+#                "French nutrition score per 100 grams.",
+#                XSD.float,
+#            ),
+#            (
+#                "nutriscoreGrade",
+#                "Nutri-Score Grade",
+#                "A grade indicating the Nutri-Score nutritional level.",
+#                XSD.string,
+#            ),
+#            (
+#                "ecoscoreGrade",
+#                "Eco-Score Grade",
+#                "A grade indicating the Eco-Score environmental impact level.",
+#                XSD.string,
+#            ),
+#            (
+#                "novaGroup",
+#                "NOVA Group",
+#                "Group classification of processing level based on NOVA system.",
+#                XSD.string,
+#            ),
+#        ]
+#    else:
+#        # Indicator Property
+#        proprieta_indicator = [
+#            (
+#                "whoScore",
+#                "WHO Score",
+#                "A score indicating WHO healthfulness assessment.",
+#                XSD.float,
+#            ),
+#            (
+#                "fsaScore",
+#                "FSA Score",
+#                "A score based on the Food Standards Agency's healthfulness criteria.",
+#                XSD.float,
+#            ),
+#            (
+#                "nutriScore",
+#                "Nutri-Score",
+#                "A score indicating the nutritional value based on the Nutri-Score system.",
+#                XSD.float,
+#            ),
+#        ]
+#
+#    for prop, label, comment, range_type in proprieta_indicator:
+#        g.add((UNICA[prop], RDF.type, RDF.Property))
+#        g.add((UNICA[prop], RDFS.domain, UNICA.Indicator))
+#        g.add((UNICA[prop], RDFS.range, range_type))
+#        g.add((UNICA[prop], RDFS.label, Literal(label, lang="en")))
+#        g.add((UNICA[prop], RDFS.comment, Literal(comment, lang="en")))
+#
+#    # Save in Turtle format with the name 'namespace_unica.ttl'
+#    with open("../csv_file/namespace_unica.ttl", "w") as f:
+#        f.write(g.serialize(format="turtle"))
+#
+#    print("namespace created successfully")
 
 
 def convert_hummus_in_rdf(
@@ -315,16 +315,10 @@ def convert_hummus_in_rdf(
         file_users = "../csv_file/pp_members_rows.csv"
         file_review = "../csv_file/pp_reviews_rows.csv"
     else:
-        file_recipes = "../csv_file/pp_recipes.csv"
-        if use_infered_attributes_description:
-            file_users = "../csv_file/pp_members_with_attributes.csv"
-        else:
-            file_users = "../csv_file/pp_members.csv"
+        file_recipes = "../csv_file/pp_recipes_normalized_by_pipeline.csv"
+        file_users = "../csv_file/pp_members_with_attributes.csv"
+        file_review = "../csv_file/pp_reviews_with_attributes.csv"
 
-        if use_infered_attributes_review:
-            file_review = "../csv_file/pp_reviews_with_attributes.csv"
-        else:
-            file_review = "../csv_file/pp_reviews.csv"
 
     if use_infered_attributes_review or use_infered_attributes_description:
         file_output = "../csv_file/ontology_hummus.ttl"
@@ -332,9 +326,9 @@ def convert_hummus_in_rdf(
         file_output = "../csv_file/ontology_hummus_not_infered.ttl"
 
     # Upload the CSV
-    df_ricette = pd.read_csv(filepath_or_buffer=file_recipes, on_bad_lines="skip", low_memory=False)
-    df_review = pd.read_csv(file_review, on_bad_lines="skip", low_memory=False)
-    df_utenti = pd.read_csv(file_users, on_bad_lines="skip", low_memory=False)
+    df_ricette = pd.read_csv(filepath_or_buffer=file_recipes, on_bad_lines="skip", sep=";",  low_memory=False)
+    df_review = pd.read_csv(file_review, on_bad_lines="skip",  sep=",",  low_memory=False)
+    df_utenti = pd.read_csv(file_users, on_bad_lines="skip", sep=",", low_memory=False)
 
     tag_count = {}
     ingredient_count = {}
@@ -848,50 +842,51 @@ def convert_hummus_in_rdf(
                             g.add((group_id, SCHEMA.hasConstraint, tag_id))
 
 
-    df_sustainability = pd.read_csv(filepath_or_buffer=file_recipes, on_bad_lines="skip", low_memory=False)
-    print("starting sustainability creation")
+    #Sustainability information
+    #df_sustainability = pd.read_csv(filepath_or_buffer=file_recipes, on_bad_lines="skip", low_memory=False)
+    #print("starting sustainability creation")
+#
+    #conta = 0
+    ## Create UserReview entities and relationships
+    #for idx, row in df_sustainability.iterrows():
+    #    conta += 1
+    #    if conta % 1000 == 0:
+    #        print(f"row: {conta}")
+    #    if pd.notna(row["recipe_id"]) and isinstance(row["recipe_id"], (int, float)):
+    #        
+    #        for colonna in ["recipe_CF_kg", "recipe_WF_kg"]:
+    #            tipo = colonna.replace('recipe_', '')
+    #            indicator_id = URIRef(
+    #                    UNICA[
+    #                        f"Indicator_{sanitize_for_uri(value=tipo.lower())}_{sanitize_for_uri(row['recipe_id'])}"
+    #                    ]
+    #                )   
+#
+    #            g.add((indicator_id, RDF.type, UNICA.Indicator))
+    #            g.add((indicator_id, SCHEMA.type, Literal(lexical_or_value=tipo)))
+    #            g.add((indicator_id, SCHEMA.unitText, Literal(lexical_or_value="kg")))
+    #            g.add(
+    #            (
+    #                indicator_id,
+    #                SCHEMA.quantity,
+    #                Literal(row[colonna], datatype=XSD.float),
+    #            )
+    #            )
+    #            g.add(
+    #                (row["recipe_id"], SCHEMA.NutritionInformation, indicator_id)
+    #            )
 
-    conta = 0
-    # Create UserReview entities and relationships
-    for idx, row in df_sustainability.iterrows():
-        conta += 1
-        if conta % 1000 == 0:
-            print(f"row: {conta}")
-        if pd.notna(row["recipe_id"]) and isinstance(row["recipe_id"], (int, float)):
-            
-            for colonna in ["recipe_CF_kg", "recipe_WF_kg"]:
-                tipo = colonna.replace('recipe_', '')
-                indicator_id = URIRef(
-                        UNICA[
-                            f"Indicator_{sanitize_for_uri(value=tipo.lower())}_{sanitize_for_uri(row['recipe_id'])}"
-                        ]
-                    )   
-
-                g.add((indicator_id, RDF.type, UNICA.Indicator))
-                g.add((indicator_id, SCHEMA.type, Literal(lexical_or_value=tipo)))
-                g.add((indicator_id, SCHEMA.unitText, Literal(lexical_or_value="kg")))
-                g.add(
-                (
-                    indicator_id,
-                    SCHEMA.quantity,
-                    Literal(row[colonna], datatype=XSD.float),
-                )
-                )
-                g.add(
-                    (row["recipe_id"], SCHEMA.NutritionInformation, indicator_id)
-                )
 
     # Save the RDF graph in Turtle format
     g.serialize(destination=file_output, format="turtle")
     print(f"Generated file: {file_output}")
 
 
+
 def convert_off_in_rdf(use_row=False) -> None:
     """
     Function to convert off data into RDF format
     """
-
-    use_addictional_information = True
 
     # File paths
     if use_row:
@@ -935,6 +930,7 @@ def convert_off_in_rdf(use_row=False) -> None:
         "fiber_100g": "dietaryFiber",
         "sugars_100g": "sugars",
         "proteins_100g": "protein",
+        #less important indicator
         "caprylic-acid_100g": "caprylicAcid",
         "capric-acid_100g": "capricAcid",
         "lauric-acid_100g": "lauricAcid",
@@ -991,7 +987,7 @@ def convert_off_in_rdf(use_row=False) -> None:
         "vitamin-k_100g": "vitaminK",
         "vitamin-b1_100g": "vitaminB1",
         "vitamin-b2_100g": "vitaminB2",
-        "vitamin-pp_100g": "vitaminPp",
+        "vitamin-pp_100g": "vitaminPP",
         "vitamin-b6_100g": "vitaminB6",
         "vitamin-b9_100g": "vitaminB9",
         "folates_100g": "folates",
@@ -1041,8 +1037,27 @@ def convert_off_in_rdf(use_row=False) -> None:
         "caproic-acid_100g": "caproicAcid"
     }
     
+
+    city_columns: list[str] = ["cities_tags"]#, "cities"]
+
+    tags_columns = [
+        "categories", "categories_en", "categories_tags",
+        "main_category_en", "nutrient_levels_tags", 
+        "food_groups_en", "food_groups_tags", "ingredients_analysis_tags", "ingredients_tags",
+        "labels_en", "labels_tags", "labels", "allergens", "traces_en"
+        ]
+    
+    countries_column = ["purchase_places", "origins_tags", "origins", "origins_en", "countries", "countries_tags", "countries_en"]
+
+    foodproducer_columns =["brands", "brands_tags", "brand_owner"]
+
+
     # Initialize a set to track already processed allergens and traces
     processed_constraints = set()
+    processed_food_producer = set()
+    processed_store = set()
+    processed_cities = set()
+    processed_countries = set()
     
     # Define namespaces (will be used in each chunk)
     UNICA = Namespace("https://github.com/tail-unica/kgeats/")
@@ -1097,48 +1112,33 @@ def convert_off_in_rdf(use_row=False) -> None:
                 chunk_graph.add((recipe_id, SCHEMA.name, Literal(row["product_name"], lang="en")))
                 chunk_graph.add((recipe_id, SCHEMA.identifier, Literal(idx, datatype=XSD.integer)))
 
-                # Process allergens
-                if pd.notna(row["allergens"]):
-                    for allergen in row["allergens"].split(","):
-                        allergen1 = re.sub(r"..:", "", str(allergen))
-                        allergen_uri = sanitize_for_uri(allergen.replace("en:", "").replace("-", "_").lower())
-                        allergen_ref = URIRef(UNICA[f"allergen_{allergen_uri}"])
-                        
-                        # Check if we've already processed this allergen
-                        if allergen_ref not in processed_constraints:
-                            processed_constraints.add(allergen_ref)
-                            chunk_constraints.add(allergen_ref)
-                            
-                            chunk_graph.add((allergen_ref, RDF.type, UNICA.UserConstraint))
-                            chunk_graph.add((allergen_ref, SCHEMA.constraintName, Literal(allergen1, lang="en")))
-                            chunk_graph.add((
-                                allergen_ref, 
-                                SCHEMA.constraintDescription, 
-                                Literal(f"is a user constraint about having an allergy to {allergen1}", lang="en")
-                            ))
-                        
-                        chunk_graph.add((allergen_ref, SCHEMA.suitableForDiet, recipe_id))
+                recipe_tags = set()
 
-                # Process traces
-                if pd.notna(row["traces_en"]):
-                    for trace in row["traces_en"].split(","):
-                        trace1 = trace
-                        trace_uri = sanitize_for_uri(trace.replace("-", "_").lower())
-                        trace_ref = URIRef(UNICA[f"trace_{trace_uri}"])
-                        
-                        if trace_ref not in processed_constraints:
-                            processed_constraints.add(trace_ref)
-                            chunk_constraints.add(trace_ref)
+                #Add entity UserConstraint
+                for contraint in tags_columns:
+                    if pd.notna(row[contraint]):
+                        for tag in row[contraint].split(","):
+                            tag = tag.split(":", 1)[1] if ":" in tag else tag
+                            tag1 = tag
+                            tag_uri = sanitize_for_uri(tag.replace("en:", "").replace("-", "_").lower())
+                            tag_ref = URIRef(UNICA[f"Contraint_{tag_uri}"])
+                            recipe_tags.add(tag_ref)
+
+                            # Check if we've already processed this allergen
+                            if tag_ref not in processed_constraints:
+                                processed_constraints.add(tag_ref)
+                                chunk_constraints.add(tag_ref)
+                                
+                                chunk_graph.add((tag_ref, RDF.type, UNICA.UserConstraint))
+                                chunk_graph.add((tag_ref, SCHEMA.constraintName, Literal(tag1, lang="en")))
+                                chunk_graph.add((
+                                    tag_ref, 
+                                    SCHEMA.constraintDescription, 
+                                    Literal(f"is a user constraint about {tag1}", lang="en")
+                                ))
                             
-                            chunk_graph.add((trace_ref, RDF.type, UNICA.UserConstraint))
-                            chunk_graph.add((trace_ref, SCHEMA.constraintName, Literal(trace1, lang="en")))
-                            chunk_graph.add((
-                                trace_ref, 
-                                SCHEMA.constraintDescription, 
-                                Literal(f"is a user constraint about having a trace of {trace1} in the product", lang="en")
-                            ))
-                        
-                        chunk_graph.add((trace_ref, SCHEMA.suitableForDiet, recipe_id))
+                for tags in recipe_tags:
+                    chunk_graph.add(triple=(tags, SCHEMA.suitableForDiet, recipe_id))
 
                 # Process indicators
                 for column in off_indicators.keys():
@@ -1178,72 +1178,115 @@ def convert_off_in_rdf(use_row=False) -> None:
                             # Add the relationship between the recipe and the indicator
                             chunk_graph.add((recipe_id, SCHEMA.NutritionInformation, indicator_id))
             
-            if use_addictional_information:
-                pass
-            #    #Process brand
-            #    brands    Crous Resto',Crous
-#
-            #    brands_tags     crous-resto,crous
-#
-            #     
-            #    #Process new tag
-            #    categories   Condiments, Sauces, Moutardes, en:groceries
-#
-            #    categories_en  Dietary supplements,Bodybuilding supplements,Protein powders
-#
-            #    categories_tags   en:dietary-supplements,en:bodybuilding-supplements,en:protein-powders
-#
-#
-            #    #Process image
-            #    image_nutrition_url
-#
-#
-            #    main_category_en
-#
-            #    nutrient_levels_tags   en:fat-in-moderate-quantity,en:saturated-fat-in-moderate-quantity,en:sugars-in-moderate-quantity,en:salt-in-moderate-quantity
-#
-            #    brand_owner
-#
-            #    food_groups_en    Fats and sauces,Dressings and sauces
-#
-            #    food_groups_tags   en:fats-and-sauces,en:dressings-and-sauces
-#
-            #    ingredients_analysis_tags en:palm-oil-content-unknown,en:vegan-status-unknown,en:vegetarian-status-unknown
-#
-            #    ingredients_tags
-#
-            #    countries_en
-#
-            #    countries_tags Germany,United States
-#
-            #    countries  Vereinigte Staaten von Amerika, Germany
-#
-            #    stores
-#
-            #    purchase_places
-#
-            #    cities_tags
-#
-            #    cities
-#
-            #    labels_en   No gluten,Vegetarian,No artificial flavors,Vegan,Made in Germany,No lactose
-#
-            #    labels_tags   en:no-gluten,en:vegetarian,en:no-artificial-flavors,en:vegan,en:made-in-germany,en:no-lactose
-#
-            #    labels    No gluten, Vegetarian, No artificial flavors, Vegan, No lactose, en:made-in-germany
-#
-            #    manufacturing_places_tags
-#
-            #    manufacturing_places (da prodotto a country)
-#
-            #    origins_en
-#
-            #    origins
-#
-            #    origins_tags
+
+
+                
+
+                # Add foodproducer entity
+                recipe_foodproducer = set()
+                for column_foodproducer in foodproducer_columns:
+                    if pd.notna(row[column_foodproducer]):
+                        for food_producer in row[column_foodproducer].split(","):
+                            food_producer1 = food_producer
+                            food_producer_uri = sanitize_for_uri(food_producer.replace("-", "_").lower())
+                            food_producer_ref = URIRef(UNICA[f"food_producer_{food_producer_uri}"])
+                            recipe_foodproducer.add(food_producer_ref)
+                            
+                            if food_producer_ref not in processed_food_producer:
+                                processed_constraints.add(food_producer_ref)
+                                chunk_constraints.add(food_producer_ref)
+                            
+                                chunk_graph.add((food_producer_ref, RDF.type, UNICA.FoodProducer))
+                                chunk_graph.add((food_producer_ref, SCHEMA.name, Literal(food_producer1, lang="en")))
+                
+                for foodproducerentity in recipe_foodproducer:
+                    chunk_graph.add((foodproducerentity, SCHEMA.produces, recipe_id))
 
 
 
+
+                #Add country entity (Produced)
+                recipe_countries = set()
+
+                for column_countries in ["manufacturing_places_tags", "manufacturing_places"]:
+                    if pd.notna(row[column_countries]):
+                        for countries in row[column_countries].split(","):
+                            countries1 = countries
+                            countries_uri = sanitize_for_uri(countries.replace("-", "_").lower())
+                            countries_ref = URIRef(UNICA[f"food_producer_{countries_uri}"])
+                            recipe_countries.add(countries_ref)
+
+                            if countries_ref not in processed_countries:
+                                processed_constraints.add(countries_ref)
+                                chunk_constraints.add(countries_ref)
+                            
+                                chunk_graph.add((countries_ref, RDF.type, SCHEMA.Country))
+                                chunk_graph.add((countries_ref, SCHEMA.name, Literal(countries1, lang="en")))
+                            
+                for country in recipe_countries:
+                    chunk_graph.add(triple=(recipe_id, SCHEMA.countryOfAssembly, country))
+
+
+                #Add country entity (Located)
+                recipe_countries = set()
+
+                for column_countries in countries_column:
+                    if pd.notna(row[column_countries]):
+                        for countries in row[column_countries].split(","):
+                            countries = countries.split(":", 1)[1] if ":" in countries else countries
+                            countries1 = countries
+                            countries_uri = sanitize_for_uri(countries.replace("-", "_").lower())
+                            countries_ref = URIRef(UNICA[f"food_producer_{countries_uri}"])
+                            recipe_countries.add(countries_ref)
+
+                            if countries_ref not in processed_countries:
+                                processed_constraints.add(countries_ref)
+                                chunk_constraints.add(countries_ref)
+                            
+                                chunk_graph.add((countries_ref, RDF.type, UNICA.Country))
+                                chunk_graph.add((countries_ref, SCHEMA.name, Literal(countries1, lang="en")))
+
+
+                #Add city entity
+                recipe_cities = set()
+
+                for column_city in city_columns:
+                    if pd.notna(row[column_city]):
+                        for city in row[column_city].split(","):
+                            city1 = city
+                            city_uri = sanitize_for_uri(city.replace("-", "_").lower())
+                            city_ref = URIRef(UNICA[f"food_producer_{city_uri}"])
+                            recipe_cities.add(city_ref)
+
+                            if city_ref not in processed_cities:
+                                processed_cities.add(city_ref)
+                                chunk_constraints.add(city_ref)
+                            
+                                chunk_graph.add((city_ref, RDF.type, SCHEMA.City))
+                                chunk_graph.add((city_ref, SCHEMA.name, Literal(city1, lang="en")))
+
+                            for country in recipe_countries:
+                                chunk_graph.add(triple=(city_ref, SCHEMA.isPlaceIn, country))
+
+
+                #Add store entity
+                if pd.notna(row["stores"]):
+                    for stores in row["stores"].split(","):
+                        stores1 = stores
+                        stores_uri = sanitize_for_uri(stores.replace("-", "_").lower())
+                        stores_ref = URIRef(UNICA[f"food_producer_{stores_uri}"])
+
+                        if stores_ref not in processed_store:
+                            processed_store.add(stores_ref)
+                            chunk_constraints.add(stores_ref)
+                        
+                            chunk_graph.add((stores_ref, RDF.type, UNICA.Store))
+                            chunk_graph.add((stores_ref, SCHEMA.name, Literal(stores1, lang="en")))
+
+                        chunk_graph.add(triple=(stores_ref, SCHEMA.offersProduct, recipe_id))
+
+                        for city in recipe_cities:
+                            chunk_graph.add(triple=(stores_ref, SCHEMA.sellerHasLocation, city))
 
         # Save this chunk
         chunk_file = f"{output_dir}chunk_{cont_chunk}.ttl"
@@ -1275,4 +1318,3 @@ def convert_off_in_rdf(use_row=False) -> None:
         except:
             print(f"Could not remove {chunk_file}")
     print("Temporary files deleted")
-
