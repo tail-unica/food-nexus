@@ -377,3 +377,27 @@ def transform_groups_in_tags(
     # Save the updated DataFrame
     df.to_csv(output_file, index=False, sep=delimiter2)
     print(f"File saved successfully to {output_file}")
+
+
+
+def save_some_column(input_csv: str, output_csv: str, column1: str, column2: str) -> None:
+    """
+    Reads a CSV file and saves a new CSV containing only the specified two columns.
+
+    Parameters:
+    - input_csv: path to the input CSV file
+    - output_csv: path where the output CSV file will be saved
+    - column1: name of the first column to include
+    - column2: name of the second column to include
+    """
+    try:
+        # Load only the specified columns
+        df = pd.read_csv(input_csv, usecols=[column1, column2])
+        df.to_csv(output_csv, index=False)
+        print(f"File successfully saved to: {output_csv}")
+    except ValueError as e:
+        print(f"Error: one or both columns do not exist in the file: {e}")
+    except FileNotFoundError:
+        print(f"Error: file {input_csv} not found.")
+    except Exception as e:
+        print(f"Unexpected error: {e}")

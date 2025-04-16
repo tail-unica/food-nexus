@@ -516,11 +516,12 @@ def evaluate_entity_linking_method(
     )
 
 
+
 def calcolate_embeddings(header, file_input, file_output, chunk_size, batch_size, model1):
 
     if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-            gc.collect()
+        torch.cuda.empty_cache()
+        gc.collect()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model: SentenceTransformer = SentenceTransformer(model_name_or_path=model1, trust_remote_code=True).to(device)
@@ -541,27 +542,43 @@ def calcolate_embeddings(header, file_input, file_output, chunk_size, batch_size
 
     print(f"Modalità: {mode}, Partenza da riga: {len_1}")
     numero_chunk = ceil(len(list_foodkg_recipe)/chunk_size)
-    print(f"numero chunk: {numero_chunk}")
+    print(f"Numero chunk: {numero_chunk}")
+
+    start_time = time.time()
 
     with open(file_output, mode=mode, newline="", encoding="utf-8") as file:
         writer = csv.writer(file)
         if mode == "w":
             writer.writerow(header)
 
-        for chunk_count in  range(numero_chunk):
-            print(f"chunk {chunk_count} of {numero_chunk}")
-            if chunk_count*(chunk_size+1) >= len(list_foodkg_recipe):
-                list_foodkg_recipe_temp = list_foodkg_recipe[chunk_count*chunk_size:]
-            else:
-                list_foodkg_recipe_temp = list_foodkg_recipe[chunk_count*chunk_size:(chunk_count+1)*chunk_size]
+        for chunk_count in range(numero_chunk):
+            chunk_start_time = time.time()
+            print(f"Elaborazione chunk {chunk_count+1} di {numero_chunk}...")
 
-            embeddings1 = model.encode(sentences=list_foodkg_recipe_temp, convert_to_tensor=False, device=device, batch_size=batch_size)
+            start_idx = chunk_count * chunk_size
+            end_idx = (chunk_count + 1) * chunk_size
+            list_foodkg_recipe_temp = list_foodkg_recipe[start_idx:end_idx]
+
+            embeddings1 = model.encode(
+                sentences=list_foodkg_recipe_temp,
+                convert_to_tensor=False,
+                device=device,
+                batch_size=batch_size
+            )
 
             writer.writerows(zip(list_foodkg_recipe_temp, map(lambda x: x.tolist(), embeddings1)))
-            
+
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
                 gc.collect()
+
+            chunk_time = time.time() - chunk_start_time
+            remaining_chunks = numero_chunk - (chunk_count + 1)
+            estimated_time_remaining = (chunk_time * remaining_chunks) / 60
+            print(f"Chunk {chunk_count+1} completato in {chunk_time:.2f} sec. Tempo stimato rimanente: {estimated_time_remaining:.2f} min")
+
+    total_time = time.time() - start_time
+    print(f"Processo completato in {total_time / 60:.2f} minuti.")
 
 
 
