@@ -2,11 +2,12 @@
 File for calcolate the statistic on a list of ontology
 """
 
-
 from collections import Counter
 from rdflib import Graph, Literal, RDF
 import csv
-
+import os
+import gc 
+import time
 
 def analyze_turtle_file(file_path) -> dict:
     """
@@ -15,8 +16,6 @@ def analyze_turtle_file(file_path) -> dict:
     :param file_path: path to the Turtle file
     :return: a dictionary containing the statistics
     """
-    g = Graph()
-    g.parse(file_path, format="turtle")
 
     # Entities and relations
     entities = set()
@@ -24,6 +23,9 @@ def analyze_turtle_file(file_path) -> dict:
     attributes = set()
     entity_types = Counter()
     relation_types = Counter()
+
+    g = Graph()
+    g.parse(file_path, format="turtle")
 
     # Analyze the RDF triples
     for subject, predicate, obj in g:
@@ -54,7 +56,120 @@ def analyze_turtle_file(file_path) -> dict:
     }
 
 
-def ontology_statistics(turtle_files, output_csv) -> None:
+def analyze_nt_file(file_path, batch_size=1000000):
+    """
+    Analyze an NT (N-Triples) file in batches for ontology statistics.
+    
+    :param file_path: path to the NT file
+    :param batch_size: number of triples to process in each batch
+    :return: a dictionary containing the aggregated statistics
+    """
+    # Entities and relations
+    entities = set()
+    relations = set()
+    attributes = set()
+    entity_types = Counter()
+    relation_types = Counter()
+    
+    total_triples = 0
+    batch_count = 0
+    
+    start_time = time.time()
+    
+    # Process the file in batches
+    with open(file_path, 'r', encoding='utf-8') as file:
+        current_batch = []
+        
+        for line in file:
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+                
+            current_batch.append(line)
+            
+            # Process batch when it reaches the specified size
+            if len(current_batch) >= batch_size:
+                batch_stats = process_batch(current_batch, entities, relations, attributes, 
+                                          entity_types, relation_types)
+                total_triples += batch_stats["batch_triples"]
+                
+                batch_count += 1
+                print(f"Processed batch {batch_count}: {batch_stats['batch_triples']} triples, "
+                      f"Total: {total_triples} triples, "
+                      f"Elapsed time: {time.time() - start_time:.2f}s")
+                
+                current_batch = []
+        
+        # Process any remaining triples in the last batch
+        if current_batch:
+            batch_stats = process_batch(current_batch, entities, relations, attributes, 
+                                      entity_types, relation_types)
+            total_triples += batch_stats["batch_triples"]
+            
+            batch_count += 1
+            print(f"Processed final batch {batch_count}: {batch_stats['batch_triples']} triples, "
+                  f"Total: {total_triples} triples, "
+                  f"Elapsed time: {time.time() - start_time:.2f}s")
+    
+    print(f"Analysis completed in {time.time() - start_time:.2f} seconds.")
+    
+    return {
+        "num_triples": total_triples,
+        "num_entities": len(entities),
+        "num_relations": len(relations),
+        "num_attributes": len(attributes),
+        "num_entity_types": len(entity_types),
+        "num_relation_types": len(relation_types),
+        "entity_types": entity_types,
+        "relation_types": relation_types,
+    }
+
+def process_batch(batch_lines, entities, relations, attributes, entity_types, relation_types):
+    """
+    Process a batch of NT lines and update the statistics.
+    
+    :param batch_lines: list of NT lines to process
+    :param entities: set of entities to update
+    :param relations: set of relations to update
+    :param attributes: set of attributes to update
+    :param entity_types: Counter for entity types
+    :param relation_types: Counter for relation types
+    :return: statistics for this batch
+    """
+    g = Graph()
+    
+    # Parse the batch of triples
+    nt_content = '\n'.join(batch_lines)
+    g.parse(data=nt_content, format="nt")
+    
+    batch_triples = 0
+    
+    # Analyze the RDF triples in this batch
+    for subject, predicate, obj in g:
+        batch_triples += 1
+        
+        # Collect entities and relations
+        entities.add(subject)
+        relations.add(predicate)
+        
+        if isinstance(obj, Literal):
+            attributes.add(obj)
+        else:
+            entities.add(obj)
+        
+        # Count the instances of entity types
+        if predicate == RDF.type:
+            entity_types[str(obj)] += 1
+        
+        # Count the relations
+        relation_types[str(predicate)] += 1
+    
+    return {"batch_triples": batch_triples}
+
+
+
+
+def ontology_statistics(turtle_files, output_csv, type="nt") -> None:
     """
     Analyze Turtle files and write statistics to a CSV, including instance counts.
 
@@ -66,7 +181,13 @@ def ontology_statistics(turtle_files, output_csv) -> None:
 
     results = []
     for file_path in turtle_files:
-        stats = analyze_turtle_file(file_path)
+
+        if type == "ttl":
+            stats = analyze_turtle_file(file_path)
+        else:
+            stats = analyze_nt_file(file_path)
+
+        
         results.append(
             {
                 "file": file_path.split("/")[-1],
