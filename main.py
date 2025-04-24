@@ -43,9 +43,7 @@ from attribute_extraction import add_user_attributes  # type: ignore
 
 
 def create_completed_ontology(
-    merge: bool = False,
-    threshold_value: float = 0.85,
-    model="paraphrase-MiniLM-L3-v2",
+    merge: bool = False
 ) -> None:
     """
     Function to create the hummus-off merged ontology
