@@ -9,7 +9,12 @@ import time
 import csv
 from rdflib import RDF, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL
+from rdflib import OWL
 from csv import writer
+from create_rdf import sanitize_for_uri  # type: ignore
+from pipeline import pipeline_core, pipeline  # type: ignore
+from attribute_extraction import add_user_attributes  # type: ignore
+
 
 
 def add_to_sys_path(folder_name) -> None:
@@ -42,22 +47,18 @@ from pipeline import pipeline_core, pipeline  # type: ignore
 from attribute_extraction import add_user_attributes  # type: ignore
 
 
-def create_completed_ontology(
-    merge: bool = False
-) -> None:
+def create_completed_ontology() -> None:
     """
     Function to create the hummus-off merged ontology
-
-    :param merge: if True, merges the two ontologies
-    :param threshold_value: threshold value for merging
-    :param model: model to use for merging
     :return: None
     """
 
-    # Define the output file path
-    file_output = "./csv_file/complete_food_ontology.ttl"
+    file_path1 = "./csv_file/ontology_hummus.nt"
+    file_path2 = "./csv_file/ontology_off.nt"
+    file_path3 = "./csv_file/ontology_merge.nt"
+    output_file_ttl = "./csv_file/ontology_complete.ttl"
+    output_file_nt = "./csv_file/ontology_complete.nt"
 
-    # Initialize the graph and namespaces
     g = Graph()
 
     # Obtain namespace
@@ -82,99 +83,11 @@ def create_completed_ontology(
     prior_version_iri = URIRef(f"{link_ontology}/0.0")
     g.add((ontology_iri, OWL.priorVersion, prior_version_iri))
 
-    ontology_files = [
-        "./csv_file/ontology_hummus.ttl",
-        "./csv_file/ontology_off.ttl",
-    ]
+    for file_path in [file_path1, file_path2, file_path3]:
+        g.parse(file_path, format="nt")
 
-    # Upload the ontologies
-    for file_path in ontology_files:
-        temp_graph = Graph()
-        temp_graph.namespace_manager.bind("unica", UNICA)
-        temp_graph.namespace_manager.bind("schema", SCHEMA)
+    g.serialize(destination=output_file_ttl, format="turtle", encoding="utf-8")
+    print(f"Creato file Turtle: {output_file_ttl}")
 
-        # Upload the ontologies data in the new graph
-        temp_graph.parse(file_path, format="turtle")
-        g += temp_graph
-
-        print(f"added to onthology the subonthology {file_path}")
-
-
-
-    ### Merge the ontologies ###
-    if merge:
-
-        print(f"starting the merging process")
-
-        ### Merge hummus and off ###
-        file_off_hummus = "./csv_file/file_off_hummus.csv"
-        off_hummus_columns = ["hummus_id", "off_id"]
-        list_off_hummus_recipe = read_specified_columns(
-            file_off_hummus, off_hummus_columns, delimiter=","
-        )
-
-        for hummus_id, off_id in list_off_hummus_recipe:
-            hummus_recipes = [
-                recipe
-                for recipe in g.subjects(RDF.type, SCHEMA.Recipe)
-                if (recipe, SCHEMA.identifier, Literal(hummus_id))
-                in g
-                and recipe.startswith(str(UNICA) + "Recipe_hummus")  # type: ignore
-            ]
-
-            off_recipes = [
-                recipe
-                for recipe in g.subjects(RDF.type, SCHEMA.Product)
-                if (recipe, SCHEMA.identifier, Literal(off_id))
-                in g
-                and recipe.startswith(str(UNICA) + "Recipe_off")  # type: ignore
-            ]
-
-            for hummus_recipe in hummus_recipes:
-                for off_recipe in off_recipes:
-                    g.add((hummus_recipe, SCHEMA.sameAs, off_recipe))
-                    g.add((off_recipe, SCHEMA.sameAs, hummus_recipe))
-
-
-
-        ### Merge foodkg and off ###           
-        file_off_foodkg = "./csv_file/file_off_foodkg.csv"
-        off_foodkg_columns = ["off_recipe", "foodkg_recipe"]
-        list_off_fgk_recipe = read_specified_columns(
-            file_off_foodkg, off_foodkg_columns, delimiter=","
-        )
-
-        for original_name1, original_name2 in list_off_fgk_recipe:
-
-            off_recipes = [
-                recipe
-                for recipe in g.subjects(RDF.type, SCHEMA.Product)
-                if (recipe, SCHEMA.name, Literal(original_name1, lang="en"))
-                in g
-                and recipe.startswith(str(UNICA) + "Recipe_off")  # type: ignore
-            ]
-
-            foodkg_recipes = [
-                recipe
-                for recipe in g.subjects(RDF.type, SCHEMA.Recipe)
-                if (
-                    recipe,
-                    SCHEMA.identifier,
-                    Literal(
-                        sanitize_for_uri(
-                            original_name2.replace(" ", "_").lower()
-                        )
-                    ),
-                )
-                in g
-                and recipe.startswith(str(UNICA) + "Recipe_Ingredient")  # type: ignore
-            ]
-
-            for foodkg_recipe in foodkg_recipes:
-                for off_recipe in off_recipes:
-                    g.add((foodkg_recipe, SCHEMA.sameAs, off_recipe))
-                    g.add((off_recipe, SCHEMA.sameAs, foodkg_recipe))
-
-    # Save the RDF graph in Turtle format
-    g.serialize(destination=file_output, format="turtle")
-    print(f"Generated file: {file_output}")
+    g.serialize(destination=output_file_nt, format="nt", encoding="utf-8")
+    print(f"Creato file N-Triples: {output_file_nt}")

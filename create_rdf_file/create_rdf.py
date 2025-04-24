@@ -319,11 +319,12 @@ def convert_hummus_in_rdf(
         file_users = "../csv_file/pp_members_with_attributes.csv"
         file_review = "../csv_file/pp_reviews_with_attributes.csv"
 
-
     if use_infered_attributes_review or use_infered_attributes_description:
-        file_output = "../csv_file/ontology_hummus.ttl"
+        file_output_ttl = "../csv_file/ontology_hummus.ttl"
+        file_output_nt = "../csv_file/ontology_hummus.nt"
     else:
-        file_output = "../csv_file/ontology_hummus_not_infered.ttl"
+        file_output_ttl = "../csv_file/ontology_hummus_not_infered.ttl"
+        file_output_nt = "../csv_file/ontology_hummus_not_infered.nt"
 
     # Upload the CSV
     df_ricette = pd.read_csv(filepath_or_buffer=file_recipes, on_bad_lines="skip", sep=";",  low_memory=False)
@@ -878,9 +879,11 @@ def convert_hummus_in_rdf(
 
 
     # Save the RDF graph in Turtle format
-    g.serialize(destination=file_output, format="turtle")
-    print(f"Generated file: {file_output}")
+    g.serialize(destination=file_output_ttl, format="turtle")
+    print(f"Generated file: {file_output_ttl}")
 
+    g.serialize(destination=file_output_nt, format="nt", encoding="utf-8")
+    print(f"Generated file: {file_output_nt}")
 
 
 def convert_off_in_rdf(use_row=False) -> None:
@@ -898,7 +901,8 @@ def convert_off_in_rdf(use_row=False) -> None:
     output_dir = "../csv_file/chunks/"
     os.makedirs(output_dir, exist_ok=True)
     
-    final_output = "../csv_file/ontology_off.ttl"
+    final_output_ttl = "../csv_file/ontology_off.ttl"
+    final_output_nt = "../csv_file/ontology_off.nt"
     
     qualitatives_indicators: dict[str, str] = {
         "nutriscore_grade": "nutriscoreGrade",
@@ -1065,8 +1069,9 @@ def convert_off_in_rdf(use_row=False) -> None:
     
     # Process in smaller chunks for better memory management
     chunksize = 50000  #10000 if the code run out of memory
-    chunk_files = []
-    
+    chunk_files_ttl = []
+    chunk_files_nt = []
+
     # First, create a graph with just the ontology information
     ontology_graph = Graph()
     ontology_graph.bind("unica", UNICA)
@@ -1089,8 +1094,13 @@ def convert_off_in_rdf(use_row=False) -> None:
     # Save the ontology information
     ontology_file = f"{output_dir}ontology_header.ttl"
     ontology_graph.serialize(destination=ontology_file, format="turtle")
-    chunk_files.append(ontology_file)
+    chunk_files_ttl.append(ontology_file)
     
+        # Save the ontology information
+    ontology_file = f"{output_dir}ontology_header.nt"
+    ontology_graph.serialize(destination=ontology_file, format="nt", encoding="utf-8")
+    chunk_files_nt.append(ontology_file)
+
     # Process the CSV in chunks
     cont_chunk = 0
     for df_off_chunk in pd.read_csv(off_file, sep="\t", on_bad_lines="skip", chunksize=chunksize, low_memory=False):
@@ -1107,7 +1117,7 @@ def convert_off_in_rdf(use_row=False) -> None:
         for idx, row in df_off_chunk.iterrows():
             if pd.notna(row["product_name"]) and row["product_name"].strip() != "":
                 # Create the recipe
-                recipe_id = URIRef(UNICA[f"Recipe_off_{idx}"]) # I put _off to differentiate them from the hummus ids
+                recipe_id = URIRef(UNICA[f"Recipe_off_{row["code"]}"]) # I put _off to differentiate them from the hummus ids
                 chunk_graph.add((recipe_id, RDF.type, SCHEMA.Product))
                 chunk_graph.add((recipe_id, SCHEMA.name, Literal(row["product_name"], lang="en")))
                 chunk_graph.add((recipe_id, SCHEMA.identifier, Literal(idx, datatype=XSD.integer)))
@@ -1291,7 +1301,12 @@ def convert_off_in_rdf(use_row=False) -> None:
         # Save this chunk
         chunk_file = f"{output_dir}chunk_{cont_chunk}.ttl"
         chunk_graph.serialize(destination=chunk_file, format="turtle")
-        chunk_files.append(chunk_file)
+        chunk_files_ttl.append(chunk_file)
+        
+        # Save this chunk
+        chunk_file = f"{output_dir}chunk_{cont_chunk}.nt"
+        chunk_graph.serialize(destination=chunk_file, format="nt", encoding="utf-8")
+        chunk_files_nt.append(chunk_file)
         
         cont_chunk += 1
         
@@ -1299,22 +1314,126 @@ def convert_off_in_rdf(use_row=False) -> None:
         del chunk_graph
         gc.collect()
     
-    print(f"Generated {len(chunk_files)} chunk files")
+    print(f"Generated {len(chunk_files_ttl)} chunk files")
     print("Combining all files into the final output...")
     
     # Combine all the chunks into a single file
-    with open(final_output, 'w') as outfile:
-        for chunk_file in chunk_files:
+    with open(final_output_ttl, 'w') as outfile:
+        for chunk_file in chunk_files_ttl:
             with open(chunk_file, 'r') as infile:
                 outfile.write(infile.read())
                 outfile.write("\n")
     
-    print(f"Generated final file: {final_output}")
+    print(f"Generated final file: {final_output_ttl}")
     
+    # Combine all the chunks into a single file
+    with open(final_output_nt, 'w') as outfile:
+        for chunk_file in chunk_files_nt:
+            with open(chunk_file, 'r') as infile:
+                outfile.write(infile.read())
+                outfile.write("\n")
+    
+    print(f"Generated final file: {final_output_nt}")
+
+
     # Optional: clean up temporary chunk files
-    for chunk_file in chunk_files:
+    for chunk_file in chunk_files_ttl:
         try:
             os.remove(chunk_file)
         except:
             print(f"Could not remove {chunk_file}")
     print("Temporary files deleted")
+
+    for chunk_file in chunk_files_nt:
+        try:
+            os.remove(chunk_file)
+        except:
+            print(f"Could not remove {chunk_file}")
+    print("Temporary files deleted")
+
+
+
+
+
+
+
+def create_merge_ontology():
+
+    g = Graph()
+
+    # Obtain namespace
+    UNICA = Namespace("https://github.com/tail-unica/kgeats/")
+    SCHEMA = Namespace("https://schema.org/")
+
+    # Associate namespaces with the graph
+    g.bind("unica", UNICA)
+    g.bind("schema", SCHEMA)
+
+    # Ontology versioning
+    link_ontology = "https://github.com/tail-unica/kgeats/complete_ontology"
+    ontology_iri = URIRef(f"{link_ontology}")
+    version_iri = URIRef(f"{link_ontology}/1.0")
+    version_info = Literal("Version 1.0 - Initial release", lang="en")
+
+    g.add((ontology_iri, RDF.type, OWL.Ontology))
+    g.add((ontology_iri, OWL.versionIRI, version_iri))
+    g.add((ontology_iri, OWL.versionInfo, version_info))
+
+    # Reference to the previous version
+    prior_version_iri = URIRef(f"{link_ontology}/0.0")
+    g.add((ontology_iri, OWL.priorVersion, prior_version_iri))
+
+    print("added the versioning info")
+
+    dizionario_hum = {}
+    dizionario_off = {}
+
+    hum_file = "../csv_file/pp_recipes_normalized_by_pipeline.csv"
+    off_file = "../csv_file/off_normalized_final.csv"
+    hum_off_file = "../csv_file/file_off_hummus.csv"
+    file_output_ttl =  "../csv_file/ontology_merge.ttl"
+    file_output_nt =  "../csv_file/ontology_merge.nt"
+
+    chunksize = 10000
+    cont_chunk = 0
+    for df_off_chunk in pd.read_csv(off_file, sep="\t", on_bad_lines="skip", chunksize=chunksize, low_memory=False, usecols=["product_name_normalized", "code"], nrows=chunksize):
+        print(f"Processing rows off from {chunksize * cont_chunk} to {chunksize * (cont_chunk+1)}")
+        
+        for idx, row in df_off_chunk.iterrows():
+            if(row["product_name_normalized"] != None and row["product_name_normalized"] != ""):
+                id = URIRef(value=UNICA[f"Recipe_off_{row["code"]}"])
+                if id != None:
+                    if row["product_name_normalized"] not in dizionario_off:
+                        dizionario_off[row["product_name_normalized"]] = [id]
+                    else: 
+                        dizionario_off[row["product_name_normalized"]].append(id)
+
+
+    for df_hum_chunk in pd.read_csv(hum_file, sep=";", on_bad_lines="skip", chunksize=chunksize, low_memory=False, usecols=["title_normalized", "recipe_id"], nrows=chunksize):
+        print(f"Processing rows hummus from {chunksize * cont_chunk} to {chunksize * (cont_chunk+1)}")
+        
+        for idx, row in df_hum_chunk.iterrows():
+            if(row["title_normalized"] != None and row["title_normalized"] != ""):
+                id = URIRef(UNICA[f"Recipe_hummus{sanitize_for_uri(row['recipe_id'])}"])
+                if id != None:
+                    if row["title_normalized"] not in dizionario_hum:
+                        dizionario_hum[row["title_normalized"]] = [id]
+                    else: 
+                        dizionario_hum[row["title_normalized"]].append(id)
+
+
+
+    for df_merge_chunk in pd.read_csv(hum_off_file, sep=",", on_bad_lines="skip", chunksize=chunksize, low_memory=False, usecols=["title_normalized", "product_name_normalized"]):
+        for idx, row in df_merge_chunk.iterrows():
+            if row["title_normalized"] in dizionario_hum and row["product_name_normalized"] in dizionario_off:
+                for hum_ricette in dizionario_hum[row["title_normalized"]]:
+                    for off_ricette in dizionario_off[row["product_name_normalized"]]:
+                        g.add((hum_ricette, SCHEMA.sameAs, off_ricette))
+                        g.add((off_ricette, SCHEMA.sameAs, hum_ricette))
+
+
+    g.serialize(destination=file_output_ttl, format="turtle")
+    print(f"Generated file: {file_output_ttl}")
+
+    g.serialize(destination=file_output_nt, format="nt", encoding="utf-8")
+    print(f"Generated file: {file_output_nt}")
