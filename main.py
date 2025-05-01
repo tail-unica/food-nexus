@@ -91,3 +91,70 @@ def create_completed_ontology() -> None:
 
     g.serialize(destination=output_file_nt, format="nt", encoding="utf-8")
     print(f"Creato file N-Triples: {output_file_nt}")
+
+
+
+
+def create_completed_ontology_streaming() -> None:
+    """
+    Function to create the hummus-off merged ontology
+    :return: None
+    """
+    file_path1 = "./csv_file/ontology_hummus.nt"
+    file_path2 = "./csv_file/ontology_off.nt"
+    file_path3 = "./csv_file/ontology_merge.nt"
+    output_file = "./csv_file/ontology_complete.nt"
+    file_paths = [file_path1, file_path2, file_path3]
+
+    UNICA = Namespace("https://github.com/tail-unica/kgeats/")
+    SCHEMA = Namespace("https://schema.org/") 
+    link_ontology = "https://github.com/tail-unica/kgeats/unica_complete_food_ontology"
+    ontology_iri = URIRef(link_ontology)
+    version_iri = URIRef(f"{link_ontology}/1.0")
+    version_info = Literal("Version 1.0 - Initial release", lang="en")
+    prior_version_iri = URIRef(f"{link_ontology}/0.0")
+
+    print(f"Inizio del processo di unione. File di output: {output_file}")
+
+    header_triples = [
+        f"{ontology_iri.n3()} <{RDF.type}> <{OWL.Ontology}> .",
+        f"{ontology_iri.n3()} <{OWL.versionIRI}> {version_iri.n3()} .",
+        f"{ontology_iri.n3()} <{OWL.versionInfo}> {version_info.n3()} .",
+        f"{ontology_iri.n3()} <{OWL.priorVersion}> {prior_version_iri.n3()} ."
+    ]
+
+    try:
+        with open(output_file, 'w', encoding='utf-8') as outfile:
+            
+            print("Scrittura dell'header dell'ontologia...")
+            for triple_line in header_triples:
+                outfile.write(triple_line + '\n')
+            print("Header scritto.")
+
+            for i, file_path in enumerate(file_paths):
+                print(f"Processando file {i+1}/{len(file_paths)}: {file_path}...")
+                if not os.path.exists(file_path):
+                    print(f"File non trovato")
+                    continue
+                
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as infile:
+                        line_count = 0
+                        for line in infile:
+                            outfile.write(line.strip()) 
+                            line_count += 1
+                        
+                            if line_count % 1000000 == 0:
+                               print(f"  ... lette {line_count // 1000000}M righe da {os.path.basename(file_path)}")
+
+                    print(f"Completata l'elaborazione di {file_path} ({line_count} righe lette).")
+                
+                except Exception as e:
+                    print(f"Errore durante l'elaborazione del file {file_path}: {e}")
+
+            print(f"Unione completata. L'output è stato salvato in: {output_file}")
+
+    except IOError as e:
+        print(f"Errore nell'apertura o scrittura del file di output {output_file}: {e}")
+    except Exception as e:
+        print(f"Si è verificato un errore imprevisto: {e}")

@@ -1,4 +1,4 @@
-from main import create_completed_ontology, create_association_triple
+from main import create_completed_ontology
 
 #put merge=True if you want to merge the ontologies
-create_association_triple()
+create_completed_ontology()

@@ -11,7 +11,7 @@ from sentence_transformers import SentenceTransformer, util
 import ast
 import gc 
 import os
-    
+import time
 
 
 def sanitize_for_uri(value) -> str:
@@ -895,7 +895,7 @@ def convert_off_in_rdf(use_row=False) -> None:
     if use_row:
         off_file = "../csv_file/off_rows.csv"
     else:
-        off_file = "../csv_file/off_english.csv"
+        off_file = "../csv_file/off_normalized_final.csv"
     
     # Create output directory if it doesn't exist
     output_dir = "../csv_file/chunks/"
@@ -1359,31 +1359,7 @@ def convert_off_in_rdf(use_row=False) -> None:
 
 def create_merge_ontology():
 
-    g = Graph()
-
-    # Obtain namespace
     UNICA = Namespace("https://github.com/tail-unica/kgeats/")
-    SCHEMA = Namespace("https://schema.org/")
-
-    # Associate namespaces with the graph
-    g.bind("unica", UNICA)
-    g.bind("schema", SCHEMA)
-
-    # Ontology versioning
-    link_ontology = "https://github.com/tail-unica/kgeats/complete_ontology"
-    ontology_iri = URIRef(f"{link_ontology}")
-    version_iri = URIRef(f"{link_ontology}/1.0")
-    version_info = Literal("Version 1.0 - Initial release", lang="en")
-
-    g.add((ontology_iri, RDF.type, OWL.Ontology))
-    g.add((ontology_iri, OWL.versionIRI, version_iri))
-    g.add((ontology_iri, OWL.versionInfo, version_info))
-
-    # Reference to the previous version
-    prior_version_iri = URIRef(f"{link_ontology}/0.0")
-    g.add((ontology_iri, OWL.priorVersion, prior_version_iri))
-
-    print("added the versioning info")
 
     dizionario_hum = {}
     dizionario_off = {}
@@ -1391,12 +1367,12 @@ def create_merge_ontology():
     hum_file = "../csv_file/pp_recipes_normalized_by_pipeline.csv"
     off_file = "../csv_file/off_normalized_final.csv"
     hum_off_file = "../csv_file/file_off_hummus.csv"
-    file_output_ttl =  "../csv_file/ontology_merge.ttl"
     file_output_nt =  "../csv_file/ontology_merge.nt"
 
-    chunksize = 10000
+    chunksize = 100000
     cont_chunk = 0
-    for df_off_chunk in pd.read_csv(off_file, sep="\t", on_bad_lines="skip", chunksize=chunksize, low_memory=False, usecols=["product_name_normalized", "code"], nrows=chunksize):
+
+    for df_off_chunk in pd.read_csv(off_file, sep="\t", on_bad_lines="skip", chunksize=chunksize, low_memory=False, usecols=["product_name_normalized", "code"]):
         print(f"Processing rows off from {chunksize * cont_chunk} to {chunksize * (cont_chunk+1)}")
         
         for idx, row in df_off_chunk.iterrows():
@@ -1407,9 +1383,10 @@ def create_merge_ontology():
                         dizionario_off[row["product_name_normalized"]] = [id]
                     else: 
                         dizionario_off[row["product_name_normalized"]].append(id)
+        cont_chunk += 1
 
-
-    for df_hum_chunk in pd.read_csv(hum_file, sep=";", on_bad_lines="skip", chunksize=chunksize, low_memory=False, usecols=["title_normalized", "recipe_id"], nrows=chunksize):
+    cont_chunk = 0
+    for df_hum_chunk in pd.read_csv(hum_file, sep=";", on_bad_lines="skip", chunksize=chunksize, low_memory=False, usecols=["title_normalized", "recipe_id"]):
         print(f"Processing rows hummus from {chunksize * cont_chunk} to {chunksize * (cont_chunk+1)}")
         
         for idx, row in df_hum_chunk.iterrows():
@@ -1420,20 +1397,45 @@ def create_merge_ontology():
                         dizionario_hum[row["title_normalized"]] = [id]
                     else: 
                         dizionario_hum[row["title_normalized"]].append(id)
+        cont_chunk += 1
 
 
+    numchunk = 0
+    chunksize = 1000
 
-    for df_merge_chunk in pd.read_csv(hum_off_file, sep=",", on_bad_lines="skip", chunksize=chunksize, low_memory=False, usecols=["title_normalized", "product_name_normalized"]):
-        for idx, row in df_merge_chunk.iterrows():
-            if row["title_normalized"] in dizionario_hum and row["product_name_normalized"] in dizionario_off:
-                for hum_ricette in dizionario_hum[row["title_normalized"]]:
-                    for off_ricette in dizionario_off[row["product_name_normalized"]]:
-                        g.add((hum_ricette, SCHEMA.sameAs, off_ricette))
-                        g.add((off_ricette, SCHEMA.sameAs, hum_ricette))
+    hum_keys = set(dizionario_hum.keys())
+    off_keys = set(dizionario_off.keys())
+    total_lines = sum(1 for _ in open(hum_off_file, encoding="utf-8")) - 1
+    total_chunks = (total_lines // chunksize) + 1
+    start_total = time.time()
 
+    with open(file_output_nt, "w", encoding="utf-8") as f_out:
 
-    g.serialize(destination=file_output_ttl, format="turtle")
-    print(f"Generated file: {file_output_ttl}")
+        for df_merge_chunk in pd.read_csv(hum_off_file, sep=",", on_bad_lines="skip", chunksize=chunksize, low_memory=False, usecols=["title_normalized", "product_name_normalized"]):
+            chunk_start = time.time()
+            if numchunk % 100 == 0:
+                print(f"\nProcessing chunk {numchunk+1}/{total_chunks}")
 
-    g.serialize(destination=file_output_nt, format="nt", encoding="utf-8")
-    print(f"Generated file: {file_output_nt}")
+            for row in df_merge_chunk.itertuples(index=False):
+                title = row.title_normalized
+                product = row.product_name_normalized
+
+                if title in hum_keys and product in off_keys:
+                    for hum_ricetta in dizionario_hum[title]:
+                        for off_ricetta in dizionario_off[product]: 
+                            triple_str = f"<{off_ricetta}> <https://schema.org/sameAs> <{hum_ricetta}> .\n"
+                            f_out.write(triple_str)
+
+            del df_merge_chunk
+            gc.collect() 
+
+            chunk_time = time.time() - chunk_start
+            avg_time_per_chunk = (time.time() - start_total) / (numchunk + 1)
+            remaining_chunks = total_chunks - (numchunk + 1)
+            est_remaining = avg_time_per_chunk * remaining_chunks
+            if numchunk % 100 == 0:
+                print(f"Chunk time: {chunk_time:.2f}s — Estimated remaining: {est_remaining/60:.1f} min")
+            numchunk += 1
+
+        total_time = time.time() - start_total
+        print(f"\nTotal processing time: {total_time/60:.2f} minutes")
