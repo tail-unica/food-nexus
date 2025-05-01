@@ -1366,7 +1366,7 @@ def create_merge_ontology():
 
     hum_file = "../csv_file/pp_recipes_normalized_by_pipeline.csv"
     off_file = "../csv_file/off_normalized_final.csv"
-    hum_off_file = "../csv_file/file_off_hummus.csv"
+    hum_off_file = "../csv_file/file_off_hummus_filtered_99.csv"
     file_output_nt =  "../csv_file/ontology_merge.nt"
 
     chunksize = 100000
@@ -1401,7 +1401,7 @@ def create_merge_ontology():
 
 
     numchunk = 0
-    chunksize = 1000
+    chunksize = 500
 
     hum_keys = set(dizionario_hum.keys())
     off_keys = set(dizionario_off.keys())
@@ -1413,8 +1413,7 @@ def create_merge_ontology():
 
         for df_merge_chunk in pd.read_csv(hum_off_file, sep=",", on_bad_lines="skip", chunksize=chunksize, low_memory=False, usecols=["title_normalized", "product_name_normalized"]):
             chunk_start = time.time()
-            if numchunk % 100 == 0:
-                print(f"\nProcessing chunk {numchunk+1}/{total_chunks}")
+            print(f"\nProcessing chunk {numchunk+1}/{total_chunks}")
 
             for row in df_merge_chunk.itertuples(index=False):
                 title = row.title_normalized
@@ -1422,9 +1421,13 @@ def create_merge_ontology():
 
                 if title in hum_keys and product in off_keys:
                     for hum_ricetta in dizionario_hum[title]:
+                        max_associazioni = 10
                         for off_ricetta in dizionario_off[product]: 
                             triple_str = f"<{off_ricetta}> <https://schema.org/sameAs> <{hum_ricetta}> .\n"
                             f_out.write(triple_str)
+                            max_associazioni -= 1
+                            if max_associazioni == 0:
+                                break
 
             del df_merge_chunk
             gc.collect() 
@@ -1433,8 +1436,7 @@ def create_merge_ontology():
             avg_time_per_chunk = (time.time() - start_total) / (numchunk + 1)
             remaining_chunks = total_chunks - (numchunk + 1)
             est_remaining = avg_time_per_chunk * remaining_chunks
-            if numchunk % 100 == 0:
-                print(f"Chunk time: {chunk_time:.2f}s — Estimated remaining: {est_remaining/60:.1f} min")
+            print(f"Chunk time: {chunk_time:.2f}s — Estimated remaining: {est_remaining/60:.1f} min")
             numchunk += 1
 
         total_time = time.time() - start_total
