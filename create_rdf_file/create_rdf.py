@@ -1366,7 +1366,7 @@ def create_merge_ontology():
 
     hum_file = "../csv_file/pp_recipes_normalized_by_pipeline.csv"
     off_file = "../csv_file/off_normalized_final.csv"
-    hum_off_file = "../csv_file/file_off_hummus_filtered_875.csv"
+    hum_off_file = "../csv_file/file_off_hummus_filtered_975.csv"
     file_output_nt =  "../csv_file/ontology_merge.nt"
 
     chunksize = 100000
@@ -1401,7 +1401,7 @@ def create_merge_ontology():
 
 
     numchunk = 0
-    chunksize = 500000
+    chunksize = 1000
 
     hum_keys = set(dizionario_hum.keys())
     off_keys = set(dizionario_off.keys())
@@ -1421,13 +1421,13 @@ def create_merge_ontology():
 
                 if title in hum_keys and product in off_keys:
                     for hum_ricetta in dizionario_hum[title]:
-                        max_associazioni = 1000
+                        #max_associazioni = 1000
                         for off_ricetta in dizionario_off[product]: 
                             triple_str = f"<{off_ricetta}> <https://schema.org/sameAs> <{hum_ricetta}> .\n"
                             f_out.write(triple_str)
-                            max_associazioni -= 1
-                            if max_associazioni == 0:
-                                break
+                            #max_associazioni -= 1
+                            #if max_associazioni == 0:
+                            #    break
 
             del df_merge_chunk
             gc.collect() 

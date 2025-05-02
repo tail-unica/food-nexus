@@ -11,41 +11,41 @@ from rdflib import RDF, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import OWL
 from rdflib import OWL
 from csv import writer
-from create_rdf import sanitize_for_uri  # type: ignore
-from pipeline import pipeline_core, pipeline  # type: ignore
-from attribute_extraction import add_user_attributes  # type: ignore
+#from create_rdf_file import sanitize_for_uri  # type: ignore
+#from pipeline import pipeline_core, pipeline  # type: ignore
+#from attribute_extraction import add_user_attributes  # type: ignore
 
 
 
-def add_to_sys_path(folder_name) -> None:
-    """
-    Function to add a folder to the system path
-    :param folder_name: name of the folder to add
-    :return: None
-    """
+#def add_to_sys_path(folder_name) -> None:
+#    """
+#    Function to add a folder to the system path
+#    :param folder_name: name of the folder to add
+#    :return: None
+#    """
+#
+#    utils_path = os.path.abspath(
+#        os.path.join(os.path.dirname(__file__), folder_name)
+#    )
+#    sys.path.append(utils_path)
+#
+#
+#add_to_sys_path("entity_linking_file")
+#add_to_sys_path("create_rdf_file")
+#add_to_sys_path("normalization_pipeline_file")
+#add_to_sys_path("attribute_extraction_file")
 
-    utils_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), folder_name)
-    )
-    sys.path.append(utils_path)
 
-
-add_to_sys_path("entity_linking_file")
-add_to_sys_path("create_rdf_file")
-add_to_sys_path("normalization_pipeline_file")
-add_to_sys_path("attribute_extraction_file")
-
-
-from entity_linking import (  # type: ignore
-    read_specified_columns,
-    normalize_columns,
-    find_k_most_similar_pairs_with_indicators,
-)
-
-from create_rdf import sanitize_for_uri  # type: ignore
-from pipeline import pipeline_core, pipeline  # type: ignore
-from attribute_extraction import add_user_attributes  # type: ignore
-
+#from entity_linking import (  # type: ignore
+#    read_specified_columns,
+#    normalize_columns,
+#    find_k_most_similar_pairs_with_indicators,
+#)
+#
+#from create_rdf_file import sanitize_for_uri  # type: ignore
+#from pipeline import pipeline_core, pipeline  # type: ignore
+#from attribute_extraction import add_user_attributes  # type: ignore
+#
 
 def create_completed_ontology() -> None:
     """
@@ -106,8 +106,6 @@ def create_completed_ontology_streaming() -> None:
     output_file = "./csv_file/ontology_complete.nt"
     file_paths = [file_path1, file_path2, file_path3]
 
-    UNICA = Namespace("https://github.com/tail-unica/kgeats/")
-    SCHEMA = Namespace("https://schema.org/") 
     link_ontology = "https://github.com/tail-unica/kgeats/unica_complete_food_ontology"
     ontology_iri = URIRef(link_ontology)
     version_iri = URIRef(f"{link_ontology}/1.0")
