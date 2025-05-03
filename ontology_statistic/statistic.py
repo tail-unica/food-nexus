@@ -56,7 +56,7 @@ def analyze_turtle_file(file_path) -> dict:
     }
 
 
-def analyze_nt_file(file_path, batch_size=1000000):
+def analyze_nt_file(file_path, batch_size=10000):
     """
     Analyze an NT (N-Triples) file in batches for ontology statistics.
     
@@ -64,6 +64,7 @@ def analyze_nt_file(file_path, batch_size=1000000):
     :param batch_size: number of triples to process in each batch
     :return: a dictionary containing the aggregated statistics
     """
+
     # Entities and relations
     entities = set()
     relations = set()
@@ -73,13 +74,15 @@ def analyze_nt_file(file_path, batch_size=1000000):
     
     total_triples = 0
     batch_count = 0
-    
-    start_time = time.time()
-    
+    total_lines = sum(1 for _ in open(file_path, encoding="utf-8")) - 1
+    total_chunks = total_lines/batch_size
+    numchunk = 0
+    start_total = time.time()
+
     # Process the file in batches
     with open(file_path, 'r', encoding='utf-8') as file:
         current_batch = []
-        
+
         for line in file:
             line = line.strip()
             if not line or line.startswith('#'):
@@ -89,17 +92,21 @@ def analyze_nt_file(file_path, batch_size=1000000):
             
             # Process batch when it reaches the specified size
             if len(current_batch) >= batch_size:
+                chunk_start = time.time()
                 batch_stats = process_batch(current_batch, entities, relations, attributes, 
                                           entity_types, relation_types)
                 total_triples += batch_stats["batch_triples"]
-                
-                batch_count += 1
-                print(f"Processed batch {batch_count}: {batch_stats['batch_triples']} triples, "
-                      f"Total: {total_triples} triples, "
-                      f"Elapsed time: {time.time() - start_time:.2f}s")
-                
+                print(f"Processed batch {numchunk+1} of {round(total_chunks)}, file {file_path}")
                 current_batch = []
-        
+                
+                chunk_time = time.time() - chunk_start
+                avg_time_per_chunk = (time.time() - start_total) / (numchunk + 1)
+                remaining_chunks = total_chunks - (numchunk + 1)
+                est_remaining = avg_time_per_chunk * remaining_chunks
+                print(f"Chunk time: {chunk_time:.2f}s — Estimated remaining: {est_remaining/60:.1f} min")
+                numchunk += 1
+
+
         # Process any remaining triples in the last batch
         if current_batch:
             batch_stats = process_batch(current_batch, entities, relations, attributes, 
@@ -108,10 +115,10 @@ def analyze_nt_file(file_path, batch_size=1000000):
             
             batch_count += 1
             print(f"Processed final batch {batch_count}: {batch_stats['batch_triples']} triples, "
-                  f"Total: {total_triples} triples, "
-                  f"Elapsed time: {time.time() - start_time:.2f}s")
-    
-    print(f"Analysis completed in {time.time() - start_time:.2f} seconds.")
+                  f"Total: {total_triples} triples, ")
+
+
+    print(f"Analysis completed in {time.time() - start_total:.2f} seconds.")
     
     return {
         "num_triples": total_triples,
