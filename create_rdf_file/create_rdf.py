@@ -1405,7 +1405,10 @@ def create_merge_ontology():
 
     hum_keys = set(dizionario_hum.keys())
     off_keys = set(dizionario_off.keys())
-    total_lines = sum(1 for _ in open(hum_off_file, encoding="utf-8")) - 1
+
+    hum_off_df = pd.read_csv(hum_off_file, sep=",", low_memory=False, on_bad_lines="skip")
+    total_lines  = len(hum_off_df)
+
     total_chunks = (total_lines // chunksize) + 1
     start_total = time.time()
 

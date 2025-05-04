@@ -23,6 +23,7 @@ def analyze_turtle_file(file_path) -> dict:
     attributes = set()
     entity_types = Counter()
     relation_types = Counter()
+    num_relations = 0
 
     g = Graph()
     g.parse(file_path, format="turtle")
@@ -32,10 +33,12 @@ def analyze_turtle_file(file_path) -> dict:
         # Collect entities and relations
         entities.add(subject)
         relations.add(predicate)
+
         if isinstance(obj, Literal):
             attributes.add(obj)
         else:
             entities.add(obj)
+            num_relations += 1
 
         # Count the instances of entity types
         if predicate == RDF.type:
@@ -47,7 +50,7 @@ def analyze_turtle_file(file_path) -> dict:
     return {
         "num_triples": len(g),
         "num_entities": len(entities),
-        "num_relations": len(relations),
+        "num_relations": num_relations,
         "num_attributes": len(attributes),
         "num_entity_types": len(entity_types),
         "num_relation_types": len(relation_types),
@@ -55,6 +58,62 @@ def analyze_turtle_file(file_path) -> dict:
         "relation_types": relation_types,
     }
 
+
+def count_lines_efficiently(file_path, chunk_size=1024*1024*4, report_interval=10_000_000, encoding='utf-8'):
+
+    total_lines = 0
+    next_report_threshold = report_interval
+    start_time = time.time()
+
+    try:
+        newline_byte = '\n'.encode(encoding)
+    except LookupError:
+        print(f"Errore: Encoding '{encoding}' non riconosciuto.")
+        return -1
+
+    print(f"Avvio conteggio righe efficiente per: {file_path} (Chunk: {chunk_size // (1024*1024)}MB, Report ogni: {report_interval:,} righe)")
+
+    try:
+        with open(file_path, 'rb') as f: # Apri in modalità binaria ('rb')
+            while True:
+                chunk = f.read(chunk_size)
+                if not chunk:
+                    break # Fine del file
+
+                # Conta i byte di newline nel blocco corrente
+                total_lines += chunk.count(newline_byte)
+
+                # Stampa il progresso se abbiamo superato la soglia
+                # Usiamo un ciclo while nel caso un singolo chunk ci faccia superare più soglie
+                while total_lines >= next_report_threshold:
+                    # Riporta la soglia appena superata
+                    milestone = (next_report_threshold // report_interval) * report_interval
+                    current_time = time.time()
+                    elapsed = current_time - start_time
+                    print(f"  ... contate ~{milestone:,} righe [{elapsed:.2f} sec]")
+                    next_report_threshold += report_interval
+
+    except FileNotFoundError:
+        print(f"Errore: File non trovato - {file_path}")
+        return -1
+    except IOError as e:
+        print(f"Errore di I/O durante la lettura di {file_path}: {e}")
+        return -1
+    except Exception as e:
+        print(f"Errore inaspettato: {e}")
+        return -1
+
+    # Report finale
+    end_time = time.time()
+    print(f"Conteggio completato: {total_lines:,} righe trovate in {end_time - start_time:.2f} secondi.")
+
+    # Nota sull'originale "- 1"
+    # Questo metodo conta i caratteri newline. Se il tuo "- 1" originale
+    # serviva a escludere una riga di intestazione o per qualche altra ragione specifica,
+    # dovrai applicare quella logica al *risultato* di questa funzione.
+    # Ad esempio: final_count = count_lines_efficiently(...) - 1 (se necessario)
+
+    return total_lines
 
 def analyze_nt_file(file_path, batch_size=10000):
     """
@@ -74,7 +133,19 @@ def analyze_nt_file(file_path, batch_size=10000):
     
     total_triples = 0
     batch_count = 0
-    total_lines = sum(1 for _ in open(file_path, encoding="utf-8")) - 1
+
+    print("calculating total rows...")
+
+    MiB = 1024*1024
+    total_lines = count_lines_efficiently(
+        file_path,
+        chunk_size=1000 * MiB,  # Prova 16MB
+        report_interval=10000000,
+        encoding='utf-8'
+    )
+
+    print("total rows: ", total_lines)
+
     total_chunks = total_lines/batch_size
     numchunk = 0
     start_total = time.time()

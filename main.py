@@ -139,7 +139,7 @@ def create_completed_ontology_streaming() -> None:
                     with open(file_path, 'r', encoding='utf-8') as infile:
                         line_count = 0
                         for line in infile:
-                            outfile.write(line.strip()) 
+                            outfile.write(line.strip() + '\n')
                             line_count += 1
                         
                             if line_count % 1000000 == 0:
