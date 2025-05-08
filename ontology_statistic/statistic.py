@@ -74,19 +74,15 @@ def count_lines_efficiently(file_path, chunk_size=1024*1024*4, report_interval=1
     print(f"Avvio conteggio righe efficiente per: {file_path} (Chunk: {chunk_size // (1024*1024)}MB, Report ogni: {report_interval:,} righe)")
 
     try:
-        with open(file_path, 'rb') as f: # Apri in modalità binaria ('rb')
+        with open(file_path, 'rb') as f: 
             while True:
                 chunk = f.read(chunk_size)
                 if not chunk:
-                    break # Fine del file
+                    break 
 
-                # Conta i byte di newline nel blocco corrente
                 total_lines += chunk.count(newline_byte)
 
-                # Stampa il progresso se abbiamo superato la soglia
-                # Usiamo un ciclo while nel caso un singolo chunk ci faccia superare più soglie
                 while total_lines >= next_report_threshold:
-                    # Riporta la soglia appena superata
                     milestone = (next_report_threshold // report_interval) * report_interval
                     current_time = time.time()
                     elapsed = current_time - start_time
@@ -103,15 +99,9 @@ def count_lines_efficiently(file_path, chunk_size=1024*1024*4, report_interval=1
         print(f"Errore inaspettato: {e}")
         return -1
 
-    # Report finale
     end_time = time.time()
     print(f"Conteggio completato: {total_lines:,} righe trovate in {end_time - start_time:.2f} secondi.")
 
-    # Nota sull'originale "- 1"
-    # Questo metodo conta i caratteri newline. Se il tuo "- 1" originale
-    # serviva a escludere una riga di intestazione o per qualche altra ragione specifica,
-    # dovrai applicare quella logica al *risultato* di questa funzione.
-    # Ad esempio: final_count = count_lines_efficiently(...) - 1 (se necessario)
 
     return total_lines
 
@@ -132,6 +122,8 @@ def analyze_nt_file(file_path, batch_size=10000):
     relation_types = Counter()
     
     total_triples = 0
+    total_actual_relations = 0
+    total_actual_attributes = 0
     batch_count = 0
 
     print("calculating total rows...")
@@ -167,6 +159,8 @@ def analyze_nt_file(file_path, batch_size=10000):
                 batch_stats = process_batch(current_batch, entities, relations, attributes, 
                                           entity_types, relation_types)
                 total_triples += batch_stats["batch_triples"]
+                total_actual_relations += batch_stats["batch_actual_relations"] 
+                total_actual_attributes += batch_stats["batch_actual_attributes"] 
                 print(f"Processed batch {numchunk+1} of {round(total_chunks)}, file {file_path}")
                 current_batch = []
                 
@@ -183,7 +177,8 @@ def analyze_nt_file(file_path, batch_size=10000):
             batch_stats = process_batch(current_batch, entities, relations, attributes, 
                                       entity_types, relation_types)
             total_triples += batch_stats["batch_triples"]
-            
+            total_actual_relations += batch_stats["batch_actual_relations"]
+            total_actual_attributes += batch_stats["batch_actual_attributes"] 
             batch_count += 1
             print(f"Processed final batch {batch_count}: {batch_stats['batch_triples']} triples, "
                   f"Total: {total_triples} triples, ")
@@ -194,8 +189,8 @@ def analyze_nt_file(file_path, batch_size=10000):
     return {
         "num_triples": total_triples,
         "num_entities": len(entities),
-        "num_relations": len(relations),
-        "num_attributes": len(attributes),
+        "num_relations": total_actual_relations,
+        "num_attributes": total_actual_attributes,
         "num_entity_types": len(entity_types),
         "num_relation_types": len(relation_types),
         "entity_types": entity_types,
@@ -221,6 +216,8 @@ def process_batch(batch_lines, entities, relations, attributes, entity_types, re
     g.parse(data=nt_content, format="nt")
     
     batch_triples = 0
+    batch_actual_relations_count = 0 
+    batch_attribute_statements_count = 0
     
     # Analyze the RDF triples in this batch
     for subject, predicate, obj in g:
@@ -232,8 +229,10 @@ def process_batch(batch_lines, entities, relations, attributes, entity_types, re
         
         if isinstance(obj, Literal):
             attributes.add(obj)
+            batch_attribute_statements_count +=1
         else:
             entities.add(obj)
+            batch_actual_relations_count += 1 
         
         # Count the instances of entity types
         if predicate == RDF.type:
@@ -242,7 +241,7 @@ def process_batch(batch_lines, entities, relations, attributes, entity_types, re
         # Count the relations
         relation_types[str(predicate)] += 1
     
-    return {"batch_triples": batch_triples}
+    return {"batch_triples": batch_triples, "batch_actual_relations": batch_actual_relations_count, "batch_actual_attributes": batch_attribute_statements_count}
 
 
 
@@ -260,12 +259,8 @@ def ontology_statistics(turtle_files, output_csv, type="nt") -> None:
     results = []
     for file_path in turtle_files:
 
-        if type == "ttl":
-            stats = analyze_turtle_file(file_path)
-        else:
-            stats = analyze_nt_file(file_path)
-
-        
+        stats = analyze_nt_file(file_path)
+      
         results.append(
             {
                 "file": file_path.split("/")[-1],
