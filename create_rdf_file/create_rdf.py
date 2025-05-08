@@ -320,11 +320,11 @@ def convert_hummus_in_rdf(
         file_review = "../csv_file/pp_reviews_with_attributes.csv"
 
     if use_infered_attributes_review or use_infered_attributes_description:
+        file_output_ttl = "../csv_file/ontology_hummus_inferedttl"
+        file_output_nt = "../csv_file/ontology_hummus_infered.nt"
+    else:
         file_output_ttl = "../csv_file/ontology_hummus.ttl"
         file_output_nt = "../csv_file/ontology_hummus.nt"
-    else:
-        file_output_ttl = "../csv_file/ontology_hummus_not_infered.ttl"
-        file_output_nt = "../csv_file/ontology_hummus_not_infered.nt"
 
     # Upload the CSV
     df_ricette = pd.read_csv(filepath_or_buffer=file_recipes, on_bad_lines="skip", sep=";",  low_memory=False)

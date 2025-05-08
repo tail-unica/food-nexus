@@ -9,54 +9,54 @@ import os
 import gc 
 import time
 
-def analyze_turtle_file(file_path) -> dict:
-    """
-    Analyze a Turtle file for ontology statistics, including counts of instances.
-
-    :param file_path: path to the Turtle file
-    :return: a dictionary containing the statistics
-    """
-
-    # Entities and relations
-    entities = set()
-    relations = set()
-    attributes = set()
-    entity_types = Counter()
-    relation_types = Counter()
-    num_relations = 0
-
-    g = Graph()
-    g.parse(file_path, format="turtle")
-
-    # Analyze the RDF triples
-    for subject, predicate, obj in g:
-        # Collect entities and relations
-        entities.add(subject)
-        relations.add(predicate)
-
-        if isinstance(obj, Literal):
-            attributes.add(obj)
-        else:
-            entities.add(obj)
-            num_relations += 1
-
-        # Count the instances of entity types
-        if predicate == RDF.type:
-            entity_types[str(obj)] += 1
-
-        # Count the relations
-        relation_types[str(predicate)] += 1
-
-    return {
-        "num_triples": len(g),
-        "num_entities": len(entities),
-        "num_relations": num_relations,
-        "num_attributes": len(attributes),
-        "num_entity_types": len(entity_types),
-        "num_relation_types": len(relation_types),
-        "entity_types": entity_types,
-        "relation_types": relation_types,
-    }
+#def analyze_turtle_file(file_path) -> dict:
+#    """
+#    Analyze a Turtle file for ontology statistics, including counts of instances.
+#
+#    :param file_path: path to the Turtle file
+#    :return: a dictionary containing the statistics
+#    """
+#
+#    # Entities and relations
+#    entities = set()
+#    relations = set()
+#    attributes = set()
+#    entity_types = Counter()
+#    relation_types = Counter()
+#    num_relations = 0
+#
+#    g = Graph()
+#    g.parse(file_path, format="turtle")
+#
+#    # Analyze the RDF triples
+#    for subject, predicate, obj in g:
+#        # Collect entities and relations
+#        entities.add(subject)
+#        relations.add(predicate)
+#
+#        if isinstance(obj, Literal):
+#            attributes.add(obj)
+#        else:
+#            entities.add(obj)
+#            num_relations += 1
+#
+#        # Count the instances of entity types
+#        if predicate == RDF.type:
+#            entity_types[str(obj)] += 1
+#
+#        # Count the relations
+#        relation_types[str(predicate)] += 1
+#
+#    return {
+#        "num_triples": len(g),
+#        "num_entities": len(entities),
+#        "num_relations": num_relations,
+#        "num_attributes": len(attributes),
+#        "num_entity_types": len(entity_types),
+#        "num_relation_types": len(relation_types),
+#        "entity_types": entity_types,
+#        "relation_types": relation_types,
+#    }
 
 
 def count_lines_efficiently(file_path, chunk_size=1024*1024*4, report_interval=10_000_000, encoding='utf-8'):

@@ -53,7 +53,7 @@ def create_completed_ontology() -> None:
     :return: None
     """
 
-    file_path1 = "./csv_file/ontology_hummus.nt"
+    file_path1 = "./csv_file/ontology_hummus_infered.nt"
     file_path2 = "./csv_file/ontology_off.nt"
     file_path3 = "./csv_file/ontology_merge.nt"
     output_file_ttl = "./csv_file/ontology_complete.ttl"
@@ -100,7 +100,7 @@ def create_completed_ontology_streaming() -> None:
     Function to create the hummus-off merged ontology
     :return: None
     """
-    file_path1 = "./csv_file/ontology_hummus.nt"
+    file_path1 = "./csv_file/ontology_hummus_infered.nt"
     file_path2 = "./csv_file/ontology_off.nt"
     file_path3 = "./csv_file/ontology_merge.nt"
     output_file = "./csv_file/ontology_complete.nt"
