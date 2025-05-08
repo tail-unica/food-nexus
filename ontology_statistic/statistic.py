@@ -116,10 +116,10 @@ def analyze_nt_file(file_path, batch_size=10000):
 
     # Entities and relations
     entities = set()
-    relations = set()
     attributes = set()
     entity_types = Counter()
-    relation_types = Counter()
+    actual_relation_predicate_types = Counter()
+    attribute_predicate_types = Counter()
     
     total_triples = 0
     total_actual_relations = 0
@@ -156,8 +156,8 @@ def analyze_nt_file(file_path, batch_size=10000):
             # Process batch when it reaches the specified size
             if len(current_batch) >= batch_size:
                 chunk_start = time.time()
-                batch_stats = process_batch(current_batch, entities, relations, attributes, 
-                                          entity_types, relation_types)
+                batch_stats = process_batch(current_batch, entities, attributes, 
+                                          entity_types, actual_relation_predicate_types, attribute_predicate_types)
                 total_triples += batch_stats["batch_triples"]
                 total_actual_relations += batch_stats["batch_actual_relations"] 
                 total_actual_attributes += batch_stats["batch_actual_attributes"] 
@@ -174,8 +174,8 @@ def analyze_nt_file(file_path, batch_size=10000):
 
         # Process any remaining triples in the last batch
         if current_batch:
-            batch_stats = process_batch(current_batch, entities, relations, attributes, 
-                                      entity_types, relation_types)
+            batch_stats = process_batch(current_batch, entities, attributes, 
+                                      entity_types, actual_relation_predicate_types, attribute_predicate_types)
             total_triples += batch_stats["batch_triples"]
             total_actual_relations += batch_stats["batch_actual_relations"]
             total_actual_attributes += batch_stats["batch_actual_attributes"] 
@@ -192,12 +192,15 @@ def analyze_nt_file(file_path, batch_size=10000):
         "num_relations": total_actual_relations,
         "num_attributes": total_actual_attributes,
         "num_entity_types": len(entity_types),
-        "num_relation_types": len(relation_types),
+        "num_relation_types": actual_relation_predicate_types,
+        "num_relation_predicate_types": len(actual_relation_predicate_types),
+        "num_attribute_predicate_types": len(attribute_predicate_types),
         "entity_types": entity_types,
-        "relation_types": relation_types,
+        "relation_predicate_type_counts": actual_relation_predicate_types,
+        "attribute_predicate_type_counts": attribute_predicate_types,
     }
 
-def process_batch(batch_lines, entities, relations, attributes, entity_types, relation_types):
+def process_batch(batch_lines, entities, attributes, entity_types, actual_relation_predicate_types_counter, attribute_predicate_types_counter):
     """
     Process a batch of NT lines and update the statistics.
     
@@ -206,7 +209,8 @@ def process_batch(batch_lines, entities, relations, attributes, entity_types, re
     :param relations: set of relations to update
     :param attributes: set of attributes to update
     :param entity_types: Counter for entity types
-    :param relation_types: Counter for relation types
+    :param actual_relation_predicate_types_counter: Counter for relation predicate types
+    :param attribute_predicate_types_counter: Counter for attribute predicate types
     :return: statistics for this batch
     """
     g = Graph()
@@ -225,22 +229,20 @@ def process_batch(batch_lines, entities, relations, attributes, entity_types, re
         
         # Collect entities and relations
         entities.add(subject)
-        relations.add(predicate)
         
         if isinstance(obj, Literal):
             attributes.add(obj)
             batch_attribute_statements_count +=1
+            attribute_predicate_types_counter[str(predicate)] += 1
         else:
             entities.add(obj)
             batch_actual_relations_count += 1 
+            actual_relation_predicate_types_counter[str(predicate)] += 1
         
         # Count the instances of entity types
         if predicate == RDF.type:
             entity_types[str(obj)] += 1
-        
-        # Count the relations
-        relation_types[str(predicate)] += 1
-    
+            
     return {"batch_triples": batch_triples, "batch_actual_relations": batch_actual_relations_count, "batch_actual_attributes": batch_attribute_statements_count}
 
 
@@ -254,7 +256,8 @@ def ontology_statistics(turtle_files, output_csv, type="nt") -> None:
     :params output_csv: path to the output CSV file
     """
     all_entity_types = Counter()
-    all_relation_types = Counter()
+    all_actual_relation_predicate_types = Counter()
+    all_attribute_predicate_types = Counter()
 
     results = []
     for file_path in turtle_files:
@@ -268,17 +271,22 @@ def ontology_statistics(turtle_files, output_csv, type="nt") -> None:
                 "num_entities": stats["num_entities"],
                 "num_relations": stats["num_relations"],
                 "num_attributes": stats["num_attributes"],
-                "num_entity_types": len(stats["entity_types"]),
-                "num_relation_types": len(stats["relation_types"]),
+                "num_entity_types": stats["num_entity_types"],
+                "num_relation_types": stats["num_relation_predicate_types"],
+                "num_attribute_types": stats["num_attribute_predicate_types"],
                 "entity_types": stats["entity_types"],
-                "relation_types": stats["relation_types"],
+                "relation_predicate_type_counts": stats["relation_predicate_type_counts"],
+                "attribute_predicate_type_counts": stats["attribute_predicate_type_counts"]
             }
         )
         all_entity_types.update(stats["entity_types"])
-        all_relation_types.update(stats["relation_types"])
+        all_actual_relation_predicate_types.update(stats["relation_predicate_type_counts"])
+        all_attribute_predicate_types.update(stats["attribute_predicate_type_counts"])  
+
 
     entity_type_cols = sorted(all_entity_types.keys())
-    relation_type_cols = sorted(all_relation_types.keys())
+    actual_relation_predicate_type_cols = sorted(all_actual_relation_predicate_types.keys())
+    attribute_predicate_type_cols = sorted(all_attribute_predicate_types.keys())
 
     header = (
         [
@@ -289,14 +297,19 @@ def ontology_statistics(turtle_files, output_csv, type="nt") -> None:
             "num_attributes",
             "num_entity_types",
             "num_relation_types",
+            "num_attribute_types"
         ]
         + [
             f"entity_type_{entita.split('/')[-1]}"
             for entita in entity_type_cols
         ]
         + [
-            f"relation_type_{relazione.split('/')[-1]}"
-            for relazione in relation_type_cols
+            f"relation_pred_type_{relazione.split('/')[-1]}"
+            for relazione in actual_relation_predicate_type_cols
+        ]
+        + [
+            f"attribute_pred_type_{attributo.split('/')[-1]}" 
+            for attributo in attribute_predicate_type_cols
         ]
     )
 
@@ -313,16 +326,24 @@ def ontology_statistics(turtle_files, output_csv, type="nt") -> None:
                 "num_attributes": result["num_attributes"],
                 "num_entity_types": result["num_entity_types"],
                 "num_relation_types": result["num_relation_types"],
+                "num_attribute_types": result["num_attribute_types"],
             }
+
             # Add entity counts
             for entity_type in entity_type_cols:
                 row[f"entity_type_{entity_type.split('/')[-1]}"] = result[
                     "entity_types"
                 ].get(entity_type, 0)
             # Add relation counts
-            for relation_type in relation_type_cols:
-                row[f"relation_type_{relation_type.split('/')[-1]}"] = result[
-                    "relation_types"
-                ].get(relation_type, 0)
+            for relation_pred_type in actual_relation_predicate_type_cols:
+                row[f"relation_pred_type_{relation_pred_type.split('/')[-1]}"] = result[
+                    "relation_predicate_type_counts" 
+                ].get(relation_pred_type, 0)
+
+            # Add attributes count
+            for attribute_pred_type in attribute_predicate_type_cols:
+                row[f"attribute_pred_type_{attribute_pred_type.split('/')[-1]}"] = result[
+                    "attribute_predicate_type_counts"
+                ].get(attribute_pred_type, 0)
 
             writer.writerow(row)
