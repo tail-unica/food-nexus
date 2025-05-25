@@ -81,18 +81,18 @@ def clean_column_name(col_name) -> str:
 #            )
 #        )
 #
-#    g.add((UNICA.UserConstraint, RDF.type, RDFS.Class))
-#    g.add((UNICA.UserConstraint, RDFS.subClassOf, SCHEMA.Intangible))
+#    g.add((UNICA.Tag, RDF.type, RDFS.Class))
+#    g.add((UNICA.Tag, RDFS.subClassOf, SCHEMA.Intangible))
 #    g.add(
 #        (
-#            UNICA.UserConstraint,
+#            UNICA.Tag,
 #            RDFS.label,
 #            Literal("User Constraint", lang="en"),
 #        )
 #    )
 #    g.add(
 #        (
-#            UNICA.UserConstraint,
+#            UNICA.Tag,
 #            RDFS.comment,
 #            Literal(
 #                "Constraint about what a user can or want to eat.", lang="en"
@@ -100,9 +100,9 @@ def clean_column_name(col_name) -> str:
 #        )
 #    )
 #
-#    # Propriety for UserConstraint
+#    # Propriety for Tag
 #    g.add((UNICA.constraintName, RDF.type, RDF.Property))
-#    g.add((UNICA.constraintName, RDFS.domain, UNICA.UserConstraint))
+#    g.add((UNICA.constraintName, RDFS.domain, UNICA.Tag))
 #    g.add((UNICA.constraintName, RDFS.range, XSD.string))
 #    g.add(
 #        (
@@ -120,7 +120,7 @@ def clean_column_name(col_name) -> str:
 #    )
 #
 #    g.add((UNICA.constraintDescription, RDF.type, RDF.Property))
-#    g.add((UNICA.constraintDescription, RDFS.domain, UNICA.UserConstraint))
+#    g.add((UNICA.constraintDescription, RDFS.domain, UNICA.Tag))
 #    g.add((UNICA.constraintDescription, RDFS.range, XSD.string))
 #    g.add(
 #        (
@@ -320,7 +320,7 @@ def convert_hummus_in_rdf(
         file_review = "../csv_file/pp_reviews_with_attributes.csv"
 
     if use_infered_attributes_review or use_infered_attributes_description:
-        file_output_ttl = "../csv_file/ontology_hummus_inferedttl"
+        file_output_ttl = "../csv_file/ontology_hummus_infered.ttl"
         file_output_nt = "../csv_file/ontology_hummus_infered.nt"
     else:
         file_output_ttl = "../csv_file/ontology_hummus.ttl"
@@ -444,7 +444,7 @@ def convert_hummus_in_rdf(
                             )
                             if tag_id not in constraint_count:
                                 constraint_count[tag_id] = 1
-                                g.add((tag_id, RDF.type, UNICA.UserConstraint))
+                                g.add((tag_id, RDF.type, UNICA.Tag))
                                 g.add(
                                     (
                                         tag_id,
@@ -457,7 +457,7 @@ def convert_hummus_in_rdf(
                                         tag_id,
                                         SCHEMA.constraintDescription,
                                         Literal(
-                                            f"is a user constraint about {constraint_name}",
+                                            f"is a tag about {constraint_name}",
                                             lang="en",
                                         ),
                                     )
@@ -501,7 +501,7 @@ def convert_hummus_in_rdf(
                 )
                 g.add((author_id, SCHEMA.publishesRecipe, recipe_id))
 
-            # UserConstraint
+            # Tag
             if pd.notna(row["tags"]):
                 tags = (
                     str(row["tags"])
@@ -516,7 +516,7 @@ def convert_hummus_in_rdf(
                     if tag_id != "Tag_":
                         if tag not in tag_count:
                             tag_count[tag] = 1
-                            g.add((tag_id, RDF.type, UNICA.UserConstraint))
+                            g.add((tag_id, RDF.type, UNICA.Tag))
                             g.add(
                                 (
                                     tag_id,
@@ -529,7 +529,7 @@ def convert_hummus_in_rdf(
                                     tag_id,
                                     SCHEMA.constraintDescription,
                                     Literal(
-                                        f"is a user constraint about {tag1.replace('-', ' ')}",
+                                        f"is a tag about {tag1.replace('-', ' ')}",
                                         lang="en",
                                     ),
                                 )
@@ -822,7 +822,7 @@ def convert_hummus_in_rdf(
                             )
                             if tag_id not in constraint_count:
                                 constraint_count[tag_id] = 1
-                                g.add((tag_id, RDF.type, UNICA.UserConstraint))
+                                g.add((tag_id, RDF.type, UNICA.Tag))
                                 g.add(
                                     (
                                         tag_id,
@@ -835,7 +835,7 @@ def convert_hummus_in_rdf(
                                         tag_id,
                                         SCHEMA.constraintDescription,
                                         Literal(
-                                            f"is a user constraint about {constraint_name}",
+                                            f"is a tag about {constraint_name}",
                                             lang="en",
                                         ),
                                     )
@@ -1047,8 +1047,9 @@ def convert_off_in_rdf(use_row=False) -> None:
     tags_columns = [
         "categories", "categories_en", "categories_tags",
         "main_category_en", "nutrient_levels_tags", 
-        "food_groups_en", "food_groups_tags", "ingredients_analysis_tags", "ingredients_tags",
-        "labels_en", "labels_tags", "labels", "allergens", "traces_en"
+        "food_groups_en", "food_groups_tags", "ingredients_analysis_tags", "ingredients_tags", #ingredient a parte?
+        "labels_en", "labels_tags", "labels", "allergens", "traces_en", "packaging_en", "serving_size", "serving_quantity",
+        "additives_n", "quantity", "product_quantity", "pnns_groups_2", "pnns_groups_1", "additives_en", "generic_name"
         ]
     
     countries_column = ["purchase_places", "origins_tags", "origins", "origins_en", "countries", "countries_tags", "countries_en"]
@@ -1121,17 +1122,18 @@ def convert_off_in_rdf(use_row=False) -> None:
                 chunk_graph.add((recipe_id, RDF.type, SCHEMA.Product))
                 chunk_graph.add((recipe_id, SCHEMA.name, Literal(row["product_name"], lang="en")))
                 chunk_graph.add((recipe_id, SCHEMA.identifier, Literal(idx, datatype=XSD.integer)))
+                chunk_graph.add((recipe_id, SCHEMA.image, Literal(row["image_small_url"], datatype=XSD.integer)))
 
                 recipe_tags = set()
 
-                #Add entity UserConstraint
+                #Add entity Tag
                 for contraint in tags_columns:
                     if pd.notna(row[contraint]):
                         for tag in row[contraint].split(","):
                             tag = tag.split(":", 1)[1] if ":" in tag else tag
                             tag1 = tag
-                            tag_uri = sanitize_for_uri(tag.replace("en:", "").replace("-", "_").lower())
-                            tag_ref = URIRef(UNICA[f"Contraint_{tag_uri}"])
+                            tag_uri = sanitize_for_uri(tag.replace("en:", "").replace("fr:", "").replace("-", "_").lower())
+                            tag_ref = URIRef(UNICA[f"Contraint_{contraint}_{tag_uri}"])
                             recipe_tags.add(tag_ref)
 
                             # Check if we've already processed this allergen
@@ -1139,12 +1141,12 @@ def convert_off_in_rdf(use_row=False) -> None:
                                 processed_constraints.add(tag_ref)
                                 chunk_constraints.add(tag_ref)
                                 
-                                chunk_graph.add((tag_ref, RDF.type, UNICA.UserConstraint))
+                                chunk_graph.add((tag_ref, RDF.type, UNICA.Tag))
                                 chunk_graph.add((tag_ref, SCHEMA.constraintName, Literal(tag1, lang="en")))
                                 chunk_graph.add((
                                     tag_ref, 
                                     SCHEMA.constraintDescription, 
-                                    Literal(f"is a user constraint about {tag1}", lang="en")
+                                    Literal(f"is a tag about {tag1}", lang="en")
                                 ))
                             
                 for tags in recipe_tags:
@@ -1424,13 +1426,104 @@ def create_merge_ontology():
 
                 if title in hum_keys and product in off_keys:
                     for hum_ricetta in dizionario_hum[title]:
-                        #max_associazioni = 1000
                         for off_ricetta in dizionario_off[product]: 
                             triple_str = f"<{off_ricetta}> <https://schema.org/sameAs> <{hum_ricetta}> .\n"
                             f_out.write(triple_str)
-                            #max_associazioni -= 1
-                            #if max_associazioni == 0:
-                            #    break
+ 
+
+            del df_merge_chunk
+            gc.collect() 
+
+            chunk_time = time.time() - chunk_start
+            avg_time_per_chunk = (time.time() - start_total) / (numchunk + 1)
+            remaining_chunks = total_chunks - (numchunk + 1)
+            est_remaining = avg_time_per_chunk * remaining_chunks
+            print(f"Chunk time: {chunk_time:.2f}s — Estimated remaining: {est_remaining/60:.1f} min")
+            numchunk += 1
+
+        total_time = time.time() - start_total
+        print(f"\nTotal processing time: {total_time/60:.2f} minutes")
+
+
+
+
+
+def create_merge_ontology2():
+
+    UNICA = Namespace("https://github.com/tail-unica/kgeats/")
+
+    dizionario_hum = {}
+    dizionario_off = {}
+
+    hum_file = "../csv_file/ingredients_food_kg_normalizzed_by_pipeline.csv"
+    off_file = "../csv_file/off_normalized_final.csv"
+    hum_off_file = "../csv_file/file_off_foodkg_filtered_975.csv"
+    file_output_nt =  "../csv_file/ontology_merge_2.nt"
+
+    chunksize = 100000
+    cont_chunk = 0
+
+    for df_off_chunk in pd.read_csv(off_file, sep="\t", on_bad_lines="skip", chunksize=chunksize, low_memory=False, usecols=["product_name_normalized", "code"]):
+        print(f"Processing rows off from {chunksize * cont_chunk} to {chunksize * (cont_chunk+1)}")
+        
+        for idx, row in df_off_chunk.iterrows():
+            if(row["product_name_normalized"] != None and row["product_name_normalized"] != ""):
+                id = URIRef(value=UNICA[f"Recipe_off_{row["code"]}"])
+                if id != None:
+                    if row["product_name_normalized"] not in dizionario_off:
+                        dizionario_off[row["product_name_normalized"]] = [id]
+                    else: 
+                        dizionario_off[row["product_name_normalized"]].append(id)
+        cont_chunk += 1
+
+    cont_chunk = 0
+
+
+    for df_hum_chunk in pd.read_csv(hum_file, sep=",", on_bad_lines="skip", chunksize=chunksize, low_memory=False, usecols=["ingredient", "ingredient_normalized"]):
+        print(f"Processing rows hummus from {chunksize * cont_chunk} to {chunksize * (cont_chunk+1)}")
+        
+        for idx, row in df_hum_chunk.iterrows():
+            if(row["ingredient_normalized"] != None and row["ingredient_normalized"] != ""):
+                id = URIRef(
+                UNICA[
+                    f"Recipe_Ingredient_{sanitize_for_uri(row["ingredient"].replace(' ', '_').lower())}"
+                            ]
+                        )
+                if id != None:
+                    if row["ingredient_normalized"] not in dizionario_hum:
+                        dizionario_hum[row["ingredient_normalized"]] = [id]
+                    else: 
+                        dizionario_hum[row["ingredient_normalized"]].append(id)
+        cont_chunk += 1
+
+
+    numchunk = 0
+    chunksize = 1000
+
+    hum_keys = set(dizionario_hum.keys())
+    off_keys = set(dizionario_off.keys())
+
+    hum_off_df = pd.read_csv(hum_off_file, sep=",", low_memory=False, on_bad_lines="skip")
+    total_lines  = len(hum_off_df)
+
+    total_chunks = (total_lines // chunksize) + 1
+    start_total = time.time()
+
+    with open(file_output_nt, "w", encoding="utf-8") as f_out:
+
+        for df_merge_chunk in pd.read_csv(hum_off_file, sep=",", on_bad_lines="skip", chunksize=chunksize, low_memory=False, usecols=["ingredient_normalized", "product_name_normalized"]):
+            chunk_start = time.time()
+            print(f"\nProcessing chunk {numchunk+1}/{total_chunks}")
+
+            for row in df_merge_chunk.itertuples(index=False):
+                title = row.ingredient_normalized
+                product = row.product_name_normalized
+
+                if title in hum_keys and product in off_keys:
+                    for hum_ricetta in dizionario_hum[title]:
+                        for off_ricetta in dizionario_off[product]: 
+                            triple_str = f"<{off_ricetta}> <https://schema.org/sameAs> <{hum_ricetta}> .\n"
+                            f_out.write(triple_str)
 
             del df_merge_chunk
             gc.collect() 
