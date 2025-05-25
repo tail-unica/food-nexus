@@ -104,8 +104,9 @@ def create_completed_ontology_streaming() -> None:
     file_path2 = "./csv_file/ontology_off.nt"
     file_path3 = "./csv_file/ontology_merge.nt"
     file_path4 = "./csv_file/ontology_merge_2.nt"
+    file_path5 = "./csv_file/ontology_merge_3.nt"
     output_file = "./csv_file/ontology_complete.nt"
-    file_paths = [file_path1, file_path2, file_path3, file_path4]
+    file_paths = [file_path1, file_path2, file_path3, file_path4, file_path5]
 
     link_ontology = "https://github.com/tail-unica/kgeats/unica_complete_food_ontology"
     ontology_iri = URIRef(link_ontology)

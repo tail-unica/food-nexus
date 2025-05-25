@@ -1421,7 +1421,7 @@ def create_merge_ontology():
             print(f"\nProcessing chunk {numchunk+1}/{total_chunks}")
 
             for row in df_merge_chunk.itertuples(index=False):
-                title = row.title_normalized
+                title = row.title_normalized #need to be modified in the csv fle
                 product = row.product_name_normalized
 
                 if title in hum_keys and product in off_keys:
@@ -1516,7 +1516,7 @@ def create_merge_ontology2():
             print(f"\nProcessing chunk {numchunk+1}/{total_chunks}")
 
             for row in df_merge_chunk.itertuples(index=False):
-                title = row.ingredient_normalized
+                title = row.ingredient_normalized #need to be modified in the csv fle
                 product = row.product_name_normalized
 
                 if title in hum_keys and product in off_keys:
@@ -1537,3 +1537,94 @@ def create_merge_ontology2():
 
         total_time = time.time() - start_total
         print(f"\nTotal processing time: {total_time/60:.2f} minutes")
+
+
+
+def create_merge_ontology3():
+
+    UNICA = Namespace("https://github.com/tail-unica/kgeats/")
+
+    dizionario_hum = {}
+    dizionario_off = {}
+
+    hum_file = "../csv_file/pp_recipes_normalized_by_pipeline.csv"
+    off_file = "../csv_file/pp_recipes_normalized_by_pipeline.csv"
+    hum_off_file = "../csv_file/file_hummus_hummus_filtered_975.csv"
+    file_output_nt =  "../csv_file/ontology_merge3.nt"
+
+    chunksize = 100000
+    cont_chunk = 0
+
+    for df_off_chunk in pd.read_csv(off_file, sep=";", on_bad_lines="skip", chunksize=chunksize, low_memory=False, usecols=["title_normalized", "recipe_id"]):
+        print(f"Processing rows hum from {chunksize * cont_chunk} to {chunksize * (cont_chunk+1)}")
+        
+        for idx, row in df_off_chunk.iterrows():
+            if(row["title_normalized"] != None and row["title_normalized"] != ""):
+                id = URIRef(UNICA[f"Recipe_hummus{sanitize_for_uri(row['recipe_id'])}"])
+                if id != None:
+                    if row["title_normalized"] not in dizionario_off:
+                        dizionario_off[row["title_normalized"]] = [id]
+                    else: 
+                        dizionario_off[row["title_normalized"]].append(id)
+        cont_chunk += 1
+
+    cont_chunk = 0
+    for df_hum_chunk in pd.read_csv(hum_file, sep=";", on_bad_lines="skip", chunksize=chunksize, low_memory=False, usecols=["title_normalized", "recipe_id"]):
+        print(f"Processing rows hummus from {chunksize * cont_chunk} to {chunksize * (cont_chunk+1)}")
+        
+        for idx, row in df_hum_chunk.iterrows():
+            if(row["title_normalized"] != None and row["title_normalized"] != ""):
+                id = URIRef(UNICA[f"Recipe_hummus{sanitize_for_uri(row['recipe_id'])}"])
+                if id != None:
+                    if row["title_normalized"] not in dizionario_hum:
+                        dizionario_hum[row["title_normalized"]] = [id]
+                    else: 
+                        dizionario_hum[row["title_normalized"]].append(id)
+        cont_chunk += 1
+
+
+    numchunk = 0
+    chunksize = 1000
+
+    hum_keys = set(dizionario_hum.keys())
+    off_keys = set(dizionario_off.keys())
+
+    hum_off_df = pd.read_csv(hum_off_file, sep=",", low_memory=False, on_bad_lines="skip")
+    total_lines  = len(hum_off_df)
+
+    total_chunks = (total_lines // chunksize) + 1
+    start_total = time.time()
+
+    with open(file_output_nt, "w", encoding="utf-8") as f_out:
+
+        for df_merge_chunk in pd.read_csv(hum_off_file, sep=",", on_bad_lines="skip", chunksize=chunksize, low_memory=False, usecols=["name_file1", "name_file2"]):
+
+            chunk_start = time.time()
+            print(f"\nProcessing chunk {numchunk+1}/{total_chunks}")
+
+            for row in df_merge_chunk.itertuples(index=False):
+                title = row.name_file1
+                product = row.name_file2
+
+                if title in hum_keys and product in off_keys:
+                    for hum_ricetta in dizionario_hum[title]:
+                        for off_ricetta in dizionario_off[product]: 
+                            if off_ricetta != hum_ricetta:
+                                triple_str = f"<{off_ricetta}> <https://schema.org/sameAs> <{hum_ricetta}> .\n"
+                                f_out.write(triple_str)
+ 
+
+            del df_merge_chunk
+            gc.collect() 
+
+            chunk_time = time.time() - chunk_start
+            avg_time_per_chunk = (time.time() - start_total) / (numchunk + 1)
+            remaining_chunks = total_chunks - (numchunk + 1)
+            est_remaining = avg_time_per_chunk * remaining_chunks
+            print(f"Chunk time: {chunk_time:.2f}s — Estimated remaining: {est_remaining/60:.1f} min")
+            numchunk += 1
+
+        total_time = time.time() - start_total
+        print(f"\nTotal processing time: {total_time/60:.2f} minutes")
+
+
