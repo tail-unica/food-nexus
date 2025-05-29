@@ -1,6 +1,6 @@
 from main import pipeline #type: ignore
 
-input_file = "csv_file/pp_recipes_groups.csv"
+input_file = "csv_file/pp_recipes.csv"
 output_file = "csv_file/pp_recipes_normalized_by_pipeline.csv"
 column_to_normalize = "title"
 column_normalized = 'title_normalized'

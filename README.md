@@ -31,16 +31,59 @@ To run the scripts successfully, the following external resources are required:
 
 Place these files in a new folder named `csv_file` at the root of this repository.
 
+
 ### 3. Execution Workflow
 
-1. **File Generation**
-   Navigate to the appropriate subdirectories containing Jupyter notebooks for data processing and LLM-based tasks. Run the notebooks to generate intermediate representations.
+This workflow outlines the steps to reproduce the KGEats ontology, from initial data setup to the final merged knowledge graph. Ensure you have completed the steps in "1. Requirements" and "2. Data Dependencies" before proceeding.
 
-2. **Normalization and Attribute Extraction**
-   Run the notebook `pipeline.ipynb` located in the root directory to normalize the datasets and infer user-specific attributes.
+1.  **Initial Data Setup:**
+    *   Download the required datasets (HUMMUS preprocessed CSVs, OpenFoodFacts CSV) from their official sources, as detailed in the "Data Dependencies" section.
+    *   Place all downloaded CSV files into the `csv_file/` directory at the root of this repository.
 
-3. **Ontology Merging**
-   Execute the final notebook `main.ipynb` to merge the extracted knowledge into a unified ontology.
+2.  **Environment and LLM Setup:**
+    *   Ensure you have created a Python virtual environment (e.g., using `venv` or `conda`) and installed all dependencies by running `pip install -r requirements.txt` within that environment.
+    *   Download and install [Ollama](https://ollama.com/) if you intend to run Large Language Models (LLMs) locally. Follow the official Ollama installation guide.
+    *   Create the necessary local LLM models (if using Ollama) by executing the `llm_creation.py` script or the associated Jupyter notebook located in the `analisys_and_file_creation_file/` directory. This step configures the specific LLMs used for inference tasks.
+
+3.  **Core Data Processing and File Generation:**
+    *   Execute the `file_creation_jupyter.ipynb` notebook, located in the `analisys_and_file_creation_file/` directory, to perform initial data processing and generate intermediate files.
+
+4.  **Dataset Normalization:**
+    *   Run the normalization scripts to standardize recipe data from different sources:
+        *   `python normalization_pipeline_file/normalize_hummus.py`
+        *   `python normalization_pipeline_file/off_normalize.py`
+
+        These scripts will produce normalized recipe datasets.
+
+5.  **LLM-based Information Inference:**
+    *   Execute the following scripts to infer additional information (e.g., user attributes, enhanced descriptions) using the configured LLMs:
+        *   `python attribute_extraction_file/infere_info_from_description.py`
+        *   `python attribute_extraction_file/infere_info_from_review.py`
+
+6.  **Entity Linking Preparation and Execution:**
+    *   **Recipe List Generation:** Execute the *last cell* in the `entity_linking_jupyter.ipynb` notebook, found within the `entity_linking_file/` directory. This step creates a consolidated list of recipes from all datasets, essential for the subsequent BERT-based merging process.
+    *   **Embedding Creation:** Generate embeddings for recipe names, which are crucial for similarity-based linking. Execute the following scripts:
+        *   `python entity_linking_file/create_embedding_foodkg.py`
+        *   `python entity_linking_file/create_embedding_hummus.py`
+        *   `python entity_linking_file/create_embedding_off.py`
+    *   **Linking Execution:** Perform the entity linking between datasets by running:
+        *   `python entity_linking_file/link_off_hum.py`
+        *   `python entity_linking_file/link_off_foodkg.py`
+        *   `python entity_linking_file/link_hum_hum.py` 
+        
+    *   **Threshold Filtering:** If a stricter association threshold is desired for recipe linking, use the `filter_association_by_threshold.ipynb` notebook (likely in `entity_linking_file/`). This allows you to refine the linking results (e.g., by setting a similarity threshold of 0.975). You will need to adjust some file name in the next script if you dont do this step
+
+7.  **RDF Graph Generation:**
+    *   Convert the processed and linked data into RDF triples. Execute the following scripts, founded in the `create_rdf_file/` directory:
+        *   `python create_rdf_file/hummus_to_rdf_not_infered.py`
+        *   `python create_rdf_file/hummus_to_rdf.py`
+        *   `python create_rdf_file/merge_hum_hum_ontology_to_rdf.py`
+        *   `python create_rdf_file/merge_off_fkg_ontology_to_rdf.py`
+        *   `python create_rdf_file/merge_off_hum_ontology_to_rdf.py`
+        *   `python create_rdf_file/off_to_rdf.py`
+
+8.  **Final Ontology Merging:**
+    *   Execute the `merge_ontology.py` script located in the root directory to combine all generated RDF graphs into the final, unified KGEats ontology.
 
 ## 📂 Repository Structure (optional)
 
@@ -73,6 +116,9 @@ This project investigates:
 * Personalized food knowledge graphs through user-driven attribute inference.
 
 The outcomes are relevant for personalized nutrition, semantic search, and knowledge graph completion in the food domain.
+
+## ⬇️ Download the full dataset 
+* [Zenodo link](https://zenodo.org/records/15446860?token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6IjMyNDM5ZTEyLTRlODYtNDljOC04MDI2LTIwNzQ3NDc0NmIxMiIsImRhdGEiOnt9LCJyYW5kb20iOiJlOTA3ZDQ3YzRjYjUyN2YwMDQwMTY4YmRmMzliNTVlZSJ9.OHft7HkLO8JTfgI7pQaB8m9SHMkMdJ71ZQPsIh8oKyj-nZRdZr-KsAisUttCM4EiGeFpk23Q1wQZR1xOJaG0qw)
 
 ## 📜 License
 
