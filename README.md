@@ -85,7 +85,7 @@ This workflow outlines the steps to reproduce the KGEats ontology, from initial 
 8.  **Final Ontology Merging:**
     *   Execute the `merge_ontology.py` script located in the root directory to combine all generated RDF graphs into the final, unified KGEats ontology.
 
-## 📂 Repository Structure (optional)
+## 📂 Repository Structure
 
 ```
 KGEats/
@@ -107,7 +107,7 @@ KGEats/
 └── README.md                         # Project documentation
 ```
 
-## 🎯 Research Objectives (optional)
+## 🎯 Research Objectives
 
 This project investigates:
 
