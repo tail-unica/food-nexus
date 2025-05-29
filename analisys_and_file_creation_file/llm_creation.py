@@ -73,3 +73,7 @@ def create_translation_model() -> None:
     )
 
     
+if __name__ == "__main__":
+    create_food_expert()
+    create_attribute_extractor()
+    create_translation_model()
