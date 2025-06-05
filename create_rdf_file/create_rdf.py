@@ -439,11 +439,11 @@ def convert_hummus_in_rdf(
                         else:
                             tag_id = URIRef(
                                 UNICA[
-                                    f"Constraint_{sanitize_for_uri(constraint_name).strip()}_{sanitize_for_uri(constraint_value).strip()}"
+                                    f"Tag_{sanitize_for_uri(constraint_name).strip()}_{sanitize_for_uri(constraint_value).strip()}"
                                 ]
                             )
-                            if tag_id not in constraint_count:
-                                constraint_count[tag_id] = 1
+                            if tag_id not in tag_count:
+                                tag_count[tag_id] = 1
                                 g.add((tag_id, RDF.type, UNICA.Tag))
                                 g.add(
                                     (
@@ -817,11 +817,11 @@ def convert_hummus_in_rdf(
                             
                             tag_id = URIRef(
                                 UNICA[
-                                    f"Constraint_{sanitize_for_uri(constraint_name).strip()}_{sanitize_for_uri(constraint_value).strip()}"
+                                    f"Tag_{sanitize_for_uri(constraint_name).strip()}_{sanitize_for_uri(constraint_value).strip()}"
                                 ]
                             )
-                            if tag_id not in constraint_count:
-                                constraint_count[tag_id] = 1
+                            if tag_id not in tag_count:
+                                tag_count[tag_id] = 1
                                 g.add((tag_id, RDF.type, UNICA.Tag))
                                 g.add(
                                     (
@@ -841,6 +841,71 @@ def convert_hummus_in_rdf(
                                     )
                                 )
                             g.add((group_id, SCHEMA.hasConstraint, tag_id))
+
+
+
+
+    # Add tag similarity
+    forbidden_words = ['no-', 'non-', 'free-', 'high', 'low', 'avoid']
+    model = SentenceTransformer('BAAI/bge-en-icl')
+    tag_list = list(tag_count.keys())
+
+    def preprocess_tag(tag_string):
+        if len(tag_string) > 4:
+            processed = tag_string[4:]
+        else:
+            processed = ""
+    
+        processed = processed.replace("_", " ")
+        return processed.strip() 
+
+    original_tags_valid = []
+    processed_tags_for_embedding = []
+
+    for original_tag in tag_list:
+        processed = preprocess_tag(original_tag)
+        if processed: 
+            original_tags_valid.append(original_tag)
+            processed_tags_for_embedding.append(processed)
+
+    if processed_tags_for_embedding:
+
+        embeddings = model.encode(processed_tags_for_embedding, convert_to_tensor=True, show_progress_bar=True)
+        cosine_scores = util.cos_sim(embeddings, embeddings)
+        num_tags = len(original_tags_valid)
+
+        for i in range(num_tags):
+            for j in range(i + 1, num_tags):
+
+                original_tag1 = original_tags_valid[i]
+                original_tag2 = original_tags_valid[j]
+                
+                processed_tag1_text = processed_tags_for_embedding[i]
+                processed_tag2_text = processed_tags_for_embedding[j]
+                
+                similarity = cosine_scores[i][j].item() 
+
+                if similarity > 0.85:
+
+                    associate = True 
+
+                    words_in_tag1 = {fw for fw in forbidden_words if fw in processed_tag1_text}
+                    words_in_tag2 = {fw for fw in forbidden_words if fw in processed_tag2_text}
+
+                    tag1_has_any_forbidden = bool(words_in_tag1)
+                    tag2_has_any_forbidden = bool(words_in_tag2)
+
+                    general_mismatch = (tag1_has_any_forbidden != tag2_has_any_forbidden)
+
+                    is_low_high_pairing = (("low" in words_in_tag1 and "high" in words_in_tag2) or ("high" in words_in_tag1 and "low" in words_in_tag2))
+
+                    if general_mismatch or is_low_high_pairing:
+                        associate = False
+                    
+                    if associate:
+                        g.add((original_tag1, SCHEMA.sameAs, original_tag2))
+
+        
 
 
     #Sustainability information
