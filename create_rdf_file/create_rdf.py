@@ -119,19 +119,19 @@ def clean_column_name(col_name) -> str:
 #        )
 #    )
 #
-#    g.add((UNICA.constraintDescription, RDF.type, RDF.Property))
-#    g.add((UNICA.constraintDescription, RDFS.domain, UNICA.Tag))
-#    g.add((UNICA.constraintDescription, RDFS.range, XSD.string))
+#    g.add((UNICA.description, RDF.type, RDF.Property))
+#    g.add((UNICA.description, RDFS.domain, UNICA.Tag))
+#    g.add((UNICA.description, RDFS.range, XSD.string))
 #    g.add(
 #        (
-#            UNICA.constraintDescription,
+#            UNICA.description,
 #            RDFS.label,
 #            Literal("Constraint Description", lang="en"),
 #        )
 #    )
 #    g.add(
 #        (
-#            UNICA.constraintDescription,
+#            UNICA.description,
 #            RDFS.comment,
 #            Literal("Description of the constraint.", lang="en"),
 #        )
@@ -448,21 +448,21 @@ def convert_hummus_in_rdf(
                                 g.add(
                                     (
                                         tag_id,
-                                        SCHEMA.constraintName,
+                                        SCHEMA.name,
                                         Literal(constraint_name, lang="en"),
                                     )
                                 )
                                 g.add(
                                     (
                                         tag_id,
-                                        SCHEMA.constraintDescription,
+                                        SCHEMA.description,
                                         Literal(
                                             f"is a tag about {constraint_name}",
                                             lang="en",
                                         ),
                                     )
                                 )
-                            g.add((group_id, SCHEMA.hasConstraint, tag_id))
+                            g.add((group_id, UNICA.hasConstraint, tag_id))
 
 
     print("starting recipe creation")
@@ -499,7 +499,7 @@ def convert_hummus_in_rdf(
                 author_id = URIRef(
                     UNICA[f"UserGroup_{sanitize_for_uri(row['author_id'])}"]
                 )
-                g.add((author_id, SCHEMA.publishesRecipe, recipe_id))
+                g.add((author_id, UNICA.publishesRecipe, recipe_id))
 
             # Tag
             if pd.notna(row["tags"]):
@@ -520,14 +520,14 @@ def convert_hummus_in_rdf(
                             g.add(
                                 (
                                     tag_id,
-                                    SCHEMA.constraintName,
+                                    SCHEMA.name,
                                     Literal(tag, lang="en"),
                                 )
                             )
                             g.add(
                                 (
                                     tag_id,
-                                    SCHEMA.constraintDescription,
+                                    SCHEMA.description,
                                     Literal(
                                         f"is a tag about {tag1.replace('-', ' ')}",
                                         lang="en",
@@ -582,7 +582,7 @@ def convert_hummus_in_rdf(
                         )
                     )
                     g.add(
-                        (recipe_id, SCHEMA.NutritionInformation, indicator_id)
+                        (recipe_id, UNICA.hasIndicator, indicator_id)
                     )
 
             # Ingredients
@@ -736,7 +736,7 @@ def convert_hummus_in_rdf(
                 g.add(
                     (
                         group_id,
-                        SCHEMA.publishesReview,
+                        UNICA.publishesReview,
                         review_id,
                     )
                 )
@@ -826,21 +826,21 @@ def convert_hummus_in_rdf(
                                 g.add(
                                     (
                                         tag_id,
-                                        SCHEMA.constraintName,
+                                        SCHEMA.name,
                                         Literal(constraint_name, lang="en"),
                                     )
                                 )
                                 g.add(
                                     (
                                         tag_id,
-                                        SCHEMA.constraintDescription,
+                                        SCHEMA.description,
                                         Literal(
                                             f"is a tag about {constraint_name}",
                                             lang="en",
                                         ),
                                     )
                                 )
-                            g.add((group_id, SCHEMA.hasConstraint, tag_id))
+                            g.add((group_id, UNICA.hasConstraint, tag_id))
 
 
 
@@ -1207,10 +1207,10 @@ def convert_off_in_rdf(use_row=False) -> None:
                                 chunk_constraints.add(tag_ref)
                                 
                                 chunk_graph.add((tag_ref, RDF.type, UNICA.Tag))
-                                chunk_graph.add((tag_ref, SCHEMA.constraintName, Literal(tag1, lang="en")))
+                                chunk_graph.add((tag_ref, SCHEMA.name, Literal(tag1, lang="en")))
                                 chunk_graph.add((
                                     tag_ref, 
-                                    SCHEMA.constraintDescription, 
+                                    SCHEMA.description, 
                                     Literal(f"is a tag about {tag1}", lang="en")
                                 ))
                             
@@ -1253,7 +1253,7 @@ def convert_off_in_rdf(use_row=False) -> None:
                                 ))
 
                             # Add the relationship between the recipe and the indicator
-                            chunk_graph.add((recipe_id, SCHEMA.NutritionInformation, indicator_id))
+                            chunk_graph.add((recipe_id, UNICA.hasIndicator, indicator_id))
             
 
 
@@ -1357,13 +1357,13 @@ def convert_off_in_rdf(use_row=False) -> None:
                             processed_store.add(stores_ref)
                             chunk_constraints.add(stores_ref)
                         
-                            chunk_graph.add((stores_ref, RDF.type, UNICA.Store))
+                            chunk_graph.add((stores_ref, RDF.type, SCHEMA.Store))
                             chunk_graph.add((stores_ref, SCHEMA.name, Literal(stores1, lang="en")))
 
-                        chunk_graph.add(triple=(stores_ref, SCHEMA.offersProduct, recipe_id))
+                        chunk_graph.add(triple=(stores_ref, SCHEMA.offers, recipe_id))
 
                         for city in recipe_cities:
-                            chunk_graph.add(triple=(stores_ref, SCHEMA.sellerHasLocation, city))
+                            chunk_graph.add(triple=(stores_ref, UNICA.isPlaceIn, city))
 
         # Save this chunk
         chunk_file = f"{output_dir}chunk_{cont_chunk}.ttl"
