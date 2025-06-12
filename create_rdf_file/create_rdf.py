@@ -515,7 +515,7 @@ def convert_hummus_in_rdf(
                     tag_id = URIRef(UNICA[f"Tag_{tag}"])
                     if tag_id != "Tag_":
                         if tag not in tag_count:
-                            tag_count[tag] = 1
+                            tag_count[tag_id] = 1
                             g.add((tag_id, RDF.type, UNICA.Tag))
                             g.add(
                                 (
@@ -846,18 +846,28 @@ def convert_hummus_in_rdf(
 
 
     # Add tag similarity
-    forbidden_words = ['no-', 'non-', 'free-', 'high', 'low', 'avoid']
+    forbidden_words = ['no-', 'non-', 'free-', 'high', 'low', 'avoid', 'free', 'less', 'nothing', 'without']
     model = SentenceTransformer('BAAI/bge-en-icl')
     tag_list = list(tag_count.keys())
 
-    def preprocess_tag(tag_string):
-        if len(tag_string) > 4:
-            processed = tag_string[4:]
+
+    def preprocess_tag(tag_uriref): 
+        tag_full_uri_string = str(tag_uriref)
+
+        prefix_to_remove = str(UNICA["Tag_"])
+        if tag_full_uri_string.startswith(prefix_to_remove):
+            processed = tag_full_uri_string[len(prefix_to_remove):]
         else:
-            processed = ""
-    
+
+            local_name = tag_full_uri_string.split('/')[-1]
+            if local_name.startswith("Tag_"):
+                 processed = local_name[len("Tag_"):]
+            else:
+                 processed = local_name
+
         processed = processed.replace("_", " ")
-        return processed.strip() 
+        return processed.strip()
+
 
     original_tags_valid = []
     processed_tags_for_embedding = []
@@ -887,25 +897,28 @@ def convert_hummus_in_rdf(
 
                 if similarity > 0.85:
 
-                    associate = True 
+                    tag1_text_lower = processed_tag1_text.lower()
+                    tag2_text_lower = processed_tag2_text.lower()
 
-                    words_in_tag1 = {fw for fw in forbidden_words if fw in processed_tag1_text}
-                    words_in_tag2 = {fw for fw in forbidden_words if fw in processed_tag2_text}
+                    negative_keywords = {'no-', 'non-', 'not', 'free-', 'free', 'without', 'less', 'low', 'reduced', 'zero', 'nothing', 'anti-', 'avoid', 'exempt', 'un-', 'de-'}
+                    positive_keywords = {'high', 'rich', 'extra', 'added', 'with', 'contains', 'plus', 'pro-', 'more', 'full', 'enriched'}
 
-                    tag1_has_any_forbidden = bool(words_in_tag1)
-                    tag2_has_any_forbidden = bool(words_in_tag2)
+                    tag1_has_negative = any(kw in tag1_text_lower for kw in negative_keywords)
+                    tag1_has_positive = any(kw in tag1_text_lower for kw in positive_keywords)
 
-                    general_mismatch = (tag1_has_any_forbidden != tag2_has_any_forbidden)
+                    tag2_has_negative = any(kw in tag2_text_lower for kw in negative_keywords)
+                    tag2_has_positive = any(kw in tag2_text_lower for kw in positive_keywords)
 
-                    is_low_high_pairing = (("low" in words_in_tag1 and "high" in words_in_tag2) or ("high" in words_in_tag1 and "low" in words_in_tag2))
+                    associate = True
 
-                    if general_mismatch or is_low_high_pairing:
+                    if (tag1_has_negative and tag2_has_positive) or \
+                    (tag1_has_positive and tag2_has_negative):
                         associate = False
-                    
+                
                     if associate:
                         g.add((original_tag1, SCHEMA.sameAs, original_tag2))
 
-        
+
 
 
     #Sustainability information
@@ -1187,14 +1200,14 @@ def convert_off_in_rdf(use_row=False) -> None:
                 chunk_graph.add((recipe_id, RDF.type, SCHEMA.Product))
                 chunk_graph.add((recipe_id, SCHEMA.name, Literal(row["product_name"], lang="en")))
                 chunk_graph.add((recipe_id, SCHEMA.identifier, Literal(idx, datatype=XSD.integer)))
-                chunk_graph.add((recipe_id, SCHEMA.image, Literal(row["image_small_url"], datatype=XSD.integer)))
+                chunk_graph.add((recipe_id, SCHEMA.image, Literal(row["image_small_url"])))
 
                 recipe_tags = set()
 
                 #Add entity Tag
                 for contraint in tags_columns:
                     if pd.notna(row[contraint]):
-                        for tag in row[contraint].split(","):
+                        for tag in str(row[contraint]).split(","):
                             tag = tag.split(":", 1)[1] if ":" in tag else tag
                             tag1 = tag
                             tag_uri = sanitize_for_uri(tag.replace("en:", "").replace("fr:", "").replace("-", "_").lower())
