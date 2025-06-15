@@ -4,6 +4,8 @@
 
 ## 📘 Overview
 
+![Model addictional info](./images/knowledgegraph.png)
+
 **KGEats** aims to:
 
 * Develop one of the most comprehensive food-related ontologies currently available.
@@ -54,6 +56,8 @@ This workflow outlines the steps to reproduce the KGEats ontology, from initial 
         *   `python normalization_pipeline_file/off_normalize.py`
 
         These scripts will produce normalized recipe datasets.
+
+![Model addictional info](./images/pipeline.svg)
 
 5.  **LLM-based Information Inference:**
     *   Execute the following scripts to infer additional information (e.g., user attributes, enhanced descriptions) using the configured LLMs:
@@ -117,7 +121,118 @@ This project investigates:
 
 The outcomes are relevant for personalized nutrition, semantic search, and knowledge graph completion in the food domain.
 
+# 📊 Result
+We trained several recommendation models on the Hummus recipe dataset. Subsequently, we evaluated the quality of the recommended recipes by analyzing their nutritional statistics derived from Open Food Facts (OFF) data.
+
+The following models were employed:
+
+- **Pop**: is a non-personalized baseline that recommends items based on their overall popularity, serving as a lower bound for personalized recommendation systems.
+
+- **BPR**: is a pairwise learning-to-rank framework that optimizes models such as matrix factorization for personalized ranking. It maximizes the prediction that observed interactions are ranked higher than unobserved ones, typically trained on implicit feedback using stochastic gradient descent.
+
+- **NeuMF**: is a neural network-based model that combines generalized matrix factorization with a multi-layer perceptron to learn complex user-item interactions from implicit feedback, enabling non-linear collaborative filtering.
+
+- **LightGCN**: simplifies graph convolutional collaborative filtering by removing feature transformation and nonlinear activation, relying solely on neighborhood aggregation to refine user and item embeddings across layers.
+
+- **KGAT**: integrates knowledge graph semantics by extending graph attention networks, propagating relation-specific messages, and learning attention scores for each edge type. The model performs recommendation and KG embedding separately, aligning item representations through shared embeddings and dot product inference.
+
+- **KTUP**: jointly optimizes recommendation and knowledge graph completion using translation-based embedding models. It represents user preferences as relation vectors in a translational framework (i.e., user + preference ≈ item), inspired by models such as TransE and TransH. The model simultaneously learns knowledge graph embeddings to enhance recommendation via shared latent representations.
+
+- **MKR**: employs a multi-task learning framework where recommendation and KG embedding tasks learn shared latent features. Its core Cross\&compress units enable bi-directional knowledge transfer by modeling high-order feature interactions, primarily between items in the recommendation task and entities in the knowledge graph, adaptively learning cross-task relevance.
+
+---
+
+## Model Modifications for User Representation in Knowledge Graphs
+
+For some models (specifically KGAT, KTUP, and MKR, or altri se applicabile), custom variants were developed to explicitly incorporate users as entities within the knowledge graph. This allows user preferences and behaviors to be directly modeled alongside item and attribute information in the KG. The figure below illustrates the general approach to these modifications:
+
+![Modifications to incorporate users as KG entities](./images/model.jpg "Conceptual diagram of model modifications for user representation in KG")
+
+
+
+---
+
+## Fine-Tuning and Filtering
+
+Each model underwent a rigorous fine-tuning process. This involved a grid search methodology to identify the optimal set of hyperparameters. Additionally, a data filtering step was applied to remove users and items with a low number of interactions, with the specific interaction count thresholds also determined via grid search.
+
+### Interaction Filtering Thresholds
+
+The range of interaction count thresholds explored during grid search for filtering entities (users/items) was:
+*   `min_user_interactions`: *[1, 2, 3, 4, 5, 7, 10, 15, 20, 25, 30]*
+*   `min_item_interactions`: *[1, 2, 3, 4, 5, 7, 10, 15, 20, 25, 30]*
+
+### Hyperparameter Tuning Ranges
+
+The hyperparameter ranges explored for each model during the grid search process were as follows:
+
+- **BPR**:
+    - `embedding_size`: `[32, 64, 128, 256]`
+    - `learning_rate`: `[0.01, 0.001, 0.0001]`
+
+- **EASE**:
+    - `reg_weight`: `[1.0, 10.0, 100.0, 250.0, 500.0, 1000.0]`
+
+- **LightGCN**:
+    - `embedding_size`: `[64, 128]`
+    - `learning_rate`: `[0.01, 0.001, 0.0001]`
+    - `n_layers`: `[1, 2, 3]`
+    - `reg_weight`: `[1e-05, 1e-03]`
+
+- **NeuMF**:
+    - `mf_embedding_size`: `[64, 128]`
+    - `mlp_train`: `[True, False]`
+    - `learning_rate`: `[0.01, 0.001, 0.0001]`
+    - `dropout_prob`: `[0.0, 0.1]`
+    - `mlp_hidden_size`: `['[64,32,16]', '[32,16,8]']`
+
+- **KGAT**:
+    - `embedding_size`: `[64, 128]`
+    - `learning_rate`: `[0.01, 0.0001]`
+    - `layers`: `['[64,32,16]', '[128,64,32]']`
+    - `reg_weight`: `[1e-4, 1e-5]`
+    - `mess_dropout`: `[0.1, 0.2]`
+
+- **KTUP**:
+    - `embedding_size`: `[64, 128]`
+    - `learning_rate`: `[0.01, 0.001, 0.0001]`
+    - `L1_flag`: `[True, False]`
+    - `use_st_gumbel`: `[True, False]`
+    - `train_rec_step`: `[8, 10]`
+    - `train_kg_step`: `[1, 2, 3]`
+
+- **MKR**:
+    - `embedding_size`: `[64, 128]`
+    - `learning_rate`: `[0.01, 0.001, 0.0001]`
+    - `low_layers_num`: `[1, 2, 3]`
+    - `high_layers_num`: `[1, 2]`
+    - `l2_weight`: `[1e-6, 1e-4]`
+    - `kg_embedding_size`: `[32, 64]`
+
+---
+
+The following visualizations display the distribution of key FoodNexus attributes (e.g., NOVA group, packaging, origin, nutrients) for recipes recommended by our models. This analysis was performed by retroactively enriching the HUMMUS-trained recommendations with FoodNexus metadata, allowing us to assess their semantic quality and identify potential biases.
+
+![Distribution of selected FoodNexus attributes in recommended recipes - Part 1](./images/grid_distributions2.png "FoodNexus Attribute Distributions - Part 1")
+![Distribution of selected FoodNexus attributes in recommended recipes - Part 2](./images/grid_distributions.png "FoodNexus Attribute Distributions - Part 2")
+
+**Key Observations from the Attribute Distributions:**
+
+*   **Processing Level (NOVA Group):** Models generally exhibit a strong tendency to recommend ultra-processed foods (average NOVA scores often high, e.g., between 3.72-3.83). The Pop model, in particular, tends to recommend items with higher NOVA scores and more additives.
+*   **Packaging:** A consistent preference for plastic packaging is observed across most models, suggesting potential biases in the training data or a lack of environmental considerations.
+*   **Geographic Origin:** Recommended products are heavily concentrated on Europe and, to a lesser extent, the USA, indicating an underrepresentation of non-Western food systems.
+*   **Common Allergens:** Gluten and milk are frequently present in recommended items, while others like soy or tree nuts are less common.
+*   **Nutritional Patterns:** While varying, some interesting patterns emerge. For instance, the Pop model, despite higher processing indicators, sometimes showed lower cholesterol and added sugars. Notably, no model significantly increased added sugar content compared to the original dataset's distribution.
+
+
+---
+
 ## ⬇️ Download the full dataset 
+
+- **Customizing the Recipe-Product Association Threshold:**
+    - The default resource is built with a Recipe-Product association threshold of 0.975. This conservative value helps create a smaller, more robust dataset.
+    - For analyses requiring a larger number of high-accuracy associations, a threshold of 0.85 is also effective.
+    - You have the flexibility to generate the resource with your preferred threshold by adjusting the relevant parameter in Section 6 of the execution workflow.
 * [Zenodo link](https://zenodo.org/records/15446860?token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6IjMyNDM5ZTEyLTRlODYtNDljOC04MDI2LTIwNzQ3NDc0NmIxMiIsImRhdGEiOnt9LCJyYW5kb20iOiJlOTA3ZDQ3YzRjYjUyN2YwMDQwMTY4YmRmMzliNTVlZSJ9.OHft7HkLO8JTfgI7pQaB8m9SHMkMdJ71ZQPsIh8oKyj-nZRdZr-KsAisUttCM4EiGeFpk23Q1wQZR1xOJaG0qw)
 
 ## 📜 License
