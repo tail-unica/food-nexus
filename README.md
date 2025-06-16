@@ -1,6 +1,6 @@
 # KGEats
 
-**KGEats** is a joint repository by *Giovanni Zedda* (internship, 0negip) and *FoodNexus*, developed as part of an applied research initiative in knowledge representation, semantic technologies, and food informatics.
+**KGEats** is the official *FoodNexus* repository, developed as part of an applied research initiative in knowledge representation, semantic technologies, and food informatics.
 
 ## 📘 Overview
 
@@ -35,6 +35,8 @@ This table highlights how FoodNexus aims to integrate a broader range of attribu
 
 ### 1. Requirements
 
+Install Ollama for host the LLM.
+
 Ensure you are using **Python ≥ 3.8**. Then install the dependencies:
 
 ```bash
@@ -65,7 +67,7 @@ This workflow outlines the steps to reproduce the KGEats ontology, from initial 
     *   Create the necessary local LLM models (if using Ollama) by executing the `llm_creation.py` script or the associated Jupyter notebook located in the `analisys_and_file_creation_file/` directory. This step configures the specific LLMs used for inference tasks.
 
 3.  **Core Data Processing and File Generation:**
-    *   Execute the `file_creation_jupyter.ipynb` notebook, located in the `analisys_and_file_creation_file/` directory, to perform initial data processing and generate intermediate files.
+    *   Execute the `file_creation_jupyter.ipynb` notebook, located in the `analisys_and_file_creation_file/` directory, to perform initial data processing and generate intermediate needed files.
 
 4.  **Dataset Normalization:**
     *   Run the normalization scripts to standardize recipe data from different sources:
@@ -91,8 +93,7 @@ This workflow outlines the steps to reproduce the KGEats ontology, from initial 
         *   `python entity_linking_file/link_off_hum.py`
         *   `python entity_linking_file/link_off_foodkg.py`
         *   `python entity_linking_file/link_hum_hum.py` 
-        
-    *   **Threshold Filtering:** If a stricter association threshold is desired for recipe linking, use the `filter_association_by_threshold.ipynb` notebook (likely in `entity_linking_file/`). This allows you to refine the linking results (e.g., by setting a similarity threshold of 0.975). You will need to adjust some file name in the next script if you dont do this step
+    *   **Threshold Filtering:** Use the `filter_association_by_threshold.ipynb` notebook in `entity_linking_file/`. This allows you to refine the linking results (e.g., by setting a similarity threshold of 0.975). The default value for the threshold is 0.975 for make the resource slimmer and more robust but all value over 0.85 give significative relation.
 
 7.  **RDF Graph Generation:**
     *   Convert the processed and linked data into RDF triples. Execute the following scripts, founded in the `create_rdf_file/` directory:
@@ -104,7 +105,7 @@ This workflow outlines the steps to reproduce the KGEats ontology, from initial 
         *   `python create_rdf_file/off_to_rdf.py`
 
 8.  **Final Ontology Merging:**
-    *   Execute the `merge_ontology.py` script located in the root directory to combine all generated RDF graphs into the final, unified KGEats ontology.
+    *   Execute the `merge_ontology.py` script located in the root directory to combine all generated RDF graphs into the final, unified **FoodNexus** ontology.
 
 ## 📂 Repository Structure
 
@@ -163,7 +164,7 @@ The following models were employed:
 
 ## Model Modifications for User Representation in Knowledge Graphs
 
-For some models (specifically KGAT, KTUP, and MKR, or altri se applicabile), custom variants were developed to explicitly incorporate users as entities within the knowledge graph. This allows user preferences and behaviors to be directly modeled alongside item and attribute information in the KG. The figure below illustrates the general approach to these modifications:
+For some models (specifically KGAT, KTUP, and MKR), custom variants were developed to explicitly incorporate users as entities within the knowledge graph. This allows user preferences and behaviors to be directly modeled alongside item and attribute information in the KG. The figure below illustrates the general approach to these modifications:
 
 ![Modifications to incorporate users as KG entities](./images/model.jpg "Conceptual diagram of model modifications for user representation in KG")
 
@@ -227,6 +228,8 @@ The hyperparameter ranges explored for each model during the grid search process
     - `high_layers_num`: `[1, 2]`
     - `l2_weight`: `[1e-6, 1e-4]`
     - `kg_embedding_size`: `[32, 64]`
+
+We found as the best parameter:
 
 ---
 
