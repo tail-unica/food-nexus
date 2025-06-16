@@ -1333,7 +1333,7 @@ def convert_off_in_rdf(use_row=False) -> None:
                                 processed_constraints.add(countries_ref)
                                 chunk_constraints.add(countries_ref)
                             
-                                chunk_graph.add((countries_ref, RDF.type, UNICA.Country))
+                                chunk_graph.add((countries_ref, RDF.type, SCHEMA.Country))
                                 chunk_graph.add((countries_ref, SCHEMA.name, Literal(countries1, lang="en")))
 
 
@@ -1376,7 +1376,7 @@ def convert_off_in_rdf(use_row=False) -> None:
                         chunk_graph.add(triple=(stores_ref, SCHEMA.offers, recipe_id))
 
                         for city in recipe_cities:
-                            chunk_graph.add(triple=(stores_ref, UNICA.isPlaceIn, city))
+                            chunk_graph.add(triple=(stores_ref, SCHEMA.isPlaceIn, city))
 
         # Save this chunk
         chunk_file = f"{output_dir}chunk_{cont_chunk}.ttl"
