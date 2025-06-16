@@ -117,7 +117,7 @@ total_lines  = len(hum_df)
 
 mean_association = sum(all_association) / total_lines
 
-print("numero di ricette con un associazione: ", len(all_association_dictionary), "/", total_lines)
+print("number of recipes with an association: ", len(all_association_dictionary), "/", total_lines)
 
 all_associated = all_association.copy()
 
@@ -127,8 +127,8 @@ for i in range(total_lines - len(all_association_dictionary)):
 median_association = np.median(all_association)
 median_associated= np.median(all_associated)
 
-print("numero medio di associazioni media: ", mean_association)
-print("mediana associazioni: ", median_association)
-print("mediana associazioni di tutte le riccette: ", median_associated)
-print("percentuale di ricette associate di hummus: ", (len(all_association_dictionary)*100/total_lines), "%")
-print("associazioni totali: ", contatore)
+print("Average number of associations: ", mean_association)
+print("Median of associations: ", median_association)
+print("Median of associations for all recipes: ", median_associated)
+print("Percentage of associated Hummus recipes: ", (len(all_association_dictionary) * 100 / total_lines), "%")
+print("Total associations: ", contatore)

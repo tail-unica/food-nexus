@@ -68,11 +68,10 @@ def count_lines_efficiently(file_path, chunk_size=1024*1024*4, report_interval=1
     try:
         newline_byte = '\n'.encode(encoding)
     except LookupError:
-        print(f"Errore: Encoding '{encoding}' non riconosciuto.")
+        print(f"Error: Encoding '{encoding}' not recognized.")
         return -1
 
-    print(f"Avvio conteggio righe efficiente per: {file_path} (Chunk: {chunk_size // (1024*1024)}MB, Report ogni: {report_interval:,} righe)")
-
+    print(f"Starting efficient line count for: {file_path} (Chunk: {chunk_size // (1024*1024)}MB, Reporting every: {report_interval:,} lines)")
     try:
         with open(file_path, 'rb') as f: 
             while True:
@@ -86,22 +85,21 @@ def count_lines_efficiently(file_path, chunk_size=1024*1024*4, report_interval=1
                     milestone = (next_report_threshold // report_interval) * report_interval
                     current_time = time.time()
                     elapsed = current_time - start_time
-                    print(f"  ... contate ~{milestone:,} righe [{elapsed:.2f} sec]")
+                    print(f"  ... counted ~{milestone:,} rows [{elapsed:.2f} sec]")
                     next_report_threshold += report_interval
 
     except FileNotFoundError:
-        print(f"Errore: File non trovato - {file_path}")
+        print(f"Error: File not found - {file_path}")
         return -1
     except IOError as e:
-        print(f"Errore di I/O durante la lettura di {file_path}: {e}")
+        print(f"I/O Error while reading {file_path}: {e}")
         return -1
     except Exception as e:
-        print(f"Errore inaspettato: {e}")
+        print(f"Unexpected error: {e}")
         return -1
 
     end_time = time.time()
-    print(f"Conteggio completato: {total_lines:,} righe trovate in {end_time - start_time:.2f} secondi.")
-
+    print(f"Count completed: {total_lines:,} lines found in {end_time - start_time:.2f} seconds.")
 
     return total_lines
 

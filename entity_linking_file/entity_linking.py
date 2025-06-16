@@ -540,9 +540,9 @@ def calcolate_embeddings(header, file_input, file_output, chunk_size, batch_size
     else:
         mode = "w"
 
-    print(f"Modalità: {mode}, Partenza da riga: {len_1}")
+    print(f"Mode: {mode}, start form row: {len_1}")
     numero_chunk = ceil(len(list_foodkg_recipe)/chunk_size)
-    print(f"Numero chunk: {numero_chunk}")
+    print(f"Chunk number: {numero_chunk}")
 
     start_time = time.time()
 
@@ -553,7 +553,7 @@ def calcolate_embeddings(header, file_input, file_output, chunk_size, batch_size
 
         for chunk_count in range(numero_chunk):
             chunk_start_time = time.time()
-            print(f"Elaborazione chunk {chunk_count+1} di {numero_chunk}...")
+            print(f"Elaborating chunk {chunk_count+1} of {numero_chunk}...")
 
             start_idx = chunk_count * chunk_size
             end_idx = (chunk_count + 1) * chunk_size
@@ -575,10 +575,10 @@ def calcolate_embeddings(header, file_input, file_output, chunk_size, batch_size
             chunk_time = time.time() - chunk_start_time
             remaining_chunks = numero_chunk - (chunk_count + 1)
             estimated_time_remaining = (chunk_time * remaining_chunks) / 60
-            print(f"Chunk {chunk_count+1} completato in {chunk_time:.2f} sec. Tempo stimato rimanente: {estimated_time_remaining:.2f} min")
+            print(f"Chunk {chunk_count+1} completed in {chunk_time:.2f} sec. Estimated time: {estimated_time_remaining:.2f} min")
 
     total_time = time.time() - start_time
-    print(f"Processo completato in {total_time / 60:.2f} minuti.")
+    print(f"Proces completed in {total_time / 60:.2f} minutes.")
 
 
 def read_file_rows(file):
@@ -654,10 +654,10 @@ def merge_embeddingaaa(header, file1, file2, file_output, chunk_size, threshold=
                 remaining_chunks = num_chunks1 - (chunk1_idx + 1)
                 estimated_time_remaining = (chunk_time * remaining_chunks) / 60 
                 
-                print(f"Chunk {chunk1_idx+1} completato in {chunk_time:.2f} sec. Tempo stimato rimanente: {estimated_time_remaining:.2f} min")
+                print(f"Chunk {chunk1_idx+1} completed in {chunk_time:.2f} sec. Estimated time: {estimated_time_remaining:.2f} min")
 
     total_time = time.time() - start_time
-    print(f"Processo completato in {total_time / 60:.2f} minuti.")
+    print(f"Process completed in {total_time / 60:.2f} minutes.")
 
 
 
@@ -674,9 +674,9 @@ def merge_embedding(header, file1, file2, file_output, chunk_size, threshold=0.8
     total_chunks = num_chunks1 * num_chunks2
     chunks_processed = 0
     
-    print(f"File 1: {num_rows1} righe ({num_chunks1} chunk)")
-    print(f"File 2: {num_rows2} righe ({num_chunks2} chunk)")
-    print(f"Totale combinazioni di chunk da processare: {total_chunks}")
+    print(f"File 1: {num_rows1} rows ({num_chunks1} chunk)")
+    print(f"File 2: {num_rows2} rows ({num_chunks2} chunk)")
+    print(f"Total chunk combinations to process: {total_chunks}")
     
     # Creiamo un file temporaneo per ogni chunk di risultati
     temp_files = []
@@ -767,10 +767,10 @@ def merge_embedding(header, file1, file2, file_output, chunk_size, threshold=0.8
                 elapsed_time = time.time() - global_start_time
                 completion_percentage = (chunks_processed / total_chunks) * 100
                 
-                print(f"  Chunk {chunk2_idx+1}/{num_chunks2} (file 2) completato in {chunk2_time:.2f} sec.")
-                print(f"  Progresso: {chunks_processed}/{total_chunks} chunks ({completion_percentage:.2f}%)")
-                print(f"  Tempo trascorso: {elapsed_time/60:.2f} min, Tempo stimato rimanente: {estimated_time_remaining/60:.2f} min")
-                print(f"  Velocità attuale: {chunks_per_second:.4f} chunks/sec")
+                print(f"  Chunk {chunk2_idx+1}/{num_chunks2} (file 2) completed in {chunk2_time:.2f} sec.")
+                print(f"  Progress: {chunks_processed}/{total_chunks} chunks ({completion_percentage:.2f}%)")
+                print(f"  Time: {elapsed_time/60:.2f} min, Estimated time remaining: {estimated_time_remaining/60:.2f} min")
+                print(f"  Actual speed: {chunks_per_second:.4f} chunks/sec")
         
         # Liberiamo la memoria
         del embeddings1
@@ -783,11 +783,11 @@ def merge_embedding(header, file1, file2, file_output, chunk_size, threshold=0.8
         remaining_file1_chunks = num_chunks1 - (chunk1_idx + 1)
         estimated_file1_time_remaining = chunk1_time * remaining_file1_chunks
         
-        print(f"Chunk {chunk1_idx+1}/{num_chunks1} (file 1) completato in {chunk1_time/60:.2f} min.")
-        print(f"Tempo stimato per completare i chunk rimanenti del file 1: {estimated_file1_time_remaining/60:.2f} min")
+        print(f"Chunk {chunk1_idx+1}/{num_chunks1} (file 1) completed in {chunk1_time/60:.2f} min.")
+        print(f"Estimated time to complete remaining chunks of file 1: {estimated_file1_time_remaining/60:.2f} min")
     
     # Combiniamo tutti i file temporanei nel file di output finale
-    print("Combinazione dei risultati temporanei nel file di output finale...")
+    print("Combining temporary results into the final output file...")
     combination_start_time = time.time()
     
     with open(file_output, mode="w", newline="", encoding="utf-8") as fout:
@@ -796,7 +796,7 @@ def merge_embedding(header, file1, file2, file_output, chunk_size, threshold=0.8
         
         for i, temp_file in enumerate(temp_files):
             temp_combination_start = time.time()
-            print(f"Processando file temporaneo {i+1}/{len(temp_files)}...")
+            print(f"Processing temp file {i+1}/{len(temp_files)}...")
             
             with open(temp_file, newline="", encoding="utf-8") as fin:
                 reader = csv.reader(fin)
@@ -810,11 +810,11 @@ def merge_embedding(header, file1, file2, file_output, chunk_size, threshold=0.8
             remaining_temp_files = len(temp_files) - (i + 1)
             estimated_combination_time = temp_combination_time * remaining_temp_files
             
-            print(f"File temporaneo {i+1}/{len(temp_files)} processato in {temp_combination_time:.2f} sec.")
-            print(f"Tempo stimato per completare la combinazione: {estimated_combination_time:.2f} sec.")
+            print(f"Temp file {i+1}/{len(temp_files)} processed in {temp_combination_time:.2f} sec.")
+            print(f"Estimated time to complete the combination: {estimated_combination_time:.2f} sec.")
     
     combination_time = time.time() - combination_start_time
     total_time = time.time() - global_start_time
     
-    print(f"Combinazione completata in {combination_time/60:.2f} minuti.")
-    print(f"Processo complessivo completato in {total_time/60:.2f} minuti.")
+    print(f"Combination completed in {combination_time/60:.2f} minutes.")
+    print(f"Overall process completed in{total_time/60:.2f} minutes.")

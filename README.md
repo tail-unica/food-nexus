@@ -14,6 +14,23 @@
 
 This project explores the intersection of ontology engineering, natural language processing, and user modeling in the food domain.
 
+
+To provide context on the comprehensiveness of our FoodNexus dataset compared to other food datasets focused on recommendation, we present the following comparison table:
+
+| Dataset          | Nutrients | Healthiness | Origin Country | Sustainability | Packaging | Interactions | User Attributes |
+|------------------|-----------|-------------|----------------|----------------|-----------|--------------|-----------------|
+| FoodOn           | ✗         | ✗*          | ✓              | ✗              | ✓         | ✗            | ✗               |
+| FoodKG           | ✓         | ✗           | ✗              | ✗              | ✗         | ✗            | ✗               |
+| HUMMUS           | ✓         | ✓           | ✗              | ✗              | ✗         | ✓            | ✗               |
+| OFF              | ✓         | ✓           | ✓              | ✓              | ✓         | ✗            | ✗               |
+| **FoodNexus (Ours)** | ✓         | ✓           | ✓              | ✓              | ✓         | ✓            | ✓               |
+
+*✓: data type available, ✗: data type not available or not applicable, *: only categorical data like allergens*
+
+This table highlights how FoodNexus aims to integrate a broader range of attributes, including user-related ones, which are crucial for personalized recommendation systems and in-depth analyses.
+
+---
+
 ## 📦 Installation and Usage
 
 ### 1. Requirements
@@ -99,6 +116,8 @@ KGEats/
 ├── create_rdf_file/                  # Scripts to generate RDF triples from processed data
 ├── csv_file/                         # All the non-script file
 ├── entity_linking_file/              # Scripts for entity linking and embedding generation
+├── extra_script_for_hopwise/         # Script to analyze the dataset to apply to the Hopwise repository
+├── images/                           # Images used in the README file
 ├── llm_model_file/                   # Prompt templates for LLMs
 ├── normalization_pipeline_file/      # Pipeline for normalization of attributes and ingredients
 ├── ollama_server_file/               # File for using ollama for a long period of time
@@ -229,6 +248,19 @@ The following visualizations display the distribution of key FoodNexus attribute
 
 ## ⬇️ Download the full dataset 
 
+Furthermore, the following table details the statistical comparison of our resulting FoodNexus knowledge graph against its constituent data sources, showcasing its scale and richness:
+
+| Data Source        | # Triples   | # Entities  | # Relations | # Attributes | # E. Types | # R. Types | # A. Types |
+|--------------------|-------------|-------------|-------------|--------------|------------|------------|------------|
+| HUMMUS             | ~53.9M      | ~12.3M      | ~31.1M      | ~22.8M       | 6          | 6          | 9          |
+| HUMMUS (inferred)  | ~57.9M      | ~12.3M      | ~35.1M      | ~22.8M       | 6          | 7          | 14         |
+| OFF                | ~267.9M     | ~38.5M      | ~160.3M     | ~107.4M      | 7          | 6          | 7          |
+| **FoodNexus (Ours)** | **~979.5M** | **~51.0M**  | **~849.9M** | **~130.2M**  | **11**     | **11**     | **15**     |
+
+*Note: The actual implementation of the FoodNexus ontology includes an additional entity, attribute, and three relations for a versioning system. These are not reported in this table, which focuses on entities relevant for recommender systems.*
+*E. Types: Entity Types; R. Types: Relation Types; A. Types: Attribute Types.*
+
+---
 - **Customizing the Recipe-Product Association Threshold:**
     - The default resource is built with a Recipe-Product association threshold of 0.975. This conservative value helps create a smaller, more robust dataset.
     - For analyses requiring a larger number of high-accuracy associations, a threshold of 0.85 is also effective.

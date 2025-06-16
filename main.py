@@ -87,10 +87,10 @@ def create_completed_ontology() -> None:
         g.parse(file_path, format="nt")
 
     g.serialize(destination=output_file_ttl, format="turtle", encoding="utf-8")
-    print(f"Creato file Turtle: {output_file_ttl}")
+    print(f"Created file Turtle: {output_file_ttl}")
 
     g.serialize(destination=output_file_nt, format="nt", encoding="utf-8")
-    print(f"Creato file N-Triples: {output_file_nt}")
+    print(f"Created file N-Triples: {output_file_nt}")
 
 
 
@@ -114,7 +114,7 @@ def create_completed_ontology_streaming() -> None:
     version_info = Literal("Version 1.0 - Initial release", lang="en")
     prior_version_iri = URIRef(f"{link_ontology}/0.0")
 
-    print(f"Inizio del processo di unione. File di output: {output_file}")
+    print(f"Start of merge process. Output file: {output_file}")
 
     header_triples = [
         f"{ontology_iri.n3()} <{RDF.type}> <{OWL.Ontology}> .",
@@ -126,15 +126,15 @@ def create_completed_ontology_streaming() -> None:
     try:
         with open(output_file, 'w', encoding='utf-8') as outfile:
             
-            print("Scrittura dell'header dell'ontologia...")
+            print("Writing the ontology header...")
             for triple_line in header_triples:
                 outfile.write(triple_line + '\n')
-            print("Header scritto.")
+            print("Header writed.")
 
             for i, file_path in enumerate(file_paths):
-                print(f"Processando file {i+1}/{len(file_paths)}: {file_path}...")
+                print(f"Processing file {i+1}/{len(file_paths)}: {file_path}...")
                 if not os.path.exists(file_path):
-                    print(f"File non trovato")
+                    print(f"File not found")
                     continue
                 
                 try:
@@ -145,16 +145,16 @@ def create_completed_ontology_streaming() -> None:
                             line_count += 1
                         
                             if line_count % 1000000 == 0:
-                               print(f"  ... lette {line_count // 1000000}M righe da {os.path.basename(file_path)}")
+                               print(f"  ... readed {line_count // 1000000}M rows from {os.path.basename(file_path)}")
 
-                    print(f"Completata l'elaborazione di {file_path} ({line_count} righe lette).")
+                    print(f"Processing completed of {file_path} ({line_count} rows readed).")
                 
                 except Exception as e:
-                    print(f"Errore durante l'elaborazione del file {file_path}: {e}")
+                    print(f"Error processing file {file_path}: {e}")
 
-            print(f"Unione completata. L'output è stato salvato in: {output_file}")
+            print(f"Merge completed. Output has been saved to: {output_file}")
 
     except IOError as e:
-        print(f"Errore nell'apertura o scrittura del file di output {output_file}: {e}")
+        print(f"Error opening or writing output file{output_file}: {e}")
     except Exception as e:
-        print(f"Si è verificato un errore imprevisto: {e}")
+        print(f"An unexpected error occurred: {e}")
