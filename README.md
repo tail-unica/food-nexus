@@ -280,8 +280,6 @@ use_inner_product: True
 reg_weight: 1e-06
 dropout_prob: 0.0
 
-We found as the best parameter:
-
 ---
 
 The following visualizations display the distribution of key FoodNexus attributes (e.g., NOVA group, packaging, origin, nutrients) for recipes recommended by our models. This analysis was performed by retroactively enriching the HUMMUS-trained recommendations with FoodNexus metadata, allowing us to assess their semantic quality and identify potential biases.
@@ -296,6 +294,21 @@ The following visualizations display the distribution of key FoodNexus attribute
 *   **Geographic Origin:** Recommended products are heavily concentrated on Europe and, to a lesser extent, the USA, indicating an underrepresentation of non-Western food systems.
 *   **Common Allergens:** Gluten and milk are frequently present in recommended items, while others like soy or tree nuts are less common.
 *   **Nutritional Patterns:** While varying, some interesting patterns emerge. For instance, the Pop model, despite higher processing indicators, sometimes showed lower cholesterol and added sugars. Notably, no model significantly increased added sugar content compared to the original dataset's distribution.
+
+
+---
+
+Model Performance:
+
+| Model    | Precision@10 | Precision@20 | Precision@50 | Recall@10 | Recall@20 | Recall@50 | NDCG@10 | NDCG@20 | NDCG@50 | Hit@10 | Hit@20 | Hit@50 |
+| :------- | :----------: | :----------: | :----------: | :--------: | :--------: | :--------: | :-------: | :-------: | :-------: | :------: | :------: | :------: |
+| Pop      | 0.0004       | 0.0003       | 0.0002       | 0.0008     | 0.0010     | 0.0013     | 0.0008    | 0.0009    | 0.0009    | 0.0035   | 0.0050   | 0.0077   |
+| BPR      | 0.0053       | 0.0047       | 0.0037       | 0.0136     | 0.0244     | 0.0467     | 0.0102    | 0.0133    | 0.0189    | 0.0474   | 0.0777   | 0.1361   |
+| NeuMF    | 0.0062       | 0.0053       | 0.0040       | 0.0175     | 0.0276     | 0.0515     | 0.0131    | 0.0160    | 0.0220    | 0.0562   | 0.0886   | 0.1491   |
+| LightGCN | **0.0067**   | **0.0056**   | **0.0042**   | 0.0184     | 0.0307     | 0.0557     | **0.0140**| **0.0173**| **0.0235**| **0.0604**| **0.0930**| **0.1558**|
+| KGAT     | 0.0019       | 0.0019       | 0.0018       | 0.0084     | 0.0164     | 0.0370     | 0.0046    | 0.0069    | 0.0116    | 0.0187   | 0.0368   | 0.0802   |
+| KTUP     | 0.0041       | 0.0039       | 0.0031       | 0.0154     | 0.0295     | 0.0570     | 0.0093    | 0.0133    | 0.0198    | 0.0388   | 0.0690   | 0.1260   |
+| MKR      | 0.0054       | 0.0045       | 0.0033       | **0.0211** | **0.0343** | **0.0577** | 0.0125    | 0.0162    | 0.0217    | 0.0494   | 0.0792   | 0.1286   |
 
 
 ---
@@ -320,11 +333,6 @@ Furthermore, the following table details the statistical comparison of our resul
     - For analyses requiring a larger number of high-accuracy associations, a threshold of 0.85 is also effective.
     - You have the flexibility to generate the resource with your preferred threshold by adjusting the relevant parameter in Section 6 of the execution workflow.
 * [Zenodo link](https://zenodo.org/records/15446860?token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6IjMyNDM5ZTEyLTRlODYtNDljOC04MDI2LTIwNzQ3NDc0NmIxMiIsImRhdGEiOnt9LCJyYW5kb20iOiJlOTA3ZDQ3YzRjYjUyN2YwMDQwMTY4YmRmMzliNTVlZSJ9.OHft7HkLO8JTfgI7pQaB8m9SHMkMdJ71ZQPsIh8oKyj-nZRdZr-KsAisUttCM4EiGeFpk23Q1wQZR1xOJaG0qw)
-
-## 📜 License
-
-This project is released under the **MIT License**.
-Please refer to the [LICENSE](LICENSE) file for more information.
 
 ## 👥 Authors
 
