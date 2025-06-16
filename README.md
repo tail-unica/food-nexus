@@ -179,8 +179,12 @@ Each model underwent a rigorous fine-tuning process. This involved a grid search
 ### Interaction Filtering Thresholds
 
 The range of interaction count thresholds explored during grid search for filtering entities (users/items) was:
-*   `min_user_interactions`: *[1, 2, 3, 4, 5, 7, 10, 15, 20, 25, 30]*
-*   `min_item_interactions`: *[1, 2, 3, 4, 5, 7, 10, 15, 20, 25, 30]*
+*   `entity_kg_num_interval`: *[1, 2, 3, 4, 5, 7, 10, 15, 20, 25, 30]*
+*   `user_entity_kg_num_interval`: *[1, 2, 3, 4, 5, 7, 10, 15, 20, 25, 30]*
+
+best param:
+* user_inter_num_interval: "[5,inf)"
+* item_inter_num_interval: "[5,inf)"
 
 ### Hyperparameter Tuning Ranges
 
@@ -190,14 +194,27 @@ The hyperparameter ranges explored for each model during the grid search process
     - `embedding_size`: `[32, 64, 128, 256]`
     - `learning_rate`: `[0.01, 0.001, 0.0001]`
 
+best param:
+embedding_size: 256
+lerning_rate: 0.0001
+
+
 - **EASE**:
     - `reg_weight`: `[1.0, 10.0, 100.0, 250.0, 500.0, 1000.0]`
+
+best param:
+embedding_size': 128
+learning_rate: 0.01
+n_layers: 2
+reg_weight: 1e-05
 
 - **LightGCN**:
     - `embedding_size`: `[64, 128]`
     - `learning_rate`: `[0.01, 0.001, 0.0001]`
     - `n_layers`: `[1, 2, 3]`
     - `reg_weight`: `[1e-05, 1e-03]`
+best param:
+
 
 - **NeuMF**:
     - `mf_embedding_size`: `[64, 128]`
@@ -206,12 +223,27 @@ The hyperparameter ranges explored for each model during the grid search process
     - `dropout_prob`: `[0.0, 0.1]`
     - `mlp_hidden_size`: `['[64,32,16]', '[32,16,8]']`
 
+best param:
+mf_embedding_size: 64
+mlp_train: False 
+learning_rate: 0.001
+dropout_prob: 0.0
+mlp_hidden_size: [32,16,8]
+
 - **KGAT**:
     - `embedding_size`: `[64, 128]`
     - `learning_rate`: `[0.01, 0.0001]`
     - `layers`: `['[64,32,16]', '[128,64,32]']`
     - `reg_weight`: `[1e-4, 1e-5]`
     - `mess_dropout`: `[0.1, 0.2]`
+
+best param:
+embedding_size: 128
+layers: [64,32,16]
+mess_dropout: 0.2
+reg_weights: 0.0001
+lerning_rate: 0.0001
+
 
 - **KTUP**:
     - `embedding_size`: `[64, 128]`
@@ -221,6 +253,14 @@ The hyperparameter ranges explored for each model during the grid search process
     - `train_rec_step`: `[8, 10]`
     - `train_kg_step`: `[1, 2, 3]`
 
+best param:
+train_rec_step: 10
+train_kg_step: 1
+embedding_size: 128
+use_st_gumbel: True
+L1_flag: False
+learning_rate: 0.001
+
 - **MKR**:
     - `embedding_size`: `[64, 128]`
     - `learning_rate`: `[0.01, 0.001, 0.0001]`
@@ -228,6 +268,17 @@ The hyperparameter ranges explored for each model during the grid search process
     - `high_layers_num`: `[1, 2]`
     - `l2_weight`: `[1e-6, 1e-4]`
     - `kg_embedding_size`: `[32, 64]`
+
+best param:
+embedding_size: 128
+kg_embedding_size: 64
+low_layers_num: 3
+high_layers_num: 1
+kge_interval: 3
+learning_rate: 0.001
+use_inner_product: True
+reg_weight: 1e-06
+dropout_prob: 0.0
 
 We found as the best parameter:
 
