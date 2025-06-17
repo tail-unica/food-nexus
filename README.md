@@ -1,6 +1,6 @@
 # KGEats
 
-**KGEats** is the official *FoodNexus* repository, developed as part of an applied research initiative in knowledge representation, semantic technologies, and food informatics.
+This the official *FoodNexus* repository, developed as part of an applied research initiative in knowledge representation, semantic technologies, and food informatics.
 
 ## 📘 Overview
 
