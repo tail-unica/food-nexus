@@ -1,4 +1,4 @@
-# KGEats
+# FoodNexus
 
 This the official *FoodNexus* repository, developed as part of an applied research initiative in knowledge representation, semantic technologies, and food informatics.
 
@@ -6,7 +6,7 @@ This the official *FoodNexus* repository, developed as part of an applied resear
 
 ![Model addictional info](./images/knowledgegraph.png)
 
-**KGEats** aims to:
+**FoodNexus** aims to:
 
 * Develop one of the most comprehensive food-related ontologies currently available.
 * Investigate novel methodologies for **entity linking** and **user attribute extraction** leveraging Large Language Models (LLMs).
@@ -55,7 +55,7 @@ Place these files in a new folder named `csv_file` at the root of this repositor
 
 ### 3. Execution Workflow
 
-This workflow outlines the steps to reproduce the KGEats ontology, from initial data setup to the final merged knowledge graph. Ensure you have completed the steps in "1. Requirements" and "2. Data Dependencies" before proceeding.
+This workflow outlines the steps to reproduce the FoodNexus ontology, from initial data setup to the final merged knowledge graph. Ensure you have completed the steps in "1. Requirements" and "2. Data Dependencies" before proceeding.
 
 1.  **Initial Data Setup:**
     *   Download the required datasets (HUMMUS preprocessed CSVs, OpenFoodFacts CSV) from their official sources, as detailed in the "Data Dependencies" section.
@@ -110,7 +110,7 @@ This workflow outlines the steps to reproduce the KGEats ontology, from initial 
 ## 📂 Repository Structure
 
 ```
-KGEats/
+FoodNexus/
 ├── analisys_and_file_creation_file/  # Scripts and notebooks for data analysis and RDF prep
 ├── attribute_extraction_file/        # Attribute extraction logic from user
 ├── config_file/                      # Configuration for preprocessing and unit normalization
