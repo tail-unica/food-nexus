@@ -1356,7 +1356,7 @@ def convert_off_in_rdf(use_row=False) -> None:
                                 chunk_graph.add((city_ref, SCHEMA.name, Literal(city1, lang="en")))
 
                             for country in recipe_countries:
-                                chunk_graph.add(triple=(city_ref, SCHEMA.isPlaceIn, country))
+                                chunk_graph.add(triple=(city_ref, UNICA.isPlaceIn, country))
 
 
                 #Add store entity
@@ -1376,7 +1376,7 @@ def convert_off_in_rdf(use_row=False) -> None:
                         chunk_graph.add(triple=(stores_ref, SCHEMA.offers, recipe_id))
 
                         for city in recipe_cities:
-                            chunk_graph.add(triple=(stores_ref, SCHEMA.isPlaceIn, city))
+                            chunk_graph.add(triple=(stores_ref, UNICA.isPlaceIn, city))
 
         # Save this chunk
         chunk_file = f"{output_dir}chunk_{cont_chunk}.ttl"
