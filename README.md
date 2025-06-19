@@ -315,6 +315,8 @@ Model Performance:
 
 ## ⬇️ Download the full dataset 
 
+Data: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15685940.svg)](https://doi.org/10.5281/zenodo.15685940)
+
 Furthermore, the following table details the statistical comparison of our resulting FoodNexus knowledge graph against its constituent data sources, showcasing its scale and richness:
 
 | Data Source        | # Triples   | # Entities  | # Relations | # Attributes | # E. Types | # R. Types | # A. Types |
