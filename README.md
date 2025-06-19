@@ -332,7 +332,7 @@ Furthermore, the following table details the statistical comparison of our resul
     - The default resource is built with a Recipe-Product association threshold of 0.975. This conservative value helps create a smaller, more robust dataset.
     - For analyses requiring a larger number of high-accuracy associations, a threshold of 0.85 is also effective.
     - You have the flexibility to generate the resource with your preferred threshold by adjusting the relevant parameter in Section 6 of the execution workflow.
-* [Zenodo link](https://zenodo.org/records/15446860?token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6IjMyNDM5ZTEyLTRlODYtNDljOC04MDI2LTIwNzQ3NDc0NmIxMiIsImRhdGEiOnt9LCJyYW5kb20iOiJlOTA3ZDQ3YzRjYjUyN2YwMDQwMTY4YmRmMzliNTVlZSJ9.OHft7HkLO8JTfgI7pQaB8m9SHMkMdJ71ZQPsIh8oKyj-nZRdZr-KsAisUttCM4EiGeFpk23Q1wQZR1xOJaG0qw)
+* [Zenodo link](https://zenodo.org/records/15685940?token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6IjI5Y2ViNWQyLTY0NDktNDdhYy1iNmFiLTYyOTBmZTdjNTA3ZCIsImRhdGEiOnt9LCJyYW5kb20iOiJlNWExNzlkZjI5MTAwOGFhMzU0NTE1NWMwZGNkMGJjYSJ9.DScCHOGbPAYccQNOLPkWd2SXx3-avq8VtufTg8nF3jOsQI0a1joUj2qMVhITNK2dVgMnpOMNijDhn07TOxF05Q)
 
 ## 👥 Authors
 
