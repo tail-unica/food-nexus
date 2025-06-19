@@ -662,7 +662,7 @@ def merge_embeddingaaa(header, file1, file2, file_output, chunk_size, threshold=
 
 
 
-def merge_embedding(header, file1, file2, file_output, chunk_size, threshold=0.85):
+def merge_embedding(header, file1, file2, file_output, chunk_size, threshold=0.85, header2 = ["name_file1", "name_file2", "cosine_similarity"]):
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("using device: ", device)
@@ -792,7 +792,7 @@ def merge_embedding(header, file1, file2, file_output, chunk_size, threshold=0.8
     
     with open(file_output, mode="w", newline="", encoding="utf-8") as fout:
         writer = csv.writer(fout)
-        writer.writerow(["name_file1", "name_file2", "cosine_similarity"])
+        writer.writerow(header2)
         
         for i, temp_file in enumerate(temp_files):
             temp_combination_start = time.time()

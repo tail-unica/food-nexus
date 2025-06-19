@@ -1447,7 +1447,7 @@ def create_merge_ontology():
     hum_file = "../csv_file/pp_recipes_normalized_by_pipeline.csv"
     off_file = "../csv_file/off_normalized_final.csv"
     hum_off_file = "../csv_file/file_off_hummus_filtered_975.csv"
-    file_output_nt =  "../csv_file/ontology_merge.nt"
+    file_output_nt =  "../csv_file/ontology_merge_off_hum.nt"
 
     chunksize = 100000
     cont_chunk = 0
@@ -1536,7 +1536,7 @@ def create_merge_ontology2():
     hum_file = "../csv_file/ingredients_food_kg_normalizzed_by_pipeline.csv"
     off_file = "../csv_file/off_normalized_final.csv"
     hum_off_file = "../csv_file/file_off_foodkg_filtered_975.csv"
-    file_output_nt =  "../csv_file/ontology_merge_2.nt"
+    file_output_nt =  "../csv_file/ontology_merge_off_fkg.nt"
 
     chunksize = 100000
     cont_chunk = 0
@@ -1628,7 +1628,7 @@ def create_merge_ontology3():
     hum_file = "../csv_file/pp_recipes_normalized_by_pipeline.csv"
     off_file = "../csv_file/pp_recipes_normalized_by_pipeline.csv"
     hum_off_file = "../csv_file/file_hummus_hummus_filtered_975.csv"
-    file_output_nt =  "../csv_file/ontology_merge3.nt"
+    file_output_nt =  "../csv_file/ontology_merge_hum_hum.nt"
 
     chunksize = 100000
     cont_chunk = 0
@@ -1675,14 +1675,14 @@ def create_merge_ontology3():
 
     with open(file_output_nt, "w", encoding="utf-8") as f_out:
 
-        for df_merge_chunk in pd.read_csv(hum_off_file, sep=",", on_bad_lines="skip", chunksize=chunksize, low_memory=False, usecols=["name_file1", "name_file2"]):
+        for df_merge_chunk in pd.read_csv(hum_off_file, sep=",", on_bad_lines="skip", chunksize=chunksize, low_memory=False, usecols=["title_normalized_1", "title_normalized_2"]):
 
             chunk_start = time.time()
             print(f"\nProcessing chunk {numchunk+1}/{total_chunks}")
 
             for row in df_merge_chunk.itertuples(index=False):
-                title = row.name_file1
-                product = row.name_file2
+                title = row.title_normalized_1
+                product = row.title_normalized_2
 
                 if title in hum_keys and product in off_keys:
                     for hum_ricetta in dizionario_hum[title]:
