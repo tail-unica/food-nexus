@@ -22,8 +22,8 @@ def sanitize_for_uri(value) -> str:
 UNICA = Namespace("https://github.com/tail-unica/kgeats/")
 SCHEMA = Namespace("https://schema.org/")
 
-dizionario_hum = {}
-dizionario_off = {}
+dict_hum = {}
+dict_off = {}
 
 hum_file = "../csv_file/pp_recipes_normalized_by_pipeline.csv"
 off_file = "../csv_file/off_normalized_final.csv"
@@ -36,13 +36,13 @@ for df_off_chunk in pd.read_csv(off_file, sep="\t", on_bad_lines="skip", chunksi
     print(f"Processing rows off from {chunksize * cont_chunk} to {chunksize * (cont_chunk+1)}")
     
     for idx, row in df_off_chunk.iterrows():
-        if(row["product_name_normalized"] != None and row["product_name_normalized"] != ""):
+        if(row["product_name_normalized"] is not None and row["product_name_normalized"] != ""):
             id = URIRef(value=UNICA[f"Recipe_off_{row["code"]}"])
-            if id != None:
-                if row["product_name_normalized"] not in dizionario_off:
-                    dizionario_off[row["product_name_normalized"]] = [id]
+            if id is not None:
+                if row["product_name_normalized"] not in dict_off:
+                    dict_off[row["product_name_normalized"]] = [id]
                 else: 
-                    dizionario_off[row["product_name_normalized"]].append(id)
+                    dict_off[row["product_name_normalized"]].append(id)
     cont_chunk += 1
 
 cont_chunk = 0
@@ -50,13 +50,13 @@ for df_hum_chunk in pd.read_csv(hum_file, sep=";", on_bad_lines="skip", chunksiz
     print(f"Processing rows hummus from {chunksize * cont_chunk} to {chunksize * (cont_chunk+1)}")
     
     for idx, row in df_hum_chunk.iterrows():
-        if(row["title_normalized"] != None and row["title_normalized"] != ""):
+        if(row["title_normalized"] is not None and row["title_normalized"] != ""):
             id = URIRef(UNICA[f"Recipe_hummus{sanitize_for_uri(row['recipe_id'])}"])
-            if id != None:
-                if row["title_normalized"] not in dizionario_hum:
-                    dizionario_hum[row["title_normalized"]] = [id]
+            if id is not None:
+                if row["title_normalized"] not in dict_hum:
+                    dict_hum[row["title_normalized"]] = [id]
                 else: 
-                    dizionario_hum[row["title_normalized"]].append(id)
+                    dict_hum[row["title_normalized"]].append(id)
     cont_chunk += 1
 
 
@@ -64,7 +64,7 @@ import numpy as np
 
 numchunk = 0
 chunksize = 10000
-contatore = 0
+counter = 0
 all_association = []
 all_association_dictionary = {}
 
@@ -83,16 +83,16 @@ for df_merge_chunk in pd.read_csv(hum_off_file, sep=",", on_bad_lines="skip", ch
         title = row.title_normalized
         product = row.product_name_normalized
 
-        if title in dizionario_hum and product in dizionario_off:
-            for hum_ricetta in dizionario_hum[title]:
+        if title in dict_hum and product in dict_off:
+            for hum_recipe in dict_hum[title]:
                 conta_ricette = 0
-                for off_ricetta in dizionario_off[product]: 
-                    contatore += 1
+                for off_recipe in dict_off[product]: 
+                    counter += 1
                     conta_ricette +=1
                 all_association.append(conta_ricette)
 
-                if hum_ricetta not in all_association_dictionary:
-                    all_association_dictionary[hum_ricetta] = 1
+                if hum_recipe not in all_association_dictionary:
+                    all_association_dictionary[hum_recipe] = 1
 
     del df_merge_chunk
     gc.collect() 
@@ -102,7 +102,7 @@ for df_merge_chunk in pd.read_csv(hum_off_file, sep=",", on_bad_lines="skip", ch
     remaining_chunks = total_chunks - (numchunk + 1)
     est_remaining = avg_time_per_chunk * remaining_chunks
     print(f"Chunk time: {chunk_time:.2f}s — Estimated remaining: {est_remaining/60:.1f} min")
-    print(contatore)
+    print(counter)
     numchunk += 1
 
 total_time = time.time() - start_total
@@ -131,4 +131,4 @@ print("Average number of associations: ", mean_association)
 print("Median of associations: ", median_association)
 print("Median of associations for all recipes: ", median_associated)
 print("Percentage of associated Hummus recipes: ", (len(all_association_dictionary) * 100 / total_lines), "%")
-print("Total associations: ", contatore)
+print("Total associations: ", counter)

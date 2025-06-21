@@ -590,74 +590,74 @@ def read_file_rows(file):
     return count - 1 
 
 
-def merge_embeddingaaa(header, file1, file2, file_output, chunk_size, threshold=0.85):
-    
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print("using device: ", device)
-
-    num_rows1 = read_file_rows(file1)
-    num_rows2 = read_file_rows(file2)
-    num_chunks1 = (num_rows1 + chunk_size - 1) // chunk_size
-    num_chunks2 = (num_rows2 + chunk_size - 1) // chunk_size
-
-    print(f"File 1: {num_rows1} righe ({num_chunks1} chunk)")
-    print(f"File 2: {num_rows2} righe ({num_chunks2} chunk)")
-    
-    with open(file_output, mode="w", newline="", encoding="utf-8") as fout:
-        writer = csv.writer(fout)
-        writer.writerow([header[0], header[1], "cosine_similarity"])  
-
-        with open(file1, newline="", encoding="utf-8") as f1:
-            reader1 = csv.reader(f1)
-            next(reader1)  
-            
-            start_time = time.time()
-            
-            for chunk1_idx in range(num_chunks1):
-                chunk_start_time = time.time()
-                print(f"Processing chunk {chunk1_idx+1}/{num_chunks1} of file 1...")
-
-                chunk1 = [next(reader1, None) for _ in range(chunk_size)]
-                chunk1 = [row for row in chunk1 if row] 
-                
-                names1 = [row[0] for row in chunk1]
-                embeddings1 = torch.tensor([eval(row[1]) for row in chunk1]).to(device)
-
-                with open(file=file2, newline="", encoding="utf-8") as f2:
-                    reader2 = csv.reader(f2)
-                    next(reader2)  
-                    
-                    for chunk2_idx in range(num_chunks2):
-                        print(f"  Processing chunk {chunk2_idx+1}/{num_chunks2} of file 2 {chunk1_idx}/{num_chunks1} of file 1")
-                        
-                        chunk2 = [next(reader2, None) for _ in range(chunk_size)]
-                        chunk2 = [row for row in chunk2 if row]
-
-                        names2 = [row[0] for row in chunk2]
-                        embeddings2 = torch.tensor([eval(row[1]) for row in chunk2]).to(device)
-
-                        cosine_similarities = util.cos_sim(embeddings1, embeddings2)
-
-                        for i, name1 in enumerate(names1):
-                            for j, name2 in enumerate(names2):
-                                similarity = cosine_similarities[i][j].item()
-                                if similarity >= threshold:
-                                    writer.writerow([name1, name2, similarity])
-                        
-                        del embeddings2
-                        torch.cuda.empty_cache()
-
-                del embeddings1
-                torch.cuda.empty_cache()
-                
-                chunk_time = time.time() - chunk_start_time
-                remaining_chunks = num_chunks1 - (chunk1_idx + 1)
-                estimated_time_remaining = (chunk_time * remaining_chunks) / 60 
-                
-                print(f"Chunk {chunk1_idx+1} completed in {chunk_time:.2f} sec. Estimated time: {estimated_time_remaining:.2f} min")
-
-    total_time = time.time() - start_time
-    print(f"Process completed in {total_time / 60:.2f} minutes.")
+#def merge_embeddingaaa(header, file1, file2, file_output, chunk_size, threshold=0.85):
+#    
+#    device = "cuda" if torch.cuda.is_available() else "cpu"
+#    print("using device: ", device)
+#
+#    num_rows1 = read_file_rows(file1)
+#    num_rows2 = read_file_rows(file2)
+#    num_chunks1 = (num_rows1 + chunk_size - 1) // chunk_size
+#    num_chunks2 = (num_rows2 + chunk_size - 1) // chunk_size
+#
+#    print(f"File 1: {num_rows1} righe ({num_chunks1} chunk)")
+#    print(f"File 2: {num_rows2} righe ({num_chunks2} chunk)")
+#    
+#    with open(file_output, mode="w", newline="", encoding="utf-8") as fout:
+#        writer = csv.writer(fout)
+#        writer.writerow([header[0], header[1], "cosine_similarity"])  
+#
+#        with open(file1, newline="", encoding="utf-8") as f1:
+#            reader1 = csv.reader(f1)
+#            next(reader1)  
+#            
+#            start_time = time.time()
+#            
+#            for chunk1_idx in range(num_chunks1):
+#                chunk_start_time = time.time()
+#                print(f"Processing chunk {chunk1_idx+1}/{num_chunks1} of file 1...")
+#
+#                chunk1 = [next(reader1, None) for _ in range(chunk_size)]
+#                chunk1 = [row for row in chunk1 if row] 
+#                
+#                names1 = [row[0] for row in chunk1]
+#                embeddings1 = torch.tensor([eval(row[1]) for row in chunk1]).to(device)
+#
+#                with open(file=file2, newline="", encoding="utf-8") as f2:
+#                    reader2 = csv.reader(f2)
+#                    next(reader2)  
+#                    
+#                    for chunk2_idx in range(num_chunks2):
+#                        print(f"  Processing chunk {chunk2_idx+1}/{num_chunks2} of file 2 {chunk1_idx}/{num_chunks1} of file 1")
+#                        
+#                        chunk2 = [next(reader2, None) for _ in range(chunk_size)]
+#                        chunk2 = [row for row in chunk2 if row]
+#
+#                        names2 = [row[0] for row in chunk2]
+#                        embeddings2 = torch.tensor([eval(row[1]) for row in chunk2]).to(device)
+#
+#                        cosine_similarities = util.cos_sim(embeddings1, embeddings2)
+#
+#                        for i, name1 in enumerate(names1):
+#                            for j, name2 in enumerate(names2):
+#                                similarity = cosine_similarities[i][j].item()
+#                                if similarity >= threshold:
+#                                    writer.writerow([name1, name2, similarity])
+#                        
+#                        del embeddings2
+#                        torch.cuda.empty_cache()
+#
+#                del embeddings1
+#                torch.cuda.empty_cache()
+#                
+#                chunk_time = time.time() - chunk_start_time
+#                remaining_chunks = num_chunks1 - (chunk1_idx + 1)
+#                estimated_time_remaining = (chunk_time * remaining_chunks) / 60 
+#                
+#                print(f"Chunk {chunk1_idx+1} completed in {chunk_time:.2f} sec. Estimated time: {estimated_time_remaining:.2f} min")
+#
+#    total_time = time.time() - start_time
+#    print(f"Process completed in {total_time / 60:.2f} minutes.")
 
 
 

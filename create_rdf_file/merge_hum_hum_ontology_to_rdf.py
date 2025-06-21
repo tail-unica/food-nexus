@@ -1,3 +1,3 @@
-from create_rdf import create_merge_ontology3 #type: ignore
+from create_rdf import merge_hum_hum_ont #type: ignore
 
-create_merge_ontology3()
+merge_hum_hum_ont()

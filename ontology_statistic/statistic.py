@@ -1,5 +1,5 @@
 """
-File for calcolate the statistic on a list of ontology
+File for calculate the statistic on a list of ontology
 """
 
 from collections import Counter
@@ -204,7 +204,6 @@ def process_batch(batch_lines, entities, attributes, entity_types, actual_relati
     
     :param batch_lines: list of NT lines to process
     :param entities: set of entities to update
-    :param relations: set of relations to update
     :param attributes: set of attributes to update
     :param entity_types: Counter for entity types
     :param actual_relation_predicate_types_counter: Counter for relation predicate types
@@ -298,16 +297,16 @@ def ontology_statistics(turtle_files, output_csv, type="nt") -> None:
             "num_attribute_types"
         ]
         + [
-            f"entity_type_{entita.split('/')[-1]}"
-            for entita in entity_type_cols
+            f"entity_type_{entity.split('/')[-1]}"
+            for entity in entity_type_cols
         ]
         + [
-            f"relation_pred_type_{relazione.split('/')[-1]}"
-            for relazione in actual_relation_predicate_type_cols
+            f"relation_pred_type_{relation.split('/')[-1]}"
+            for relation in actual_relation_predicate_type_cols
         ]
         + [
-            f"attribute_pred_type_{attributo.split('/')[-1]}" 
-            for attributo in attribute_predicate_type_cols
+            f"attribute_pred_type_{attribute.split('/')[-1]}" 
+            for attribute in attribute_predicate_type_cols
         ]
     )
 

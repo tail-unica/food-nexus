@@ -4,7 +4,7 @@ This the official *FoodNexus* repository, developed as part of an applied resear
 
 ## 📘 Overview
 
-![Model addictional info](./images/knowledgegraph.png)
+![knowledgegraph](./images/knowledgegraph.png)
 
 **FoodNexus** aims to:
 
@@ -25,7 +25,7 @@ To provide context on the comprehensiveness of our FoodNexus dataset compared to
 | OFF              | ✓         | ✓           | ✓              | ✓              | ✓         | ✗            | ✗               |
 | **FoodNexus (Ours)** | ✓         | ✓           | ✓              | ✓              | ✓         | ✓            | ✓               |
 
-*✓: data type available, ✗: data type not available or not applicable, *: only categorical data like allergens*
+*✓: data type available, ✗: data type not available or not applicable, ✗\*: only categorical data like allergens*
 
 This table highlights how FoodNexus aims to integrate a broader range of attributes, including user-related ones, which are crucial for personalized recommendation systems and in-depth analyses.
 
@@ -35,7 +35,8 @@ This table highlights how FoodNexus aims to integrate a broader range of attribu
 
 ### 1. Requirements
 
-Install Ollama for host the LLM.
+Install Ollama to host the LLM (o Install Ollama for hosting the LLM).
+(The tested Ollama version was December 2024, Newer versions might cause compatibility issues.)
 
 Ensure you are using **Python ≥ 3.8**. Then install the dependencies:
 
@@ -48,7 +49,7 @@ pip install -r requirements.txt
 To run the scripts successfully, the following external resources are required:
 
 * **HUMMUS**: Preprocessed CSV files (from the `data preprocess` folder in the [HUMMUS repository](https://gitlab.com/felix134/connected-recipe-data-set/-/tree/master/data/hummus_data/preprocessed?ref_type=heads))
-* **OFF Ontology**: The OpenFoodFacts ontology, available from the [OFF Wiki](https://world.openfoodfacts.org/data) in csv format.
+* **OFF Ontology**: The OpenFoodFacts ontology, available from the [OFF Wiki](https://world.openfoodfacts.org/data) in csv format. (please rename the file to off.csv to use it with this repository)
 
 Place these files in a new folder named `csv_file` at the root of this repository.
 
@@ -59,7 +60,7 @@ This workflow outlines the steps to reproduce the FoodNexus ontology, from initi
 
 1.  **Initial Data Setup:**
     *   Download the required datasets (HUMMUS preprocessed CSVs, OpenFoodFacts CSV) from their official sources, as detailed in the "Data Dependencies" section.
-    *   Place all downloaded CSV files into the `csv_file/` directory at the root of this repository.
+    *   Place all downloaded CSV files into the `csv_file/` directory at the root of this repository and rename the Open Food Facts file to "off.csv".
 
 2.  **Environment and LLM Setup:**
     *   Ensure you have created a Python virtual environment (e.g., using `venv` or `conda`) and installed all dependencies by running `pip install -r requirements.txt` within that environment.
@@ -67,16 +68,18 @@ This workflow outlines the steps to reproduce the FoodNexus ontology, from initi
     *   Create the necessary local LLM models (if using Ollama) by executing the `llm_creation.py` script or the associated Jupyter notebook located in the `analisys_and_file_creation_file/` directory. This step configures the specific LLMs used for inference tasks.
 
 3.  **Core Data Processing and File Generation:**
-    *   Execute the `file_creation_jupyter.ipynb` notebook, located in the `analisys_and_file_creation_file/` directory, to perform initial data processing and generate intermediate needed files.
+    *   Execute the `file_creation_jupyter.ipynb` notebook, located in the `analisys_and_file_creation_file/` directory, to perform initial data processing and generate necessary intermediate needed files.
 
 4.  **Dataset Normalization:**
-    *   Run the normalization scripts to standardize recipe data from different sources:
+    *   Run the normalization scripts to standardize recipe data from different sources (if you encounter errors run the first cell of pipeline_jupyter.ipynb to install the nltk components):
+        *   `python normalization_pipeline_file/fkg_normalize.py`
         *   `python normalization_pipeline_file/normalize_hummus.py`
+        *   `python normalization_pipeline_file/off_translate.py`
         *   `python normalization_pipeline_file/off_normalize.py`
 
         These scripts will produce normalized recipe datasets.
 
-![Model addictional info](./images/pipeline.svg)
+![pipeline](./images/pipeline.svg)
 
 5.  **LLM-based Information Inference:**
     *   Execute the following scripts to infer additional information (e.g., user attributes, enhanced descriptions) using the configured LLMs:
@@ -93,16 +96,17 @@ This workflow outlines the steps to reproduce the FoodNexus ontology, from initi
         *   `python entity_linking_file/link_off_hum.py`
         *   `python entity_linking_file/link_off_foodkg.py`
         *   `python entity_linking_file/link_hum_hum.py` 
-    *   **Threshold Filtering:** Use the `filter_association_by_threshold.ipynb` notebook in `entity_linking_file/`. This allows you to refine the linking results (e.g., by setting a similarity threshold of 0.975). The default value for the threshold is 0.975 for make the resource slimmer and more robust but all value over 0.85 give significative relation.
+    *   **Threshold Filtering:** Use the `filter_association_by_threshold.ipynb` notebook in `entity_linking_file/`. This allows you to refine the linking results (e.g., by setting a similarity threshold of 0.975). The default threshold is 0.975 to make the resource slimmer and more robust, but all values over 0.85 provide significant relations
 
 7.  **RDF Graph Generation:**
-    *   Convert the processed and linked data into RDF triples. Execute the following scripts, founded in the `create_rdf_file/` directory:
+    *   Convert the processed and linked data into RDF triples. Execute the following scripts, found in the `create_rdf_file/` directory:
         *   `python create_rdf_file/hummus_to_rdf_not_infered.py`
         *   `python create_rdf_file/hummus_to_rdf.py`
+        *   `python create_rdf_file/off_to_rdf.py`
         *   `python create_rdf_file/merge_hum_hum_ontology_to_rdf.py`
         *   `python create_rdf_file/merge_off_fkg_ontology_to_rdf.py`
         *   `python create_rdf_file/merge_off_hum_ontology_to_rdf.py`
-        *   `python create_rdf_file/off_to_rdf.py`
+
 
 8.  **Final Ontology Merging:**
     *   Execute the `merge_ontology.py` script located in the root directory to combine all generated RDF graphs into the final, unified **FoodNexus** ontology.
@@ -115,7 +119,7 @@ FoodNexus/
 ├── attribute_extraction_file/        # Attribute extraction logic from user
 ├── config_file/                      # Configuration for preprocessing and unit normalization
 ├── create_rdf_file/                  # Scripts to generate RDF triples from processed data
-├── csv_file/                         # All the non-script file
+├── csv_file/                         # All non-script file
 ├── entity_linking_file/              # Scripts for entity linking and embedding generation
 ├── extra_script_for_hopwise/         # Script to analyze the dataset to apply to the Hopwise repository
 ├── images/                           # Images used in the README file
@@ -126,7 +130,7 @@ FoodNexus/
 ├── view_onthology_file/              # Visualization tools for ontologies
 ├── main.py                           # Main script
 ├── merge_ontology.py                 # Main script for ontology merging
-├── pipeline_jupyter.ipynb            # Notebook for calcolate cohen coefficient
+├── pipeline_jupyter.ipynb            # Notebook for calculate cohen coefficient
 ├── requirements.txt                  # Python dependencies
 └── README.md                         # Project documentation
 ```
@@ -213,21 +217,17 @@ embedding_size: 256
 lerning_rate: 0.0001
 
 
-- **EASE**:
-    - `reg_weight`: `[1.0, 10.0, 100.0, 250.0, 500.0, 1000.0]`
+- **LightGCN**:
+    - `embedding_size`: `[64, 128]`
+    - `learning_rate`: `[0.01, 0.001, 0.0001]`
+    - `n_layers`: `[1, 2, 3]`
+    - `reg_weight`: `[1e-05, 1e-03]`
 
 best param:
 embedding_size': 128
 learning_rate: 0.01
 n_layers: 2
 reg_weight: 1e-05
-
-- **LightGCN**:
-    - `embedding_size`: `[64, 128]`
-    - `learning_rate`: `[0.01, 0.001, 0.0001]`
-    - `n_layers`: `[1, 2, 3]`
-    - `reg_weight`: `[1e-05, 1e-03]`
-best param:
 
 
 - **NeuMF**:
@@ -348,6 +348,12 @@ Furthermore, the following table details the statistical comparison of our resul
     - The default resource is built with a Recipe-Product association threshold of 0.975. This conservative value helps create a smaller, more robust dataset.
     - For analyses requiring a larger number of high-accuracy associations, a threshold of 0.85 is also effective.
     - You have the flexibility to generate the resource with your preferred threshold by adjusting the relevant parameter in Section 6 of the execution workflow.
+
+## 📜 License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+
 
 ## 👥 Authors
 

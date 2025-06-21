@@ -327,9 +327,9 @@ def convert_hummus_in_rdf(
         file_output_nt = "../csv_file/ontology_hummus.nt"
 
     # Upload the CSV
-    df_ricette = pd.read_csv(filepath_or_buffer=file_recipes, on_bad_lines="skip", sep=";",  low_memory=False)
+    df_recipe = pd.read_csv(filepath_or_buffer=file_recipes, on_bad_lines="skip", sep=";",  low_memory=False)
     df_review = pd.read_csv(file_review, on_bad_lines="skip",  sep=",",  low_memory=False)
-    df_utenti = pd.read_csv(file_users, on_bad_lines="skip", sep=",", low_memory=False)
+    df_user = pd.read_csv(file_users, on_bad_lines="skip", sep=",", low_memory=False)
 
     tag_count = {}
     ingredient_count = {}
@@ -362,7 +362,7 @@ def convert_hummus_in_rdf(
     print("starting user creation")
 
     # Create the entity UserGroup
-    for idx, row in df_utenti.iterrows():
+    for idx, row in df_user.iterrows():
         if pd.notna(row["member_id"]):
             group_id = URIRef(
                 UNICA[f"UserGroup_{sanitize_for_uri(row['member_id'])}"]
@@ -468,11 +468,11 @@ def convert_hummus_in_rdf(
     print("starting recipe creation")
 
     # Create the entity Recipe
-    conta = 0
-    for idx, row in df_ricette.iterrows():
-        conta +=1
-        if conta % 10000 == 0:
-            print(f"row: {conta}")
+    counter = 0
+    for idx, row in df_recipe.iterrows():
+        counter +=1
+        if counter % 10000 == 0:
+            print(f"row: {counter}")
 
 
         if pd.notna(row["recipe_id"]):
@@ -569,16 +569,16 @@ def convert_hummus_in_rdf(
                         and row["servingSize [g]"] != 0
                         and row["servingSize [g]"] != ""
                     ):
-                        quantità = (
+                        quant = (
                             float(stringa) / float(row["servingSize [g]"]) * 100
                         )
                     else:
-                        quantità = float(stringa)
+                        quant = float(stringa)
                     g.add(
                         (
                             indicator_id,
                             SCHEMA.quantity,
-                            Literal(quantità, datatype=XSD.float),
+                            Literal(quant, datatype=XSD.float),
                         )
                     )
                     g.add(
@@ -690,12 +690,12 @@ def convert_hummus_in_rdf(
 
     print("starting review creation")
 
-    conta = 0
+    counter = 0
     # Create UserReview entities and relationships
     for idx, row in df_review.iterrows():
-        conta += 1
-        if conta % 10000 == 0:
-            print(f"row: {conta}")
+        counter += 1
+        if counter % 10000 == 0:
+            print(f"row: {counter}")
     
         if pd.notna(row["rating"]) and isinstance(row["rating"], (int, float)):
             review_id = URIRef(UNICA[f"Review_{sanitize_for_uri(idx)}"])
@@ -925,12 +925,12 @@ def convert_hummus_in_rdf(
     #df_sustainability = pd.read_csv(filepath_or_buffer=file_recipes, on_bad_lines="skip", low_memory=False)
     #print("starting sustainability creation")
 #
-    #conta = 0
+    #counter = 0
     ## Create UserReview entities and relationships
     #for idx, row in df_sustainability.iterrows():
-    #    conta += 1
-    #    if conta % 1000 == 0:
-    #        print(f"row: {conta}")
+    #    counter += 1
+    #    if counter % 1000 == 0:
+    #        print(f"row: {counter}")
     #    if pd.notna(row["recipe_id"]) and isinstance(row["recipe_id"], (int, float)):
     #        
     #        for colonna in ["recipe_CF_kg", "recipe_WF_kg"]:
@@ -1437,12 +1437,12 @@ def convert_off_in_rdf(use_row=False) -> None:
 
 
 
-def create_merge_ontology():
+def merge_off_hum_ont():
 
     UNICA = Namespace("https://github.com/tail-unica/kgeats/")
 
-    dizionario_hum = {}
-    dizionario_off = {}
+    dict_hum = {}
+    dict_off = {}
 
     hum_file = "../csv_file/pp_recipes_normalized_by_pipeline.csv"
     off_file = "../csv_file/off_normalized_final.csv"
@@ -1456,13 +1456,13 @@ def create_merge_ontology():
         print(f"Processing rows off from {chunksize * cont_chunk} to {chunksize * (cont_chunk+1)}")
         
         for idx, row in df_off_chunk.iterrows():
-            if(row["product_name_normalized"] != None and row["product_name_normalized"] != ""):
+            if(row["product_name_normalized"] is not None and row["product_name_normalized"] != ""):
                 id = URIRef(value=UNICA[f"Recipe_off_{row["code"]}"])
-                if id != None:
-                    if row["product_name_normalized"] not in dizionario_off:
-                        dizionario_off[row["product_name_normalized"]] = [id]
+                if id is not None:
+                    if row["product_name_normalized"] not in dict_off:
+                        dict_off[row["product_name_normalized"]] = [id]
                     else: 
-                        dizionario_off[row["product_name_normalized"]].append(id)
+                        dict_off[row["product_name_normalized"]].append(id)
         cont_chunk += 1
 
     cont_chunk = 0
@@ -1470,21 +1470,21 @@ def create_merge_ontology():
         print(f"Processing rows hummus from {chunksize * cont_chunk} to {chunksize * (cont_chunk+1)}")
         
         for idx, row in df_hum_chunk.iterrows():
-            if(row["title_normalized"] != None and row["title_normalized"] != ""):
+            if(row["title_normalized"] is not None and row["title_normalized"] != ""):
                 id = URIRef(UNICA[f"Recipe_hummus{sanitize_for_uri(row['recipe_id'])}"])
-                if id != None:
-                    if row["title_normalized"] not in dizionario_hum:
-                        dizionario_hum[row["title_normalized"]] = [id]
+                if id is not None:
+                    if row["title_normalized"] not in dict_hum:
+                        dict_hum[row["title_normalized"]] = [id]
                     else: 
-                        dizionario_hum[row["title_normalized"]].append(id)
+                        dict_hum[row["title_normalized"]].append(id)
         cont_chunk += 1
 
 
     numchunk = 0
     chunksize = 1000
 
-    hum_keys = set(dizionario_hum.keys())
-    off_keys = set(dizionario_off.keys())
+    hum_keys = set(dict_hum.keys())
+    off_keys = set(dict_off.keys())
 
     hum_off_df = pd.read_csv(hum_off_file, sep=",", low_memory=False, on_bad_lines="skip")
     total_lines  = len(hum_off_df)
@@ -1499,13 +1499,13 @@ def create_merge_ontology():
             print(f"\nProcessing chunk {numchunk+1}/{total_chunks}")
 
             for row in df_merge_chunk.itertuples(index=False):
-                title = row.title_normalized #need to be modified in the csv fle
+                title = row.title_normalized 
                 product = row.product_name_normalized
 
                 if title in hum_keys and product in off_keys:
-                    for hum_ricetta in dizionario_hum[title]:
-                        for off_ricetta in dizionario_off[product]: 
-                            triple_str = f"<{off_ricetta}> <https://schema.org/sameAs> <{hum_ricetta}> .\n"
+                    for hum_recipes in dict_hum[title]:
+                        for off_recipes in dict_off[product]: 
+                            triple_str = f"<{off_recipes}> <https://schema.org/sameAs> <{hum_recipes}> .\n"
                             f_out.write(triple_str)
  
 
@@ -1526,12 +1526,12 @@ def create_merge_ontology():
 
 
 
-def create_merge_ontology2():
+def merge_off_fkg_ont():
 
     UNICA = Namespace("https://github.com/tail-unica/kgeats/")
 
-    dizionario_hum = {}
-    dizionario_off = {}
+    dict_hum = {}
+    dict_off = {}
 
     hum_file = "../csv_file/ingredients_food_kg_normalizzed_by_pipeline.csv"
     off_file = "../csv_file/off_normalized_final.csv"
@@ -1545,13 +1545,13 @@ def create_merge_ontology2():
         print(f"Processing rows off from {chunksize * cont_chunk} to {chunksize * (cont_chunk+1)}")
         
         for idx, row in df_off_chunk.iterrows():
-            if(row["product_name_normalized"] != None and row["product_name_normalized"] != ""):
+            if(row["product_name_normalized"] is not None and row["product_name_normalized"] != ""):
                 id = URIRef(value=UNICA[f"Recipe_off_{row["code"]}"])
-                if id != None:
-                    if row["product_name_normalized"] not in dizionario_off:
-                        dizionario_off[row["product_name_normalized"]] = [id]
+                if id is not None:
+                    if row["product_name_normalized"] not in dict_off:
+                        dict_off[row["product_name_normalized"]] = [id]
                     else: 
-                        dizionario_off[row["product_name_normalized"]].append(id)
+                        dict_off[row["product_name_normalized"]].append(id)
         cont_chunk += 1
 
     cont_chunk = 0
@@ -1561,25 +1561,25 @@ def create_merge_ontology2():
         print(f"Processing rows hummus from {chunksize * cont_chunk} to {chunksize * (cont_chunk+1)}")
         
         for idx, row in df_hum_chunk.iterrows():
-            if(row["ingredient_normalized"] != None and row["ingredient_normalized"] != ""):
+            if(row["ingredient_normalized"] is not None and row["ingredient_normalized"] != ""):
                 id = URIRef(
                 UNICA[
                     f"Recipe_Ingredient_{sanitize_for_uri(row["ingredient"].replace(' ', '_').lower())}"
                             ]
                         )
-                if id != None:
-                    if row["ingredient_normalized"] not in dizionario_hum:
-                        dizionario_hum[row["ingredient_normalized"]] = [id]
+                if id is not None:
+                    if row["ingredient_normalized"] not in dict_hum:
+                        dict_hum[row["ingredient_normalized"]] = [id]
                     else: 
-                        dizionario_hum[row["ingredient_normalized"]].append(id)
+                        dict_hum[row["ingredient_normalized"]].append(id)
         cont_chunk += 1
 
 
     numchunk = 0
     chunksize = 1000
 
-    hum_keys = set(dizionario_hum.keys())
-    off_keys = set(dizionario_off.keys())
+    hum_keys = set(dict_hum.keys())
+    off_keys = set(dict_off.keys())
 
     hum_off_df = pd.read_csv(hum_off_file, sep=",", low_memory=False, on_bad_lines="skip")
     total_lines  = len(hum_off_df)
@@ -1598,9 +1598,9 @@ def create_merge_ontology2():
                 product = row.product_name_normalized
 
                 if title in hum_keys and product in off_keys:
-                    for hum_ricetta in dizionario_hum[title]:
-                        for off_ricetta in dizionario_off[product]: 
-                            triple_str = f"<{off_ricetta}> <https://schema.org/sameAs> <{hum_ricetta}> .\n"
+                    for hum_recipes in dict_hum[title]:
+                        for off_recipes in dict_off[product]: 
+                            triple_str = f"<{off_recipes}> <https://schema.org/sameAs> <{hum_recipes}> .\n"
                             f_out.write(triple_str)
 
             del df_merge_chunk
@@ -1618,12 +1618,12 @@ def create_merge_ontology2():
 
 
 
-def create_merge_ontology3():
+def merge_hum_hum_ont():
 
     UNICA = Namespace("https://github.com/tail-unica/kgeats/")
 
-    dizionario_hum = {}
-    dizionario_off = {}
+    dict_hum = {}
+    dict_off = {}
 
     hum_file = "../csv_file/pp_recipes_normalized_by_pipeline.csv"
     off_file = "../csv_file/pp_recipes_normalized_by_pipeline.csv"
@@ -1637,13 +1637,13 @@ def create_merge_ontology3():
         print(f"Processing rows hum from {chunksize * cont_chunk} to {chunksize * (cont_chunk+1)}")
         
         for idx, row in df_off_chunk.iterrows():
-            if(row["title_normalized"] != None and row["title_normalized"] != ""):
+            if(row["title_normalized"] is not None and row["title_normalized"] != ""):
                 id = URIRef(UNICA[f"Recipe_hummus{sanitize_for_uri(row['recipe_id'])}"])
-                if id != None:
-                    if row["title_normalized"] not in dizionario_off:
-                        dizionario_off[row["title_normalized"]] = [id]
+                if id is not None:
+                    if row["title_normalized"] not in dict_off:
+                        dict_off[row["title_normalized"]] = [id]
                     else: 
-                        dizionario_off[row["title_normalized"]].append(id)
+                        dict_off[row["title_normalized"]].append(id)
         cont_chunk += 1
 
     cont_chunk = 0
@@ -1651,21 +1651,21 @@ def create_merge_ontology3():
         print(f"Processing rows hummus from {chunksize * cont_chunk} to {chunksize * (cont_chunk+1)}")
         
         for idx, row in df_hum_chunk.iterrows():
-            if(row["title_normalized"] != None and row["title_normalized"] != ""):
+            if(row["title_normalized"] is not None and row["title_normalized"] != ""):
                 id = URIRef(UNICA[f"Recipe_hummus{sanitize_for_uri(row['recipe_id'])}"])
-                if id != None:
-                    if row["title_normalized"] not in dizionario_hum:
-                        dizionario_hum[row["title_normalized"]] = [id]
+                if id is not None:
+                    if row["title_normalized"] not in dict_hum:
+                        dict_hum[row["title_normalized"]] = [id]
                     else: 
-                        dizionario_hum[row["title_normalized"]].append(id)
+                        dict_hum[row["title_normalized"]].append(id)
         cont_chunk += 1
 
 
     numchunk = 0
     chunksize = 1000
 
-    hum_keys = set(dizionario_hum.keys())
-    off_keys = set(dizionario_off.keys())
+    hum_keys = set(dict_hum.keys())
+    off_keys = set(dict_off.keys())
 
     hum_off_df = pd.read_csv(hum_off_file, sep=",", low_memory=False, on_bad_lines="skip")
     total_lines  = len(hum_off_df)
@@ -1685,10 +1685,10 @@ def create_merge_ontology3():
                 product = row.title_normalized_2
 
                 if title in hum_keys and product in off_keys:
-                    for hum_ricetta in dizionario_hum[title]:
-                        for off_ricetta in dizionario_off[product]: 
-                            if off_ricetta != hum_ricetta:
-                                triple_str = f"<{off_ricetta}> <https://schema.org/sameAs> <{hum_ricetta}> .\n"
+                    for hum_recipes in dict_hum[title]:
+                        for off_recipes in dict_off[product]: 
+                            if off_recipes != hum_recipes:
+                                triple_str = f"<{off_recipes}> <https://schema.org/sameAs> <{hum_recipes}> .\n"
                                 f_out.write(triple_str)
  
 

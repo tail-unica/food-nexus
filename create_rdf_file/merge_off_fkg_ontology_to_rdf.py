@@ -1,3 +1,3 @@
-from create_rdf import create_merge_ontology2 #type: ignore
+from create_rdf import merge_off_fkg_ont #type: ignore
 
-create_merge_ontology2()
+merge_off_fkg_ont()
