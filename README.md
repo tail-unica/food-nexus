@@ -179,12 +179,26 @@ Each model underwent a rigorous fine-tuning process. This involved a grid search
 ### Interaction Filtering Thresholds
 
 The range of interaction count thresholds explored during grid search for filtering entities (users/items) was:
-*   `entity_kg_num_interval`: *[1, 2, 3, 4, 5, 7, 10, 15, 20, 25, 30]*
-*   `user_entity_kg_num_interval`: *[1, 2, 3, 4, 5, 7, 10, 15, 20, 25, 30]*
+*   `user_inter_num_interval`: *[1, 2, 3, 4, 5, 7, 10, 15, 20, 25, 30]*
+*   `item_inter_num_interval`: *[1, 2, 3, 4, 5, 7, 10, 15, 20, 25, 30]*
 
 best param:
 * user_inter_num_interval: "[5,inf)"
 * item_inter_num_interval: "[5,inf)"
+
+### Interaction Filtering Thresholds for triples
+
+The range of interaction count thresholds explored during grid search for filtering triples was:
+*   `entity_kg_num_interval`: *[1, 2, 3, 4, 5, 7, 10, 15, 20, 25, 30]*
+*   `user_entity_kg_num_interval`: *[1, 2, 3, 4, 5, 7, 10, 15, 20, 25, 30]*
+
+best param:
+* kg_reverse_r: False
+* entity_kg_num_interval: "[30,inf)"
+* relation_kg_num_interval: "[1,inf)"
+* user_entity_kg_num_interval: "[5,inf)"
+
+
 
 ### Hyperparameter Tuning Ranges
 
