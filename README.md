@@ -107,12 +107,12 @@ This workflow outlines the steps to reproduce the FoodNexus ontology, from initi
 
 7.  **RDF Graph Generation:**
     *   Convert the processed and linked data into RDF triples. Execute the following scripts, found in the `create_rdf_file/` directory:
-        *   `python create_rdf_file/hummus_to_rdf_not_infered.py`
-        *   `python create_rdf_file/hummus_to_rdf.py`
-        *   `python create_rdf_file/off_to_rdf.py`
-        *   `python create_rdf_file/merge_hum_hum_ontology_to_rdf.py`
-        *   `python create_rdf_file/merge_off_fkg_ontology_to_rdf.py`
-        *   `python create_rdf_file/merge_off_hum_ontology_to_rdf.py`
+        *   `python hummus_to_rdf_not_infered.py`
+        *   `python hummus_to_rdf.py`
+        *   `python off_to_rdf.py`
+        *   `python merge_hum_hum_ontology_to_rdf.py`
+        *   `python merge_off_fkg_ontology_to_rdf.py`
+        *   `python merge_off_hum_ontology_to_rdf.py`
 
 
 8.  **Final Ontology Merging:**
