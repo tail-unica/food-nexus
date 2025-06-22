@@ -78,31 +78,31 @@ This workflow outlines the steps to reproduce the FoodNexus ontology, from initi
     *   Execute the `file_creation_jupyter.ipynb` notebook, located in the `analisys_and_file_creation_file/` directory, to perform initial data processing and generate **necessary** intermediate needed files.
 
 4.  **Dataset Normalization:**
-    *   Run the normalization scripts to standardize recipe data from different sources (if you encounter errors run the first cell of pipeline_jupyter.ipynb to install the nltk components):
-        *   `python normalization_pipeline_file/fkg_normalize.py`
-        *   `python normalization_pipeline_file/normalize_hummus.py`
-        *   `python normalization_pipeline_file/off_translate.py`
-        *   `python normalization_pipeline_file/off_normalize.py`
+    *   Run the normalization scripts in `normalization_pipeline_file` to standardize recipe data from different sources (if you encounter errors run the first cell of pipeline_jupyter.ipynb to install the nltk components):
+        *   `python fkg_normalize.py`
+        *   `python normalize_hummus.py`
+        *   `python off_translate.py`
+        *   `python off_normalize.py`
 
         These scripts will produce normalized recipe datasets.
 
 ![pipeline](./images/pipeline.svg)
 
 5.  **LLM-based Information Inference:**
-    *   Execute the following scripts to infer additional information (e.g., user attributes, enhanced descriptions) using the configured LLMs:
-        *   `python attribute_extraction_file/infere_info_from_description.py`
-        *   `python attribute_extraction_file/infere_info_from_review.py`
+    *   Execute the following scripts in `attribute_extraction_file` to infer additional information (e.g., user attributes, enhanced descriptions) using the configured LLMs:
+        *   `python infere_info_from_description.py`
+        *   `python infere_info_from_review.py`
 
 6.  **Entity Linking Preparation and Execution:**
     *   **Recipe List Generation:** Execute the *last cell* in the `entity_linking_jupyter.ipynb` notebook, found within the `entity_linking_file/` directory. This step creates a consolidated list of recipes from all datasets, essential for the subsequent BERT-based merging process.
     *   **Embedding Creation:** Generate embeddings for recipe names, which are crucial for similarity-based linking. Execute the following scripts:
-        *   `python entity_linking_file/create_embedding_foodkg.py`
-        *   `python entity_linking_file/create_embedding_hummus.py`
-        *   `python entity_linking_file/create_embedding_off.py`
-    *   **Linking Execution:** Perform the entity linking between datasets by running:
-        *   `python entity_linking_file/link_off_hum.py`
-        *   `python entity_linking_file/link_off_foodkg.py`
-        *   `python entity_linking_file/link_hum_hum.py` 
+        *   `python create_embedding_foodkg.py`
+        *   `python create_embedding_hummus.py`
+        *   `python create_embedding_off.py`
+    *   **Linking Execution:** Perform the entity linking between datasets by running (folder `entity_linking_file`):
+        *   `python link_off_hum.py`
+        *   `python link_off_foodkg.py`
+        *   `python link_hum_hum.py` 
     *   **Threshold Filtering:** Use the `filter_association_by_threshold.ipynb` notebook in `entity_linking_file/`. This allows you to refine the linking results (e.g., by setting a similarity threshold of 0.975). The default threshold is 0.975 to make the resource slimmer and more robust, but all values over 0.85 provide significant relations
 
 7.  **RDF Graph Generation:**
