@@ -1,7 +1,7 @@
 from main import pipeline #type: ignore
 
 file_input = "csv_file/ingredients_food_kg.csv"
-file_output = "csv_file/ingredients_food_kg_normalizzed_by_pipeline_2.csv"
+file_output = "csv_file/ingredients_food_kg_normalizzed_by_pipeline.csv"
 column_to_normalize = "ingredient"
 column_normalized = 'ingredient_normalized'
 pipeline(

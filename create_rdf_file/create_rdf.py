@@ -1196,7 +1196,7 @@ def convert_off_in_rdf(use_row=False) -> None:
         for idx, row in df_off_chunk.iterrows():
             if pd.notna(row["product_name"]) and row["product_name"].strip() != "":
                 # Create the recipe
-                recipe_id = URIRef(UNICA[f"Recipe_off_{row["code"]}"]) # I put _off to differentiate them from the hummus ids
+                recipe_id = URIRef(UNICA[f"Recipe_off_{row['code']}"]) # I put _off to differentiate them from the hummus ids
                 chunk_graph.add((recipe_id, RDF.type, SCHEMA.Product))
                 chunk_graph.add((recipe_id, SCHEMA.name, Literal(row["product_name"], lang="en")))
                 chunk_graph.add((recipe_id, SCHEMA.identifier, Literal(idx, datatype=XSD.integer)))
@@ -1457,7 +1457,7 @@ def merge_off_hum_ont():
         
         for idx, row in df_off_chunk.iterrows():
             if(row["product_name_normalized"] is not None and row["product_name_normalized"] != ""):
-                id = URIRef(value=UNICA[f"Recipe_off_{row["code"]}"])
+                id = URIRef(value=UNICA[f"Recipe_off_{row['code']}"])
                 if id is not None:
                     if row["product_name_normalized"] not in dict_off:
                         dict_off[row["product_name_normalized"]] = [id]
@@ -1546,7 +1546,7 @@ def merge_off_fkg_ont():
         
         for idx, row in df_off_chunk.iterrows():
             if(row["product_name_normalized"] is not None and row["product_name_normalized"] != ""):
-                id = URIRef(value=UNICA[f"Recipe_off_{row["code"]}"])
+                id = URIRef(value=UNICA[f"Recipe_off_{row['code']}"])
                 if id is not None:
                     if row["product_name_normalized"] not in dict_off:
                         dict_off[row["product_name_normalized"]] = [id]
@@ -1564,7 +1564,7 @@ def merge_off_fkg_ont():
             if(row["ingredient_normalized"] is not None and row["ingredient_normalized"] != ""):
                 id = URIRef(
                 UNICA[
-                    f"Recipe_Ingredient_{sanitize_for_uri(row["ingredient"].replace(' ', '_').lower())}"
+                    f"Recipe_Ingredient_{sanitize_for_uri(row['ingredient'].replace(' ', '_').lower())}"
                             ]
                         )
                 if id is not None:

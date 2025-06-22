@@ -38,6 +38,13 @@ This table highlights how FoodNexus aims to integrate a broader range of attribu
 Install Ollama to host the LLM (o Install Ollama for hosting the LLM).
 (The tested Ollama version was December 2024, Newer versions might cause compatibility issues.)
 
+Recommended: create a new clean conda env
+```bash
+conda create -n foodnexus python=3.10 
+conda activate foodnexus
+```
+
+
 Ensure you are using **Python ≥ 3.8**. Then install the dependencies:
 
 ```bash
@@ -68,7 +75,7 @@ This workflow outlines the steps to reproduce the FoodNexus ontology, from initi
     *   Create the necessary local LLM models (if using Ollama) by executing the `llm_creation.py` script or the associated Jupyter notebook located in the `analisys_and_file_creation_file/` directory. This step configures the specific LLMs used for inference tasks.
 
 3.  **Core Data Processing and File Generation:**
-    *   Execute the `file_creation_jupyter.ipynb` notebook, located in the `analisys_and_file_creation_file/` directory, to perform initial data processing and generate necessary intermediate needed files.
+    *   Execute the `file_creation_jupyter.ipynb` notebook, located in the `analisys_and_file_creation_file/` directory, to perform initial data processing and generate **necessary** intermediate needed files.
 
 4.  **Dataset Normalization:**
     *   Run the normalization scripts to standardize recipe data from different sources (if you encounter errors run the first cell of pipeline_jupyter.ipynb to install the nltk components):

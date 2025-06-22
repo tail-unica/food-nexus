@@ -7,7 +7,7 @@ alembic==1.15.2
 amqp==5.3.1
 annotated-types==0.7.0
 antlr4-python3-runtime==4.9.3
-anyio==4.6.2.post1
+anyio==4.6.2
 appdirs==1.4.4
 asttokens==2.4.1
 asyncssh==2.20.0
@@ -149,7 +149,7 @@ pyparsing==3.2.0
 pytest==8.3.5
 pytest-cov==6.1.1
 pytest-mock==3.14.0
-python-dateutil==2.9.0.post0
+python-dateutil==2.9.0
 pytz==2024.2
 pyyaml==6.0.2
 pyzmq==26.2.0
@@ -204,8 +204,8 @@ vine==5.1.0
 voluptuous==0.15.2
 wcwidth==0.2.13
 widgetsnbextension==4.0.13
-xformers==0.0.28.post3
+xformers
 xxhash==3.5.0
 yarl==1.18.3
-zc-lockfile==3.0.post1
+zc-lockfile==3.0
 zipp==3.21.0

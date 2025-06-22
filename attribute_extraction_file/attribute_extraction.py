@@ -8,7 +8,7 @@ import os
 import sys
 import time
 
-csv.field_size_limit(new_limit=sys.maxsize)
+csv.field_size_limit(sys.maxsize)
 
 
 def add_to_sys_path(folder_name):

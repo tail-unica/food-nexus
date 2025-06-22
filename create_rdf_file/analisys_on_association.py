@@ -37,7 +37,7 @@ for df_off_chunk in pd.read_csv(off_file, sep="\t", on_bad_lines="skip", chunksi
     
     for idx, row in df_off_chunk.iterrows():
         if(row["product_name_normalized"] is not None and row["product_name_normalized"] != ""):
-            id = URIRef(value=UNICA[f"Recipe_off_{row["code"]}"])
+            id = URIRef(value=UNICA[f"Recipe_off_{row['code']}"])
             if id is not None:
                 if row["product_name_normalized"] not in dict_off:
                     dict_off[row["product_name_normalized"]] = [id]
