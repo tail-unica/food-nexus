@@ -2,6 +2,34 @@
 
 This the official *FoodNexus* repository, developed as part of an applied research initiative in knowledge representation, semantic technologies, and food informatics.
 
+## ⬇️ Download the full dataset 
+
+Data: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15710771.svg)](https://zenodo.org/records/15710771)
+
+If you want to use the downloaded data, ensure it is placed in the csv_file directory at the root of this repository. If you haven't created this directory yet, do so.
+
+## Stats
+
+Furthermore, the following table details the statistical comparison of our resulting FoodNexus knowledge graph against its constituent data sources, showcasing its scale and richness:
+
+| Data Source        | # Triples   | # Entities  | # Relations | # Attributes | # E. Types | # R. Types | # A. Types |
+|--------------------|-------------|-------------|-------------|--------------|------------|------------|------------|
+| HUMMUS             | ~53.9M      | ~12.3M      | ~31.1M      | ~22.8M       | 6          | 6          | 9          |
+| HUMMUS (inferred)  | ~57.9M      | ~12.3M      | ~35.1M      | ~22.8M       | 6          | 7          | 14         |
+| OFF                | ~267.9M     | ~38.5M      | ~160.3M     | ~107.4M      | 7          | 6          | 7          |
+| **FoodNexus (Ours)** | **~979.5M** | **~51.0M**  | **~849.9M** | **~130.2M**  | **11**     | **11**     | **15**     |
+
+*Note: The actual implementation of the FoodNexus ontology includes an additional entity, attribute, and three relations for a versioning system. These are not reported in this table, which focuses on entities relevant for recommender systems.*
+*E. Types: Entity Types; R. Types: Relation Types; A. Types: Attribute Types.*
+
+---
+- **Customizing the Recipe-Product Association Threshold:**
+    - The default resource is built with a Recipe-Product association threshold of 0.975. This conservative value helps create a smaller, more robust dataset.
+    - For analyses requiring a larger number of high-accuracy associations, a threshold of 0.85 is also effective.
+    - You have the flexibility to generate the resource with your preferred threshold by adjusting the relevant parameter in Section 6 of the execution workflow.
+ 
+---
+
 ## 📘 Overview
 
 ![knowledgegraph](./images/knowledgegraph.png)
@@ -334,37 +362,9 @@ Model Performance:
 
 ---
 
-## ⬇️ Download the full dataset 
-
-Data: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15710771.svg)](https://zenodo.org/records/15710771)
-
-If you want to use the downloaded data, ensure it is placed in the csv_file directory at the root of this repository. If you haven't created this directory yet, do so.
-
-## Stats
-
-Furthermore, the following table details the statistical comparison of our resulting FoodNexus knowledge graph against its constituent data sources, showcasing its scale and richness:
-
-| Data Source        | # Triples   | # Entities  | # Relations | # Attributes | # E. Types | # R. Types | # A. Types |
-|--------------------|-------------|-------------|-------------|--------------|------------|------------|------------|
-| HUMMUS             | ~53.9M      | ~12.3M      | ~31.1M      | ~22.8M       | 6          | 6          | 9          |
-| HUMMUS (inferred)  | ~57.9M      | ~12.3M      | ~35.1M      | ~22.8M       | 6          | 7          | 14         |
-| OFF                | ~267.9M     | ~38.5M      | ~160.3M     | ~107.4M      | 7          | 6          | 7          |
-| **FoodNexus (Ours)** | **~979.5M** | **~51.0M**  | **~849.9M** | **~130.2M**  | **11**     | **11**     | **15**     |
-
-*Note: The actual implementation of the FoodNexus ontology includes an additional entity, attribute, and three relations for a versioning system. These are not reported in this table, which focuses on entities relevant for recommender systems.*
-*E. Types: Entity Types; R. Types: Relation Types; A. Types: Attribute Types.*
-
----
-- **Customizing the Recipe-Product Association Threshold:**
-    - The default resource is built with a Recipe-Product association threshold of 0.975. This conservative value helps create a smaller, more robust dataset.
-    - For analyses requiring a larger number of high-accuracy associations, a threshold of 0.85 is also effective.
-    - You have the flexibility to generate the resource with your preferred threshold by adjusting the relevant parameter in Section 6 of the execution workflow.
-
 ## 📜 License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-
 
 ## 👥 Authors
 
