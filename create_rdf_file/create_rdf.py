@@ -36,241 +36,6 @@ def clean_column_name(col_name) -> str:
     return re.sub(r"\s*\[.*?\]", "", col_name).strip()
 
 
-#def create_namespace(namespace_completo=True) -> None:
-#    """
-#    Function to create the TTL file with the custom namespace for UNICA
-#    """
-#
-#    # Create the graph
-#    g = Graph()
-#
-#    # Define the namespaces
-#    SCHEMA = Namespace("https://schema.org/")
-#    UNICA = Namespace(
-#        "https://github.com/tail-unica/kgeats/"
-#    )
-#    XSD_NS = Namespace("http://www.w3.org/2001/XMLSchema#")
-#    RDFS_NS = Namespace("http://www.w3.org/2000/01/rdf-schema#")
-#    RDF_NS = Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
-#
-#    # Add prefixes to the graph
-#    g.bind("schema", SCHEMA)
-#    g.bind("unica", UNICA)
-#    g.bind("xsd", XSD_NS)
-#    g.bind("rdfs", RDFS_NS)
-#    g.bind("rdf", RDF_NS)
-#
-#    if namespace_completo:
-#        # Create classes
-#        g.add((UNICA.FoodProducer, RDF.type, RDFS.Class))
-#        g.add((UNICA.FoodProducer, RDFS.subClassOf, SCHEMA.Organization))
-#        g.add(
-#            (
-#                UNICA.FoodProducer,
-#                RDFS.label,
-#                Literal("Food Producer", lang="en"),
-#            )
-#        )
-#        g.add(
-#            (
-#                UNICA.FoodProducer,
-#                RDFS.comment,
-#                Literal(
-#                    "Information about the producer of a food item.", lang="en"
-#                ),
-#            )
-#        )
-#
-#    g.add((UNICA.Tag, RDF.type, RDFS.Class))
-#    g.add((UNICA.Tag, RDFS.subClassOf, SCHEMA.Intangible))
-#    g.add(
-#        (
-#            UNICA.Tag,
-#            RDFS.label,
-#            Literal("User Constraint", lang="en"),
-#        )
-#    )
-#    g.add(
-#        (
-#            UNICA.Tag,
-#            RDFS.comment,
-#            Literal(
-#                "Constraint about what a user can or want to eat.", lang="en"
-#            ),
-#        )
-#    )
-#
-#    # Propriety for Tag
-#    g.add((UNICA.constraintName, RDF.type, RDF.Property))
-#    g.add((UNICA.constraintName, RDFS.domain, UNICA.Tag))
-#    g.add((UNICA.constraintName, RDFS.range, XSD.string))
-#    g.add(
-#        (
-#            UNICA.constraintName,
-#            RDFS.label,
-#            Literal("Constraint Name", lang="en"),
-#        )
-#    )
-#    g.add(
-#        (
-#            UNICA.constraintName,
-#            RDFS.comment,
-#            Literal("Name of the constraint.", lang="en"),
-#        )
-#    )
-#
-#    g.add((UNICA.description, RDF.type, RDF.Property))
-#    g.add((UNICA.description, RDFS.domain, UNICA.Tag))
-#    g.add((UNICA.description, RDFS.range, XSD.string))
-#    g.add(
-#        (
-#            UNICA.description,
-#            RDFS.label,
-#            Literal("Constraint Description", lang="en"),
-#        )
-#    )
-#    g.add(
-#        (
-#            UNICA.description,
-#            RDFS.comment,
-#            Literal("Description of the constraint.", lang="en"),
-#        )
-#    )
-#
-#    # Create the Indicator class
-#    g.add((UNICA.Indicator, RDF.type, RDFS.Class))
-#    g.add((UNICA.Indicator, RDFS.subClassOf, SCHEMA.NutritionInformation))
-#    g.add((UNICA.Indicator, RDFS.label, Literal("Indicator", lang="en")))
-#    g.add(
-#        (
-#            UNICA.Indicator,
-#            RDFS.comment,
-#            Literal(
-#                "Represents nutritional and sustainability indicators for food items.",
-#                lang="en",
-#            ),
-#        )
-#    )
-#
-#    if namespace_completo:
-#        # Indicator property
-#        proprieta_indicator = [
-#            (
-#                "calcium",
-#                "Calcium for 100g",
-#                "Calcium content for 100 grams.",
-#                XSD.float,
-#            ),
-#            (
-#                "iron",
-#                "Iron for 100g",
-#                "Iron content per 100 grams.",
-#                XSD.float,
-#            ),
-#            (
-#                "vitaminC",
-#                "Vitamin C for 100g",
-#                "Vitamin C content per 100 grams.",
-#                XSD.float,
-#            ),
-#            (
-#                "vitaminA",
-#                "Vitamin A for 100g",
-#                "Vitamin A content per 100 grams.",
-#                XSD.float,
-#            ),
-#            (
-#                "whoScore",
-#                "WHO Score",
-#                "A score indicating WHO healthfulness assessment.",
-#                XSD.float,
-#            ),
-#            (
-#                "fsaScore",
-#                "FSA Score",
-#                "A score based on the Food Standards Agency's healthfulness criteria.",
-#                XSD.float,
-#            ),
-#            (
-#                "nutriScore",
-#                "Nutri-Score",
-#                "A score indicating the nutritional value based on the Nutri-Score system.",
-#                XSD.float,
-#            ),
-#            (
-#                "nutriscoreScore",
-#                "Nutri-Score Score",
-#                "A numeric score for Nutri-Score system.",
-#                XSD.float,
-#            ),
-#            (
-#                "ecoscoreScore",
-#                "Eco-Score Score",
-#                "A numeric score for Eco-Score system.",
-#                XSD.float,
-#            ),
-#            (
-#                "nutritionScoreFr",
-#                "Nutrition Score FR for 100g",
-#                "French nutrition score per 100 grams.",
-#                XSD.float,
-#            ),
-#            (
-#                "nutriscoreGrade",
-#                "Nutri-Score Grade",
-#                "A grade indicating the Nutri-Score nutritional level.",
-#                XSD.string,
-#            ),
-#            (
-#                "ecoscoreGrade",
-#                "Eco-Score Grade",
-#                "A grade indicating the Eco-Score environmental impact level.",
-#                XSD.string,
-#            ),
-#            (
-#                "novaGroup",
-#                "NOVA Group",
-#                "Group classification of processing level based on NOVA system.",
-#                XSD.string,
-#            ),
-#        ]
-#    else:
-#        # Indicator Property
-#        proprieta_indicator = [
-#            (
-#                "whoScore",
-#                "WHO Score",
-#                "A score indicating WHO healthfulness assessment.",
-#                XSD.float,
-#            ),
-#            (
-#                "fsaScore",
-#                "FSA Score",
-#                "A score based on the Food Standards Agency's healthfulness criteria.",
-#                XSD.float,
-#            ),
-#            (
-#                "nutriScore",
-#                "Nutri-Score",
-#                "A score indicating the nutritional value based on the Nutri-Score system.",
-#                XSD.float,
-#            ),
-#        ]
-#
-#    for prop, label, comment, range_type in proprieta_indicator:
-#        g.add((UNICA[prop], RDF.type, RDF.Property))
-#        g.add((UNICA[prop], RDFS.domain, UNICA.Indicator))
-#        g.add((UNICA[prop], RDFS.range, range_type))
-#        g.add((UNICA[prop], RDFS.label, Literal(label, lang="en")))
-#        g.add((UNICA[prop], RDFS.comment, Literal(comment, lang="en")))
-#
-#    # Save in Turtle format with the name 'namespace_unica.ttl'
-#    with open("../csv_file/namespace_unica.ttl", "w") as f:
-#        f.write(g.serialize(format="turtle"))
-#
-#    print("namespace created successfully")
-
-
 def convert_hummus_in_rdf(
     use_infered_attributes_description=False,
     use_infered_attributes_review=False,
@@ -559,7 +324,7 @@ def convert_hummus_in_rdf(
                         ]
                     )
                     g.add((indicator_id, RDF.type, UNICA.Indicator))
-                    g.add((indicator_id, SCHEMA.type, Literal(lexical_or_value=col)))
+                    g.add((indicator_id, SCHEMA.nutrition, Literal(lexical_or_value=col)))
                     if unit:
                         g.add((indicator_id, SCHEMA.unitText, Literal(unit)))
 
@@ -663,7 +428,7 @@ def convert_hummus_in_rdf(
                             if unit != "":
                                 g.add(
                                     (ingredient_id_for_recipe,
-                                    SCHEMA.quantity,
+                                    SCHEMA.value,
                                     Literal(unit, datatype=XSD.string))
                                 )
                             if measure != "":
@@ -942,12 +707,12 @@ def convert_hummus_in_rdf(
     #                )   
 #
     #            g.add((indicator_id, RDF.type, UNICA.Indicator))
-    #            g.add((indicator_id, SCHEMA.type, Literal(lexical_or_value=tipo)))
+    #            g.add((indicator_id, SCHEMA.nutrition, Literal(lexical_or_value=tipo)))
     #            g.add((indicator_id, SCHEMA.unitText, Literal(lexical_or_value="kg")))
     #            g.add(
     #            (
     #                indicator_id,
-    #                SCHEMA.quantity,
+    #                SCHEMA.value,
     #                Literal(row[colonna], datatype=XSD.float),
     #            )
     #            )
@@ -1239,7 +1004,7 @@ def convert_off_in_rdf(use_row=False) -> None:
                             indicator_id = URIRef(UNICA[f"{column_name}_{idx}"])
                             
                             chunk_graph.add((indicator_id, RDF.type, UNICA.Indicator))
-                            chunk_graph.add((indicator_id, SCHEMA.type, Literal(column_name)))
+                            chunk_graph.add((indicator_id, SCHEMA.nutrition, Literal(column_name)))
 
                             is_qualitative = column_name in qualitatives_indicators.values()
                             
@@ -1255,13 +1020,13 @@ def convert_off_in_rdf(use_row=False) -> None:
                                 chunk_graph.add((indicator_id, SCHEMA.unitText, Literal("grams")))
                                 chunk_graph.add((
                                     indicator_id, 
-                                    SCHEMA.quantity, 
+                                    SCHEMA.value, 
                                     Literal(float(indicator_value), datatype=XSD.float)
                                 ))
                             else:
                                 chunk_graph.add((
                                     indicator_id, 
-                                    SCHEMA.quantity, 
+                                    SCHEMA.value, 
                                     Literal(indicator_value, datatype=XSD.string)
                                 ))
 
@@ -1356,7 +1121,7 @@ def convert_off_in_rdf(use_row=False) -> None:
                                 chunk_graph.add((city_ref, SCHEMA.name, Literal(city1, lang="en")))
 
                             for country in recipe_countries:
-                                chunk_graph.add(triple=(city_ref, UNICA.isPlaceIn, country))
+                                chunk_graph.add(triple=(city_ref, SCHEMA.containedInPlace, country))
 
 
                 #Add store entity
@@ -1376,7 +1141,7 @@ def convert_off_in_rdf(use_row=False) -> None:
                         chunk_graph.add(triple=(stores_ref, SCHEMA.offers, recipe_id))
 
                         for city in recipe_cities:
-                            chunk_graph.add(triple=(stores_ref, UNICA.isPlaceIn, city))
+                            chunk_graph.add(triple=(stores_ref, SCHEMA.containedInPlace, city))
 
         # Save this chunk
         chunk_file = f"{output_dir}chunk_{cont_chunk}.ttl"
