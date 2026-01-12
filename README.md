@@ -1,6 +1,50 @@
 # FoodNexus
 
-This the official *FoodNexus* repository, developed as part of an applied research initiative in knowledge representation, semantic technologies, and food informatics.
+This is the official *FoodNexus* repository, developed as part of an applied research initiative in knowledge representation, semantic technologies, and food informatics.
+
+## 📌 Table of Contents
+1. [Download](#⬇️-download-the-full-dataset)
+2. [Stats](#stats)
+3. [Overview](#📘-overview)
+4. [Installation and Usage](#📦-installation-and-usage)
+5. [Repository Structure](#📂-repository-structure)
+6. [Research Objectives](#🎯-research-objectives)
+7. [Results](#📊-result)
+8. [License](#📜-license)
+9. [Authors](#👥-authors)
+10. [Acknowledgements](#🙏-acknowledgements)
+11. [Contact](#📢-contact)
+
+## ⬇️ Download the full dataset 
+
+Our dataset is fully available for download with multiple threshold values. The link below also provides access to the intermediate files generated during processing.
+If you prefer not to download our precomputed resources, you can deterministically reproduce the entire knowledge graph by following the procedure described in the [Installation and Usage](#📦-installation-and-usage) section.
+
+Data: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15710771.svg)](https://zenodo.org/records/15710771)
+
+If you want to use the downloaded data, ensure it is placed in the csv_file directory at the root of this repository. If you haven't created this directory yet, do so.
+
+## Stats
+
+Furthermore, the following table details the statistical comparison of our resulting FoodNexus knowledge graph against its constituent data sources, showcasing its scale and richness:
+
+| Data Source        | # Triples   | # Entities  | # Relations | # Attributes | # E. Types | # R. Types | # A. Types |
+|--------------------|-------------|-------------|-------------|--------------|------------|------------|------------|
+| HUMMUS             | ~53.9M      | ~12.3M      | ~31.1M      | ~22.8M       | 6          | 6          | 9          |
+| HUMMUS (inferred)  | ~57.9M      | ~12.3M      | ~35.1M      | ~22.8M       | 6          | 7          | 14         |
+| OFF                | ~267.9M     | ~38.5M      | ~160.3M     | ~107.4M      | 7          | 6          | 7          |
+| **FoodNexus (Ours)** | **~979.5M** | **~51.0M**  | **~849.9M** | **~130.2M**  | **11**     | **11**     | **15**     |
+
+*Note: The actual implementation of the FoodNexus ontology includes an additional entity, attribute, and three relations for a versioning system. These are not reported in this table, which focuses on entities relevant for recommender systems.*
+*E. Types: Entity Types; R. Types: Relation Types; A. Types: Attribute Types.*
+
+---
+- **Customizing the Recipe-Product Association Threshold:**
+    - The default resource is built with a Recipe-Product association threshold of 0.975. This conservative value helps create a smaller, more robust dataset.
+    - For analyses requiring a larger number of high-accuracy associations, a threshold of 0.85 is also effective.
+    - You have the flexibility to generate the resource with your preferred threshold by adjusting the relevant parameter in Section 6 of the execution workflow.
+ 
+---
 
 ## 📘 Overview
 
@@ -17,15 +61,25 @@ This project explores the intersection of ontology engineering, natural language
 
 To provide context on the comprehensiveness of our FoodNexus dataset compared to other food datasets focused on recommendation, we present the following comparison table:
 
-| Dataset          | Nutrients | Healthiness | Origin Country | Sustainability | Packaging | Interactions | User Attributes |
-|------------------|-----------|-------------|----------------|----------------|-----------|--------------|-----------------|
-| FoodOn           | ✗         | ✗*          | ✓              | ✗              | ✓         | ✗            | ✗               |
-| FoodKG           | ✓         | ✗           | ✗              | ✗              | ✗         | ✗            | ✗               |
-| HUMMUS           | ✓         | ✓           | ✗              | ✗              | ✗         | ✓            | ✗               |
-| OFF              | ✓         | ✓           | ✓              | ✓              | ✓         | ✗            | ✗               |
-| **FoodNexus (Ours)** | ✓         | ✓           | ✓              | ✓              | ✓         | ✓            | ✓               |
+| Dataset              | Type   | Representation | Access  | Nutrients | Healthiness | Origin Country | Sustainability | Packaging | Interactions | User Attributes |
+|----------------------|--------|----------------|----------|------------|--------------|----------------|----------------|------------|---------------|-----------------|
+| FoodOn               | DK     | KG             | Public   | ✗          | ✗*           | ✓              | ✗              | ✓          | ✗             | ✗               |
+| FoodKG               | UI+DK  | KG             | Public   | ✓          | ✗            | ✗              | ✗              | ✗          | ✓             | ✗               |
+| LODHalal             | DK     | KG             | Public   | ✓          | ✗            | ✓              | ✗              | ✗          | ✗             | ✗               |
+| HUMMUS               | UI+DK  | Tab            | Public   | ✓          | ✓            | ✗              | ✗              | ✗          | ✓             | ✗               |
+| RecSoGood            | UI+DK  | KG             | Private  | ✓          | ✓            | ✗              | ✗              | ✗          | ✓             | ✗               |
+| HeASe                | UI+DK  | Tab            | Public   | ✓          | ✓            | ✗              | ✓              | ✗          | ✓             | ✗               |
+| GreenRec             | UI     | Tab            | Public   | ✓          | ✓            | ✗              | ✓              | ✗          | ✓             | ✗               |
+| OFF (Open Food Facts) | DK     | Tab            | Public   | ✓          | ✓            | ✓              | ✓              | ✓          | ✗             | ✗               |
+| **FoodNexus (Ours)** | UI+DK  | KG             | Public   | ✓          | ✓            | ✓              | ✓              | ✓          | ✓             | ✓               |
 
-*✓: data type available, ✗: data type not available or not applicable, ✗\*: only categorical data like allergens*
+✓: available ✗: not available or not applicable ✗*: only categorical data (e.g., allergens)
+
+**Legend**:  
+- **Type** — UI: User–Item data, DK: Domain Knowledge  
+- **Representation** — Tab: Tabular data, KG: Knowledge Graph  
+- **Access** — Public or Private availability
+
 
 This table highlights how FoodNexus aims to integrate a broader range of attributes, including user-related ones, which are crucial for personalized recommendation systems and in-depth analyses.
 
@@ -303,64 +357,48 @@ dropout_prob: 0.0
 
 ---
 
-The following visualizations display the distribution of key FoodNexus attributes (e.g., NOVA group, packaging, origin, nutrients) for recipes recommended by our models. This analysis was performed by retroactively enriching the HUMMUS-trained recommendations with FoodNexus metadata, allowing us to assess their semantic quality and identify potential biases.
-
-![Distribution of selected FoodNexus attributes in recommended recipes - Part 1](./images/grid_distributions2.png "FoodNexus Attribute Distributions - Part 1")
-![Distribution of selected FoodNexus attributes in recommended recipes - Part 2](./images/grid_distributions.png "FoodNexus Attribute Distributions - Part 2")
-
-**Key Observations from the Attribute Distributions:**
-
-*   **Processing Level (NOVA Group):** Models generally exhibit a strong tendency to recommend ultra-processed foods (average NOVA scores often high, e.g., between 3.72-3.83). The Pop model, in particular, tends to recommend items with higher NOVA scores and more additives.
-*   **Packaging:** A consistent preference for plastic packaging is observed across most models, suggesting potential biases in the training data or a lack of environmental considerations.
-*   **Geographic Origin:** Recommended products are heavily concentrated on Europe and, to a lesser extent, the USA, indicating an underrepresentation of non-Western food systems.
-*   **Common Allergens:** Gluten and milk are frequently present in recommended items, while others like soy or tree nuts are less common.
-*   **Nutritional Patterns:** While varying, some interesting patterns emerge. For instance, the Pop model, despite higher processing indicators, sometimes showed lower cholesterol and added sugars. Notably, no model significantly increased added sugar content compared to the original dataset's distribution.
 
 
----
+**Recommendation Utility**  
+We evaluated multiple recommendation models using **Hit**, **Recall**, and **NDCG** at top-10, top-20, and top-50 cutoffs. As expected, the non-personalized baseline **Pop** performs poorly, highlighting the importance of personalized modeling for food recommendations. Interaction-based models (**BPR**, **NeuMF**, **LightGCN**) improve substantially, with **LightGCN** achieving the highest Hit scores and **KGAT** excelling in Recall and NDCG by leveraging knowledge graph semantics. Among KG-aware variants, **UserMKR** shows consistent improvements, demonstrating that user relations can further enhance recommendation performance when integrated effectively.
+
+
 
 Model Performance:
 
-| Model    | Precision@10 | Precision@20 | Precision@50 | Recall@10 | Recall@20 | Recall@50 | NDCG@10 | NDCG@20 | NDCG@50 | Hit@10 | Hit@20 | Hit@50 |
-| :------- | :----------: | :----------: | :----------: | :--------: | :--------: | :--------: | :-------: | :-------: | :-------: | :------: | :------: | :------: |
-| Pop      | 0.0004       | 0.0003       | 0.0002       | 0.0008     | 0.0010     | 0.0013     | 0.0008    | 0.0009    | 0.0009    | 0.0035   | 0.0050   | 0.0077   |
-| BPR      | 0.0053       | 0.0047       | 0.0037       | 0.0136     | 0.0244     | 0.0467     | 0.0102    | 0.0133    | 0.0189    | 0.0474   | 0.0777   | 0.1361   |
-| NeuMF    | 0.0062       | 0.0053       | 0.0040       | 0.0175     | 0.0276     | 0.0515     | 0.0131    | 0.0160    | 0.0220    | 0.0562   | 0.0886   | 0.1491   |
-| LightGCN | **0.0067**   | **0.0056**   | **0.0042**   | 0.0184     | 0.0307     | 0.0557     | **0.0140**| **0.0173**| **0.0235**| **0.0604**| **0.0930**| **0.1558**|
-| KGAT     | 0.0019       | 0.0019       | 0.0018       | 0.0084     | 0.0164     | 0.0370     | 0.0046    | 0.0069    | 0.0116    | 0.0187   | 0.0368   | 0.0802   |
-| KTUP     | 0.0041       | 0.0039       | 0.0031       | 0.0154     | 0.0295     | 0.0570     | 0.0093    | 0.0133    | 0.0198    | 0.0388   | 0.0690   | 0.1260   |
-| MKR      | 0.0054       | 0.0045       | 0.0033       | **0.0211** | **0.0343** | **0.0577** | 0.0125    | 0.0162    | 0.0217    | 0.0494   | 0.0792   | 0.1286   |
+| Model     | Hit@10 | Hit@20 | Hit@50 | Recall@10 | Recall@20 | Recall@50 | NDCG@10 | NDCG@20 | NDCG@50 |
+|------------|:------:|:------:|:------:|:----------:|:----------:|:----------:|:--------:|:--------:|:--------:|
+| **Pop**        | 0.0035 | 0.0050 | 0.0077 | 0.0008 | 0.0010 | 0.0013 | 0.0008 | 0.0009 | 0.0009 |
+| **BPR**        | 0.0474 | 0.0777 | 0.1361 | 0.0136 | 0.0244 | 0.0467 | 0.0102 | 0.0133 | 0.0189 |
+| **NeuMF**      | 0.0562 | 0.0886 | 0.1491 | 0.0175 | 0.0276 | 0.0515 | 0.0131 | 0.0160 | 0.0220 |
+| **LightGCN**   | **0.0604** | **0.0930** | **0.1558** | 0.0184 | 0.0307 | 0.0557 | 0.0140 | 0.0173 | 0.0235 |
+| **MKR**        | 0.0413 | 0.0656 | 0.1126 | 0.0166 | 0.0272 | 0.0477 | 0.0111 | 0.0140 | 0.0188 |
+| **KTUP**       | 0.0446 | 0.0737 | 0.1260 | 0.0189 | 0.0315 | 0.0552 | 0.0118 | 0.0154 | 0.0210 |
+| **KGAT**       | 0.0580 | 0.0903 | 0.1453 | **0.0231** | **0.0372** | **0.0628** | **0.0152** | **0.0191** | **0.0252** |
+| **UserKGAT**   | 0.0187 | 0.0368 | 0.0802 | 0.0084 | 0.0164 | 0.0370 | 0.0046 | 0.0069 | 0.0116 |
+| **UserKTUP**   | 0.0388 | 0.0690 | 0.1260 | 0.0154 | 0.0295 | 0.0570 | 0.0093 | 0.0133 | 0.0198 |
+| **UserMKR**    | 0.0461 | 0.0744 | 0.1264 | 0.0187 | 0.0319 | 0.0556 | 0.0120 | 0.0157 | 0.0212 |
+
+---
+
+
+
+**Nutritional and Contextual Analysis**  
+We also analyzed how models influence the distribution of food attributes in recommendations. Most models tend to over-recommend gluten-containing items and plastic-packaged products while under-representing milk or more sustainable items. User-aware approaches generally produce a more balanced allergen and sustainability profile. Nutritionally, models slightly under-represent vitamins, potassium, and certain micronutrients; some models (e.g., **NeuMF**, **UserKGAT**) reduce added sugars, saturated fat, and additives while favoring less processed items. Overall, FoodNexus provides rich semantic grounding that enables more balanced, health-conscious, and contextually-aware recommendations.
+
+![Categorical attribute bias across recommendation models (Allergens, Packaging, Green Score). Positive values indicate over-representation of a category in model recommendations compared to its global prevalence; negative values indicate under-representation.](./images/categorical_delta_heatmap_allergens_packaging_en_ecoscore_grade-1.png "Categorical Attribute Bias in Recommendations")
+
+
+
+![Model Legend.](./images/legend_models-1.png "Model Legend")
+![Numerical attribute bias across recommendation models (nutrients and processing indicators such as Added Sugars, Saturated Fat, Fiber, and Nova Group). Positive values indicate that the model recommends items with higher average values of the attribute than the dataset mean; negative values indicate the opposite. Error bars denote 95% confidence intervals.](./images/numeric_delta_grid-1.png "Numerical Attribute Bias in Recommendations")
 
 
 ---
-
-## ⬇️ Download the full dataset 
-
-Data: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15710771.svg)](https://zenodo.org/records/15710771)
-
-Furthermore, the following table details the statistical comparison of our resulting FoodNexus knowledge graph against its constituent data sources, showcasing its scale and richness:
-
-| Data Source        | # Triples   | # Entities  | # Relations | # Attributes | # E. Types | # R. Types | # A. Types |
-|--------------------|-------------|-------------|-------------|--------------|------------|------------|------------|
-| HUMMUS             | ~53.9M      | ~12.3M      | ~31.1M      | ~22.8M       | 6          | 6          | 9          |
-| HUMMUS (inferred)  | ~57.9M      | ~12.3M      | ~35.1M      | ~22.8M       | 6          | 7          | 14         |
-| OFF                | ~267.9M     | ~38.5M      | ~160.3M     | ~107.4M      | 7          | 6          | 7          |
-| **FoodNexus (Ours)** | **~979.5M** | **~51.0M**  | **~849.9M** | **~130.2M**  | **11**     | **11**     | **15**     |
-
-*Note: The actual implementation of the FoodNexus ontology includes an additional entity, attribute, and three relations for a versioning system. These are not reported in this table, which focuses on entities relevant for recommender systems.*
-*E. Types: Entity Types; R. Types: Relation Types; A. Types: Attribute Types.*
-
----
-- **Customizing the Recipe-Product Association Threshold:**
-    - The default resource is built with a Recipe-Product association threshold of 0.975. This conservative value helps create a smaller, more robust dataset.
-    - For analyses requiring a larger number of high-accuracy associations, a threshold of 0.85 is also effective.
-    - You have the flexibility to generate the resource with your preferred threshold by adjusting the relevant parameter in Section 6 of the execution workflow.
 
 ## 📜 License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-
 
 ## 👥 Authors
 
