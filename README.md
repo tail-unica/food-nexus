@@ -207,7 +207,7 @@ This project investigates:
 The outcomes are relevant for personalized nutrition, semantic search, and knowledge graph completion in the food domain.
 
 # 📊 Result
-We trained several recommendation models on the Hummus recipe dataset. Subsequently, we evaluated the quality of the recommended recipes by analyzing their nutritional statistics derived from Open Food Facts (OFF) data.
+We trained several recommendation models on the Hummus recipe dataset using the [hopwise](https://github.com/tail-unica/hopwise) library, specifically adopting the branch _24-add-support-for-user-side-kg-and-testing_ at the commit version _b209570f432a2accf763aaa7f98959c89c329283_, which supports the usage of KGs with user-side triples. Subsequently, we evaluated the quality of the recommended recipes by analyzing their nutritional statistics derived from Open Food Facts (OFF) data.
 
 The following models were employed:
 
